@@ -143,7 +143,8 @@ export default function RootLayout({
           }}
         />
 
-        {/* Yellow favicon for alpha/test version - runs immediately */}
+        {/* Yellow favicon for alpha/test version - TEMPORARILY DISABLED FOR DEBUGGING */}
+        {/*
         <script
           dangerouslySetInnerHTML={{
             __html: `
@@ -192,6 +193,7 @@ export default function RootLayout({
             `,
           }}
         />
+        */}
       </head>
       <body className="font-body antialiased bg-ivory text-ink selection:bg-burgundy/20 selection:text-burgundy-900">
         <AppSettingsProvider>

@@ -10,7 +10,7 @@
 
 // Cache version - increment this when you want to force cache updates
 // Format: ccs-wb-v{major}.{minor}.{patch}
-const CACHE_VERSION = '2.17.6';
+const CACHE_VERSION = '2.17.7';
 const CACHE_NAME = `ccs-wb-v${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
@@ -23,7 +23,8 @@ const STATIC_ASSETS = [
 
 // Patterns to cache (regex)
 const CACHE_PATTERNS = [
-  /\/_next\/static\/.*/,           // Next.js static files
+  // TEMPORARILY DISABLED: Not caching Next.js bundles to force fresh load
+  // /\/_next\/static\/.*/,           // Next.js static files
   /\/icons\/.*/,                   // PWA icons
   /\/sample-code\/.*\.ccs$/,       // Sample .ccs files
   /\/sample-code\/.*\.md$/,        // README files
