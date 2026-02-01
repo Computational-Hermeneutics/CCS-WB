@@ -86,10 +86,6 @@ export interface CodeMirrorEditorProps {
   initialScrollPos?: number;
   /** Callback when scroll position changes (for tracking per-file scroll) */
   onScrollPosChange?: (scrollTop: number) => void;
-  /** Initial line number to jump to (1-indexed, defaults to 1) */
-  initialLineNumber?: number;
-  /** Callback when cursor line changes (for tracking per-file position) */
-  onLineChange?: (lineNumber: number) => void;
   /** CSS class for the container */
   className?: string;
 }
@@ -123,8 +119,6 @@ export function CodeMirrorEditor({
   isInProject,
   initialScrollPos,
   onScrollPosChange,
-  initialLineNumber = 1,
-  onLineChange,
   className,
 }: CodeMirrorEditorProps) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -160,7 +154,6 @@ export function CodeMirrorEditor({
   const onChangeRef = useRef(onChange);
   const onCursorPositionChangeRef = useRef(onCursorPositionChange);
   const onScrollPosChangeRef = useRef(onScrollPosChange);
-  const onLineChangeRef = useRef(onLineChange);
 
   // Keep refs in sync with props
   useEffect(() => {
@@ -178,10 +171,6 @@ export function CodeMirrorEditor({
   useEffect(() => {
     onScrollPosChangeRef.current = onScrollPosChange;
   }, [onScrollPosChange]);
-
-  useEffect(() => {
-    onLineChangeRef.current = onLineChange;
-  }, [onLineChange]);
 
   // Memoize handlers to prevent recreation
   const stableOnEdit = useCallback(
@@ -316,21 +305,12 @@ export function CodeMirrorEditor({
       // Update listener for cursor position changes (selection moves, focus, etc.)
       EditorView.updateListener.of((update) => {
         // Fire on selection change OR when editor gains focus
-        if (update.selectionSet || update.focusChanged) {
+        if ((update.selectionSet || update.focusChanged) && onCursorPositionChangeRef.current) {
           const pos = update.state.selection.main.head;
           const line = update.state.doc.lineAt(pos);
           const lineNumber = line.number;
           const column = pos - line.from + 1; // 1-based column
-
-          // Track cursor position for punch card display
-          if (onCursorPositionChangeRef.current) {
-            onCursorPositionChangeRef.current(lineNumber, column);
-          }
-
-          // Track line number for per-file position memory
-          if (onLineChangeRef.current) {
-            onLineChangeRef.current(lineNumber);
-          }
+          onCursorPositionChangeRef.current(lineNumber, column);
         }
       }),
       // Mouse move handler for real-time position tracking on hover
@@ -378,25 +358,9 @@ export function CodeMirrorEditor({
       onCursorPositionChangeRef.current(line.number, pos - line.from + 1);
     }
 
-    // Jump to initial line number for this file (defaults to line 1)
-    // This takes precedence over scroll position for better UX
-    if (initialLineNumber > 1) {
-      requestAnimationFrame(() => {
-        if (viewRef.current) {
-          const doc = viewRef.current.state.doc;
-          // Ensure line number is within document bounds
-          const targetLine = Math.min(initialLineNumber, doc.lines);
-          const line = doc.line(targetLine);
-
-          // Scroll to the line and place cursor there
-          viewRef.current.dispatch({
-            selection: { anchor: line.from },
-            effects: EditorView.scrollIntoView(line.from, { y: "center" }),
-          });
-        }
-      });
-    } else if (initialScrollPos !== undefined && initialScrollPos > 0) {
-      // Fallback to scroll position if no specific line number
+    // Restore scroll position for this file (if previously saved)
+    if (initialScrollPos !== undefined && initialScrollPos > 0) {
+      // Use requestAnimationFrame to ensure DOM is ready
       requestAnimationFrame(() => {
         if (view.scrollDOM) {
           view.scrollDOM.scrollTop = initialScrollPos;
