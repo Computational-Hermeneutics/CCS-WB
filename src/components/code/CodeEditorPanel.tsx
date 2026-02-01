@@ -562,6 +562,8 @@ export function CodeEditorPanel({
   const [revertConfirmFileId, setRevertConfirmFileId] = useState<string | null>(null); // File ID to confirm revert
   // Track scroll positions per file for persistence when switching files
   const fileScrollPositions = useRef<Record<string, number>>({});
+  // Track line numbers per file for persistence when switching files (defaults to 1)
+  const fileLineNumbers = useRef<Record<string, number>>({});
   const [showLanguageDropdown, setShowLanguageDropdown] = useState(false); // Language selector dropdown
   const [showCustomLanguageInput, setShowCustomLanguageInput] = useState(false); // Show custom language text input
   const [customLanguageValue, setCustomLanguageValue] = useState(""); // Custom language input value
@@ -1025,6 +1027,16 @@ export function CodeEditorPanel({
 
   // Get saved scroll position for current file (0 if first time viewing)
   const currentFileScrollPos = selectedFileId ? (fileScrollPositions.current[selectedFileId] ?? 0) : 0;
+
+  // Track line number changes for current file
+  const handleLineChange = useCallback((lineNumber: number) => {
+    if (selectedFileId) {
+      fileLineNumbers.current[selectedFileId] = lineNumber;
+    }
+  }, [selectedFileId]);
+
+  // Get saved line number for current file (1 if first time viewing)
+  const currentFileLineNumber = selectedFileId ? (fileLineNumbers.current[selectedFileId] ?? 1) : 1;
 
   // Switch to Edit mode: show clean code (annotations preserved in state)
   const handleSwitchToEdit = useCallback(() => {
@@ -2690,6 +2702,8 @@ export function CodeEditorPanel({
               onCursorPositionChange={isPunchCardFormat ? handleCursorPositionChange : undefined}
               initialScrollPos={currentFileScrollPos}
               onScrollPosChange={handleScrollPosChange}
+              initialLineNumber={currentFileLineNumber}
+              onLineChange={handleLineChange}
               className="flex-1"
             />
           ) : (
@@ -2722,6 +2736,8 @@ export function CodeEditorPanel({
               isInProject={isInProject}
               initialScrollPos={currentFileScrollPos}
               onScrollPosChange={handleScrollPosChange}
+              initialLineNumber={currentFileLineNumber}
+              onLineChange={handleLineChange}
               className="flex-1"
             />
           )}
