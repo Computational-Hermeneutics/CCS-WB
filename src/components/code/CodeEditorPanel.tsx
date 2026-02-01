@@ -695,10 +695,13 @@ export function CodeEditorPanel({
   };
   const [undoStack, setUndoStack] = useState<AnnotationHistoryEntry[]>([]);
   const [redoStack, setRedoStack] = useState<AnnotationHistoryEntry[]>([]);
+  const [isUndoRedoInProgress, setIsUndoRedoInProgress] = useState(false);
   const MAX_HISTORY_SIZE = 50;
 
   // Take a snapshot of current annotations for the selected file (for undo)
   const takeAnnotationSnapshot = useCallback(() => {
+    // Don't take snapshots during undo/redo operations
+    if (isUndoRedoInProgress) return;
     if (!selectedFileId) return;
     const currentAnnotations = session.lineAnnotations.filter(a => a.codeFileId === selectedFileId);
     setUndoStack(prev => {
@@ -711,7 +714,7 @@ export function CodeEditorPanel({
     });
     // Clear redo stack when new action is taken
     setRedoStack([]);
-  }, [selectedFileId, session.lineAnnotations]);
+  }, [selectedFileId, session.lineAnnotations, isUndoRedoInProgress]);
 
   // Undo: restore previous annotation state
   const handleUndo = useCallback(() => {
@@ -720,6 +723,9 @@ export function CodeEditorPanel({
     // Get the last snapshot
     const lastSnapshot = undoStack[undoStack.length - 1];
     if (lastSnapshot.fileId !== selectedFileId) return; // Snapshot must be for current file
+
+    // Set flag to prevent snapshots during this operation
+    setIsUndoRedoInProgress(true);
 
     // Save current state to redo stack
     const currentAnnotations = session.lineAnnotations.filter(a => a.codeFileId === selectedFileId);
@@ -745,6 +751,9 @@ export function CodeEditorPanel({
 
     // Pop from undo stack
     setUndoStack(prev => prev.slice(0, -1));
+
+    // Clear flag after operation completes
+    setIsUndoRedoInProgress(false);
   }, [undoStack, selectedFileId, session.lineAnnotations, sessionRemoveLineAnnotation, addLineAnnotation]);
 
   // Redo: restore next annotation state
@@ -754,6 +763,9 @@ export function CodeEditorPanel({
     // Get the last snapshot
     const nextSnapshot = redoStack[redoStack.length - 1];
     if (nextSnapshot.fileId !== selectedFileId) return;
+
+    // Set flag to prevent snapshots during this operation
+    setIsUndoRedoInProgress(true);
 
     // Save current state to undo stack
     const currentAnnotations = session.lineAnnotations.filter(a => a.codeFileId === selectedFileId);
@@ -779,6 +791,9 @@ export function CodeEditorPanel({
 
     // Pop from redo stack
     setRedoStack(prev => prev.slice(0, -1));
+
+    // Clear flag after operation completes
+    setIsUndoRedoInProgress(false);
   }, [redoStack, selectedFileId, session.lineAnnotations, sessionRemoveLineAnnotation, addLineAnnotation]);
 
   // Check if undo/redo is available for current file
@@ -1152,6 +1167,7 @@ export function CodeEditorPanel({
     if (readOnly) return;
     // Take snapshot before deleting (for undo)
     takeAnnotationSnapshot();
+    // Use the potentially-wrapped version for normal deletes (shows confirmation if wrapped)
     removeLineAnnotation(annotationId);
   }, [removeLineAnnotation, takeAnnotationSnapshot, readOnly]);
 
