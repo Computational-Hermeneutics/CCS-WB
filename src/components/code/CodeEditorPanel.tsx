@@ -464,7 +464,8 @@ export function CodeEditorPanel({
   // Store the "clean" code (without embedded annotations) for edit mode
   const [editModeCode, setEditModeCode] = useState<string>("");
   // Track previous file IDs to detect which files were newly added
-  const prevFileIdsRef = useRef<Set<string>>(new Set(codeFiles.map(f => f.id)));
+  // Initialize with empty set so first useEffect run detects all files as "new" (for README selection)
+  const prevFileIdsRef = useRef<Set<string>>(new Set());
 
   // Auto-select newly added LOCAL files, or first file if none selected
   // Don't auto-select files added by remote collaborators (source === "shared")
