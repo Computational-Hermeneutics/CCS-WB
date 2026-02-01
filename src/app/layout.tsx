@@ -143,7 +143,7 @@ export default function RootLayout({
           }}
         />
 
-        {/* Yellow favicon for alpha/test version */}
+        {/* Yellow favicon for alpha/test version - runs immediately */}
         <script
           dangerouslySetInnerHTML={{
             __html: `
@@ -152,19 +152,33 @@ export default function RootLayout({
                 if (window.location.hostname.includes('alpha') ||
                     window.location.hostname.includes('test') ||
                     window.location.hostname.includes('staging')) {
+
+                  // Remove ALL existing favicons (Next.js adds them automatically)
+                  var existingIcons = document.querySelectorAll('link[rel="icon"], link[rel="shortcut icon"]');
+                  existingIcons.forEach(function(icon) {
+                    icon.remove();
+                  });
+
                   // Create and inject yellow favicon
                   var link = document.createElement('link');
                   link.rel = 'icon';
                   link.type = 'image/svg+xml';
                   link.href = '/icon-yellow.svg';
-
-                  // Remove existing favicon
-                  var existing = document.querySelector('link[rel="icon"]');
-                  if (existing) {
-                    existing.remove();
-                  }
-
                   document.head.appendChild(link);
+
+                  // Also watch for Next.js trying to re-add the default icon
+                  var observer = new MutationObserver(function(mutations) {
+                    mutations.forEach(function(mutation) {
+                      mutation.addedNodes.forEach(function(node) {
+                        if (node.tagName === 'LINK' &&
+                            (node.rel === 'icon' || node.rel === 'shortcut icon') &&
+                            !node.href.includes('icon-yellow.svg')) {
+                          node.remove();
+                        }
+                      });
+                    });
+                  });
+                  observer.observe(document.head, { childList: true, subtree: true });
                 }
               })();
             `,
