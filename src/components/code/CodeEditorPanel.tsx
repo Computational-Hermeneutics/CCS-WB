@@ -491,6 +491,7 @@ export function CodeEditorPanel({
         // This handles sample project loading without filtering by source
         if (prevIds.size === 0) {
           const readmeFile = findReadme(codeFiles);
+          console.log('[CodeEditorPanel] Sample loaded, found README:', readmeFile?.name);
           if (readmeFile) {
             setSelectedFileId(readmeFile.id);
           } else {
@@ -528,7 +529,7 @@ export function CodeEditorPanel({
       setSelectedFileId(null);
       prevFileIdsRef.current = new Set();
     }
-  }, [codeFiles]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [codeFiles, selectedFileId]);
 
   const [editingLine, setEditingLine] = useState<number | null>(null);
   const [editingEndLine, setEditingEndLine] = useState<number | null>(null); // For block annotations
