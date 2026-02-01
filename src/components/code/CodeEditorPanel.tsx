@@ -449,9 +449,17 @@ export function CodeEditorPanel({
   const removeLineAnnotation = onRemoveLineAnnotation ?? sessionRemoveLineAnnotation;
   const clearLineAnnotations = onClearLineAnnotations ?? sessionClearLineAnnotations;
 
-  const [selectedFileId, setSelectedFileId] = useState<string | null>(
-    codeFiles.length > 0 ? codeFiles[0].id : null
-  );
+  const [selectedFileId, setSelectedFileId] = useState<string | null>(() => {
+    // On initial mount, prioritize README.md if it exists
+    if (codeFiles.length > 0) {
+      const readmeFile = codeFiles.find(f => {
+        const name = f.name.toLowerCase();
+        return name === 'readme.md' || name === 'readme' || name.startsWith('readme.');
+      });
+      return readmeFile ? readmeFile.id : codeFiles[0].id;
+    }
+    return null;
+  });
   const [editorMode, setEditorMode] = useState<EditorMode>("annotate");
   // Store the "clean" code (without embedded annotations) for edit mode
   const [editModeCode, setEditModeCode] = useState<string>("");
@@ -474,7 +482,11 @@ export function CodeEditorPanel({
         const localNewFiles = newFiles.filter(f => f.source !== "shared");
         if (localNewFiles.length > 0) {
           // Check if README.md is among the new files (prioritize it for sample projects)
-          const readmeFile = localNewFiles.find(f => f.name.toLowerCase() === 'readme.md');
+          // More robust matching: check for readme with any extension
+          const readmeFile = localNewFiles.find(f => {
+            const name = f.name.toLowerCase();
+            return name === 'readme.md' || name === 'readme' || name.startsWith('readme.');
+          });
           if (readmeFile) {
             setSelectedFileId(readmeFile.id);
           } else {
@@ -487,7 +499,12 @@ export function CodeEditorPanel({
         // If no file selected or selected file no longer exists, select the first one
         const selectedExists = codeFiles.some((f) => f.id === selectedFileId);
         if (!selectedFileId || !selectedExists) {
-          setSelectedFileId(codeFiles[0].id);
+          // Try to find README first, even among existing files
+          const readmeFile = codeFiles.find(f => {
+            const name = f.name.toLowerCase();
+            return name === 'readme.md' || name === 'readme' || name.startsWith('readme.');
+          });
+          setSelectedFileId(readmeFile ? readmeFile.id : codeFiles[0].id);
         }
       }
 
