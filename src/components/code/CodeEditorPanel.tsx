@@ -468,6 +468,7 @@ export function CodeEditorPanel({
 
   // Auto-select newly added LOCAL files, or first file if none selected
   // Don't auto-select files added by remote collaborators (source === "shared")
+  // ALWAYS prioritize README.md when loading sample projects
   useEffect(() => {
     if (codeFiles.length > 0) {
       const currentIds = new Set(codeFiles.map(f => f.id));
@@ -476,17 +477,21 @@ export function CodeEditorPanel({
       // Find newly added files (in current but not in previous)
       const newFiles = codeFiles.filter(f => !prevIds.has(f.id));
 
+      // Helper to find README among a set of files
+      const findReadme = (files: typeof codeFiles) => {
+        return files.find(f => {
+          const name = f.name.toLowerCase();
+          return name === 'readme.md' || name === 'readme' || name.startsWith('readme.');
+        });
+      };
+
       if (newFiles.length > 0) {
         // Only auto-select if the new file is local (not from a collaborator)
         // Files from collaborators have source === "shared"
         const localNewFiles = newFiles.filter(f => f.source !== "shared");
         if (localNewFiles.length > 0) {
-          // Check if README.md is among the new files (prioritize it for sample projects)
-          // More robust matching: check for readme with any extension
-          const readmeFile = localNewFiles.find(f => {
-            const name = f.name.toLowerCase();
-            return name === 'readme.md' || name === 'readme' || name.startsWith('readme.');
-          });
+          // ALWAYS prioritize README if present in new files (for sample projects)
+          const readmeFile = findReadme(localNewFiles);
           if (readmeFile) {
             setSelectedFileId(readmeFile.id);
           } else {
@@ -495,15 +500,21 @@ export function CodeEditorPanel({
           }
         }
         // If only shared files were added, keep current selection
+      } else if (prevIds.size === 0 && codeFiles.length > 0) {
+        // Special case: session just loaded (previous was empty, now has files)
+        // This handles sample project loading
+        const readmeFile = findReadme(codeFiles);
+        if (readmeFile) {
+          setSelectedFileId(readmeFile.id);
+        } else if (!selectedFileId) {
+          setSelectedFileId(codeFiles[0].id);
+        }
       } else {
         // If no file selected or selected file no longer exists, select the first one
         const selectedExists = codeFiles.some((f) => f.id === selectedFileId);
         if (!selectedFileId || !selectedExists) {
           // Try to find README first, even among existing files
-          const readmeFile = codeFiles.find(f => {
-            const name = f.name.toLowerCase();
-            return name === 'readme.md' || name === 'readme' || name.startsWith('readme.');
-          });
+          const readmeFile = findReadme(codeFiles);
           setSelectedFileId(readmeFile ? readmeFile.id : codeFiles[0].id);
         }
       }
