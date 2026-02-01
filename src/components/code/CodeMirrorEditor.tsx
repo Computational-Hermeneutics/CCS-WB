@@ -206,13 +206,17 @@ export function CodeMirrorEditor({
     return [
       EditorView.theme({
         '&': {
-          fontSize: '16px', // Prevent iOS zoom on focus
+          fontSize: '12px', // Smaller for better code readability on mobile
         },
         '.cm-scroller': {
-          fontSize: '16px',
+          fontSize: '12px',
         },
         '.cm-gutters': {
           minWidth: '44px', // Touch-friendly tap targets
+          fontSize: '10px', // Smaller line numbers
+        },
+        '.cm-content': {
+          fontSize: '12px', // Explicit content size
         },
       }),
     ];
