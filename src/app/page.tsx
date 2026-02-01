@@ -65,10 +65,23 @@ export default function WelcomePage() {
   const [showSkillDoc, setShowSkillDoc] = useState(false);
   const [skillDocContent, setSkillDocContent] = useState<string>("");
   const [appVersion, setAppVersion] = useState(APP_VERSION);
+  const [isAlphaVersion, setIsAlphaVersion] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // CCS Skill document version (matches Critical-Code-Studies-Skill.md)
   const CCS_SKILL_VERSION = "2.4";
+
+  // Detect if we're on alpha/test deployment for visual indicator
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const hostname = window.location.hostname;
+      setIsAlphaVersion(
+        hostname.includes('alpha') ||
+        hostname.includes('test') ||
+        hostname.includes('staging')
+      );
+    }
+  }, []);
 
   // Fetch latest version from API (ensures it updates without server restart)
   useEffect(() => {
@@ -151,7 +164,12 @@ export default function WelcomePage() {
       <header className="border-b border-parchment/50 bg-background/95 backdrop-blur-sm sticky top-0 z-10 relative">
         <div className="max-w-5xl mx-auto px-4 py-1">
           <div className="flex items-center justify-between">
-            <h1 className="font-display text-sm text-ink tracking-tight relative">
+            <h1 className={cn(
+              "font-display text-sm tracking-tight relative",
+              isAlphaVersion
+                ? "text-yellow-600 dark:text-yellow-500"
+                : "text-ink"
+            )} title={isAlphaVersion ? "Alpha Test Version" : undefined}>
               <span className="hidden sm:inline">Critical Code Studies Workbench</span>
               <span className="sm:hidden">CCS Workbench</span>
               <span className="font-sans text-[9px] text-slate/50 ml-2 align-bottom absolute bottom-0 left-full whitespace-nowrap">

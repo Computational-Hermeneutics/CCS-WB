@@ -92,6 +92,18 @@ export default function ConversationPage() {
   const [isContextPanelOpen, setIsContextPanelOpen] = useState(false); // Default closed on mobile
   const [isMobile, setIsMobile] = useState(false);
 
+  // Detect if we're on alpha/test deployment for visual indicator
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const hostname = window.location.hostname;
+      setIsAlphaVersion(
+        hostname.includes('alpha') ||
+        hostname.includes('test') ||
+        hostname.includes('staging')
+      );
+    }
+  }, []);
+
   // Check if mobile viewport - only toggle panel when crossing threshold
   useEffect(() => {
     let wasMobile = window.innerWidth < 768;
@@ -125,6 +137,7 @@ export default function ConversationPage() {
   const [saveModalName, setSaveModalName] = useState("");
   const [showUnsavedWarning, setShowUnsavedWarning] = useState(false);
   const [triggerCritiqueSave, setTriggerCritiqueSave] = useState(false);
+  const [isAlphaVersion, setIsAlphaVersion] = useState(false);
   const [selectedCodeDetails, setSelectedCodeDetails] = useState<CodeReference | null>(null);
   const [selectedRefDetails, setSelectedRefDetails] = useState<ReferenceResult | null>(null);
   const [selectedArtifactDetails, setSelectedArtifactDetails] = useState<{ id: string; type: string; content: string; version: number; createdAt: string } | null>(null);
@@ -1435,7 +1448,13 @@ export default function ConversationPage() {
         <div className="flex items-center gap-4">
           <button
             onClick={handleNavigateHome}
-            className="font-display text-sm text-ink hover:text-burgundy transition-colors"
+            className={cn(
+              "font-display text-sm transition-colors",
+              isAlphaVersion
+                ? "text-yellow-600 hover:text-yellow-700 dark:text-yellow-500 dark:hover:text-yellow-400"
+                : "text-ink hover:text-burgundy"
+            )}
+            title={isAlphaVersion ? "Alpha Test Version" : undefined}
           >
             <span className="hidden sm:inline">CCS Workbench</span>
             <span className="sm:hidden">CCS-WB</span>
