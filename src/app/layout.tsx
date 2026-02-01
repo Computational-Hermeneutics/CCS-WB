@@ -123,7 +123,7 @@ export default function RootLayout({
           }}
         />
 
-        {/* Service Worker Registration with Auto-Update */}
+        {/* Service Worker Registration */}
         <script
           dangerouslySetInnerHTML={{
             __html: `
@@ -132,39 +132,11 @@ export default function RootLayout({
                   navigator.serviceWorker.register('/service-worker.js').then(
                     function(registration) {
                       console.log('[SW] Registration successful:', registration.scope);
-
-                      // Check for updates every 60 seconds
-                      setInterval(function() {
-                        registration.update();
-                      }, 60000);
-
-                      // Listen for new service worker waiting
-                      registration.addEventListener('updatefound', function() {
-                        var newWorker = registration.installing;
-                        if (newWorker) {
-                          newWorker.addEventListener('statechange', function() {
-                            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                              // New service worker available, force it to activate
-                              console.log('[SW] New version available, activating...');
-                              newWorker.postMessage({ type: 'SKIP_WAITING' });
-
-                              // Reload the page to use new version
-                              window.location.reload();
-                            }
-                          });
-                        }
-                      });
                     },
                     function(error) {
                       console.log('[SW] Registration failed:', error);
                     }
                   );
-
-                  // Listen for controller change and reload
-                  navigator.serviceWorker.addEventListener('controllerchange', function() {
-                    console.log('[SW] Controller changed, reloading...');
-                    window.location.reload();
-                  });
                 });
               }
             `,
@@ -184,7 +156,9 @@ export default function RootLayout({
                   // Remove ALL existing favicons (Next.js adds them automatically)
                   var existingIcons = document.querySelectorAll('link[rel="icon"], link[rel="shortcut icon"]');
                   existingIcons.forEach(function(icon) {
-                    icon.remove();
+                    if (icon && icon.parentNode) {
+                      icon.parentNode.removeChild(icon);
+                    }
                   });
 
                   // Create and inject yellow favicon
@@ -192,7 +166,9 @@ export default function RootLayout({
                   link.rel = 'icon';
                   link.type = 'image/svg+xml';
                   link.href = '/icon-yellow.svg';
-                  document.head.appendChild(link);
+                  if (document.head) {
+                    document.head.appendChild(link);
+                  }
 
                   // Also watch for Next.js trying to re-add the default icon
                   var observer = new MutationObserver(function(mutations) {
@@ -201,12 +177,16 @@ export default function RootLayout({
                         if (node.tagName === 'LINK' &&
                             (node.rel === 'icon' || node.rel === 'shortcut icon') &&
                             !node.href.includes('icon-yellow.svg')) {
-                          node.remove();
+                          if (node.parentNode) {
+                            node.parentNode.removeChild(node);
+                          }
                         }
                       });
                     });
                   });
-                  observer.observe(document.head, { childList: true, subtree: true });
+                  if (document.head) {
+                    observer.observe(document.head, { childList: true, subtree: true });
+                  }
                 }
               })();
             `,
