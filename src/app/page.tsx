@@ -151,9 +151,12 @@ export default function WelcomePage() {
       <header className="border-b border-parchment/50 bg-background/95 backdrop-blur-sm sticky top-0 z-10 relative">
         <div className="max-w-5xl mx-auto px-4 py-1">
           <div className="flex items-center justify-between">
-            <h1 className="font-display text-sm text-ink tracking-tight">
+            <h1 className="font-display text-sm text-ink tracking-tight relative">
               <span className="hidden sm:inline">Critical Code Studies Workbench</span>
               <span className="sm:hidden">CCS Workbench</span>
+              <span className="font-sans text-[9px] text-slate/50 ml-2 align-bottom absolute bottom-0 left-full whitespace-nowrap">
+                v{appVersion}
+              </span>
             </h1>
             <div className="flex items-center gap-1">
               <button

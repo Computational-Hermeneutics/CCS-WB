@@ -1437,7 +1437,8 @@ export default function ConversationPage() {
             onClick={handleNavigateHome}
             className="font-display text-sm text-ink hover:text-burgundy transition-colors"
           >
-            CCS Workbench
+            <span className="hidden sm:inline">CCS Workbench</span>
+            <span className="sm:hidden">CCS-WB</span>
           </button>
           {/* Mode indicator - clickable to switch */}
           {session.mode && (

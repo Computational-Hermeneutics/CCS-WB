@@ -726,8 +726,9 @@ export function CodeEditorPanel({
     setRedoStack(prev => [...prev, { fileId: selectedFileId, annotations: [...currentAnnotations] }]);
 
     // Remove current annotations for this file
+    // Use session method directly to bypass confirmation modals
     const currentFileAnnotations = session.lineAnnotations.filter(a => a.codeFileId === selectedFileId);
-    currentFileAnnotations.forEach(ann => removeLineAnnotation(ann.id));
+    currentFileAnnotations.forEach(ann => sessionRemoveLineAnnotation(ann.id));
 
     // Restore previous annotations
     lastSnapshot.annotations.forEach(ann => {
@@ -744,7 +745,7 @@ export function CodeEditorPanel({
 
     // Pop from undo stack
     setUndoStack(prev => prev.slice(0, -1));
-  }, [undoStack, selectedFileId, session.lineAnnotations, removeLineAnnotation, addLineAnnotation]);
+  }, [undoStack, selectedFileId, session.lineAnnotations, sessionRemoveLineAnnotation, addLineAnnotation]);
 
   // Redo: restore next annotation state
   const handleRedo = useCallback(() => {
@@ -759,8 +760,9 @@ export function CodeEditorPanel({
     setUndoStack(prev => [...prev, { fileId: selectedFileId, annotations: [...currentAnnotations] }]);
 
     // Remove current annotations for this file
+    // Use session method directly to bypass confirmation modals
     const currentFileAnnotations = session.lineAnnotations.filter(a => a.codeFileId === selectedFileId);
-    currentFileAnnotations.forEach(ann => removeLineAnnotation(ann.id));
+    currentFileAnnotations.forEach(ann => sessionRemoveLineAnnotation(ann.id));
 
     // Restore next annotations
     nextSnapshot.annotations.forEach(ann => {
@@ -777,7 +779,7 @@ export function CodeEditorPanel({
 
     // Pop from redo stack
     setRedoStack(prev => prev.slice(0, -1));
-  }, [redoStack, selectedFileId, session.lineAnnotations, removeLineAnnotation, addLineAnnotation]);
+  }, [redoStack, selectedFileId, session.lineAnnotations, sessionRemoveLineAnnotation, addLineAnnotation]);
 
   // Check if undo/redo is available for current file
   const canUndo = useMemo(() => {
