@@ -707,4 +707,17 @@ html:not(.skin-active) .font-display {
   :root {
     --annotation-font-size: 8px !important;
   }
+
+  /* Smaller code font in annotations on mobile */
+  .annotation-content code,
+  .annotation-content pre,
+  .cm-annotation-widget code,
+  .cm-annotation-widget pre,
+  .cm-annotation-content code,
+  .cm-annotation-content pre,
+  [class*="annotation"] code,
+  [class*="annotation"] pre {
+    font-size: 10px !important;
+    line-height: 1.4 !important;
+  }
 }
