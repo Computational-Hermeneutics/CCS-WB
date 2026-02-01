@@ -1657,7 +1657,8 @@ export function CodeEditorPanel({
                           setSelectedFileId(file.id);
                           setMobileSidebarOpen(false); // Close mobile sidebar after selection
                         }}
-                        className="flex-1 min-w-0 py-1 pr-2 text-left overflow-hidden flex items-center gap-0.5"
+                        className="flex-1 min-w-0 py-1 md:py-1 pr-2 text-left overflow-hidden flex items-center gap-0.5"
+                        style={{ paddingTop: "0.625rem", paddingBottom: "0.625rem" }} // 10px on mobile for ~44px touch target
                         title={file.name}
                       >
                         {/* Cloud icon when file is in a cloud project, HardDrive when local */}

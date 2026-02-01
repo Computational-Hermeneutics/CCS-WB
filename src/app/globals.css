@@ -720,4 +720,35 @@ html:not(.skin-active) .font-display {
     font-size: 10px !important;
     line-height: 1.4 !important;
   }
+
+  /* Make annotation inline edit toolbar wrap and touch-friendly on mobile */
+  .cm-annotation-inline-edit {
+    flex-wrap: wrap !important;
+    gap: 4px !important;
+  }
+
+  .cm-annotation-type-container {
+    flex-shrink: 0 !important;
+  }
+
+  .cm-annotation-input {
+    min-width: 200px !important;
+    flex: 1 1 auto !important;
+  }
+
+  .cm-annotation-actions {
+    flex-wrap: wrap !important;
+    gap: 6px !important;
+  }
+
+  .cm-annotation-btn {
+    min-height: 32px !important;
+    min-width: 32px !important;
+    padding: 6px 10px !important;
+  }
+
+  .cm-annotation-signed-as {
+    min-height: 32px !important;
+    padding: 6px 8px !important;
+  }
 }
