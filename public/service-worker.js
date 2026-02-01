@@ -10,7 +10,7 @@
 
 // Cache version - increment this when you want to force cache updates
 // Format: ccs-wb-v{major}.{minor}.{patch}
-const CACHE_VERSION = '2.17.4';
+const CACHE_VERSION = '2.17.5';
 const CACHE_NAME = `ccs-wb-v${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 

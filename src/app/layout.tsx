@@ -123,7 +123,7 @@ export default function RootLayout({
           }}
         />
 
-        {/* Service Worker Registration */}
+        {/* Service Worker Registration with Auto-Update */}
         <script
           dangerouslySetInnerHTML={{
             __html: `
@@ -132,11 +132,39 @@ export default function RootLayout({
                   navigator.serviceWorker.register('/service-worker.js').then(
                     function(registration) {
                       console.log('[SW] Registration successful:', registration.scope);
+
+                      // Check for updates every 60 seconds
+                      setInterval(function() {
+                        registration.update();
+                      }, 60000);
+
+                      // Listen for new service worker waiting
+                      registration.addEventListener('updatefound', function() {
+                        var newWorker = registration.installing;
+                        if (newWorker) {
+                          newWorker.addEventListener('statechange', function() {
+                            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                              // New service worker available, force it to activate
+                              console.log('[SW] New version available, activating...');
+                              newWorker.postMessage({ type: 'SKIP_WAITING' });
+
+                              // Reload the page to use new version
+                              window.location.reload();
+                            }
+                          });
+                        }
+                      });
                     },
                     function(error) {
                       console.log('[SW] Registration failed:', error);
                     }
                   );
+
+                  // Listen for controller change and reload
+                  navigator.serviceWorker.addEventListener('controllerchange', function() {
+                    console.log('[SW] Controller changed, reloading...');
+                    window.location.reload();
+                  });
                 });
               }
             `,
