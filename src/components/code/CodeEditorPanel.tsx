@@ -559,6 +559,8 @@ export function CodeEditorPanel({
   const [showToolbarMenu, setShowToolbarMenu] = useState(false); // Hamburger menu for narrow toolbar
   const [toolbarNarrow, setToolbarNarrow] = useState(false); // Track if toolbar is narrow
   const [revertConfirmFileId, setRevertConfirmFileId] = useState<string | null>(null); // File ID to confirm revert
+  // Track scroll positions per file for persistence when switching files
+  const fileScrollPositions = useRef<Record<string, number>>({});
   const [showLanguageDropdown, setShowLanguageDropdown] = useState(false); // Language selector dropdown
   const [showCustomLanguageInput, setShowCustomLanguageInput] = useState(false); // Show custom language text input
   const [customLanguageValue, setCustomLanguageValue] = useState(""); // Custom language input value
@@ -1012,6 +1014,16 @@ export function CodeEditorPanel({
   const handleCodeEdit = useCallback((newContent: string) => {
     setEditModeCode(newContent);
   }, []);
+
+  // Track scroll position changes for current file
+  const handleScrollPosChange = useCallback((scrollTop: number) => {
+    if (selectedFileId) {
+      fileScrollPositions.current[selectedFileId] = scrollTop;
+    }
+  }, [selectedFileId]);
+
+  // Get saved scroll position for current file (0 if first time viewing)
+  const currentFileScrollPos = selectedFileId ? (fileScrollPositions.current[selectedFileId] ?? 0) : 0;
 
   // Switch to Edit mode: show clean code (annotations preserved in state)
   const handleSwitchToEdit = useCallback(() => {
@@ -2675,6 +2687,8 @@ export function CodeEditorPanel({
               readOnly={false}
               fontSize={displaySettings.fontSize}
               onCursorPositionChange={isPunchCardFormat ? handleCursorPositionChange : undefined}
+              initialScrollPos={currentFileScrollPos}
+              onScrollPosChange={handleScrollPosChange}
               className="flex-1"
             />
           ) : (
@@ -2705,6 +2719,8 @@ export function CodeEditorPanel({
               onOpenReplyInput={onOpenReplyInput}
               onCloseReplyInput={onCloseReplyInput}
               isInProject={isInProject}
+              initialScrollPos={currentFileScrollPos}
+              onScrollPosChange={handleScrollPosChange}
               className="flex-1"
             />
           )}

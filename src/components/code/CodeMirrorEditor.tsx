@@ -82,6 +82,10 @@ export interface CodeMirrorEditorProps {
   onCloseReplyInput?: () => void;
   /** Whether we're in a cloud project (enables reply functionality) */
   isInProject?: boolean;
+  /** Initial scroll position (top offset in pixels) to restore when loading file */
+  initialScrollPos?: number;
+  /** Callback when scroll position changes (for tracking per-file scroll) */
+  onScrollPosChange?: (scrollTop: number) => void;
   /** CSS class for the container */
   className?: string;
 }
@@ -113,6 +117,8 @@ export function CodeMirrorEditor({
   onOpenReplyInput,
   onCloseReplyInput,
   isInProject,
+  initialScrollPos,
+  onScrollPosChange,
   className,
 }: CodeMirrorEditorProps) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -147,6 +153,7 @@ export function CodeMirrorEditor({
   const readOnlyRef = useRef(readOnly);
   const onChangeRef = useRef(onChange);
   const onCursorPositionChangeRef = useRef(onCursorPositionChange);
+  const onScrollPosChangeRef = useRef(onScrollPosChange);
 
   // Keep refs in sync with props
   useEffect(() => {
@@ -160,6 +167,10 @@ export function CodeMirrorEditor({
   useEffect(() => {
     onCursorPositionChangeRef.current = onCursorPositionChange;
   }, [onCursorPositionChange]);
+
+  useEffect(() => {
+    onScrollPosChangeRef.current = onScrollPosChange;
+  }, [onScrollPosChange]);
 
   // Memoize handlers to prevent recreation
   const stableOnEdit = useCallback(
@@ -315,6 +326,14 @@ export function CodeMirrorEditor({
           }
           return false; // Don't prevent default handling
         },
+        scroll(event, view) {
+          // Track scroll position for per-file memory
+          if (onScrollPosChangeRef.current) {
+            const scroller = view.scrollDOM;
+            onScrollPosChangeRef.current(scroller.scrollTop);
+          }
+          return false;
+        },
       }),
     ];
 
@@ -337,6 +356,16 @@ export function CodeMirrorEditor({
       const pos = view.state.selection.main.head;
       const line = view.state.doc.lineAt(pos);
       onCursorPositionChangeRef.current(line.number, pos - line.from + 1);
+    }
+
+    // Restore scroll position for this file (if previously saved)
+    if (initialScrollPos !== undefined && initialScrollPos > 0) {
+      // Use requestAnimationFrame to ensure DOM is ready
+      requestAnimationFrame(() => {
+        if (view.scrollDOM) {
+          view.scrollDOM.scrollTop = initialScrollPos;
+        }
+      });
     }
 
     // Load language support asynchronously
