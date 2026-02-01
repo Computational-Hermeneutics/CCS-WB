@@ -1548,6 +1548,19 @@ export const CritiqueLayout = forwardRef<CritiqueLayoutRef, CritiqueLayoutProps>
     setShowExportModal(false);
   }, [session, projectName, codeContents, profile]);
 
+  // Detect if we're on alpha/test deployment for visual indicator
+  const [isAlphaVersion, setIsAlphaVersion] = React.useState(false);
+  React.useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const hostname = window.location.hostname;
+      setIsAlphaVersion(
+        hostname.includes('alpha') ||
+        hostname.includes('test') ||
+        hostname.includes('staging')
+      );
+    }
+  }, []);
+
   return (
     <div className="h-screen flex flex-col bg-background">
       {/* Header */}
@@ -1555,7 +1568,13 @@ export const CritiqueLayout = forwardRef<CritiqueLayoutRef, CritiqueLayoutProps>
         <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0">
           <button
             onClick={onNavigateHome}
-            className="font-display text-sm text-ink hover:text-burgundy transition-colors"
+            className={cn(
+              "font-display text-sm transition-colors",
+              isAlphaVersion
+                ? "text-yellow-600 hover:text-yellow-700 dark:text-yellow-500 dark:hover:text-yellow-400"
+                : "text-ink hover:text-burgundy"
+            )}
+            title={isAlphaVersion ? "Alpha Test Version" : undefined}
           >
             <span className="hidden sm:inline">CCS Workbench</span>
             <span className="sm:hidden">CCS-WB</span>
