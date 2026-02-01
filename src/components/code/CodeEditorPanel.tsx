@@ -474,9 +474,6 @@ export function CodeEditorPanel({
       const currentIds = new Set(codeFiles.map(f => f.id));
       const prevIds = prevFileIdsRef.current;
 
-      // Find newly added files (in current but not in previous)
-      const newFiles = codeFiles.filter(f => !prevIds.has(f.id));
-
       // Helper to find README among a set of files
       const findReadme = (files: typeof codeFiles) => {
         return files.find(f => {
@@ -485,32 +482,37 @@ export function CodeEditorPanel({
         });
       };
 
+      // Find newly added files (in current but not in previous)
+      const newFiles = codeFiles.filter(f => !prevIds.has(f.id));
+
       if (newFiles.length > 0) {
-        // Only auto-select if the new file is local (not from a collaborator)
-        // Files from collaborators have source === "shared"
-        const localNewFiles = newFiles.filter(f => f.source !== "shared");
-        if (localNewFiles.length > 0) {
-          // ALWAYS prioritize README if present in new files (for sample projects)
-          const readmeFile = findReadme(localNewFiles);
+        // Special case: if previous was empty (session just loaded), always prioritize README
+        // This handles sample project loading without filtering by source
+        if (prevIds.size === 0) {
+          const readmeFile = findReadme(codeFiles);
           if (readmeFile) {
             setSelectedFileId(readmeFile.id);
           } else {
-            // Select the last locally-added file
-            setSelectedFileId(localNewFiles[localNewFiles.length - 1].id);
+            setSelectedFileId(codeFiles[0].id);
           }
-        }
-        // If only shared files were added, keep current selection
-      } else if (prevIds.size === 0 && codeFiles.length > 0) {
-        // Special case: session just loaded (previous was empty, now has files)
-        // This handles sample project loading
-        const readmeFile = findReadme(codeFiles);
-        if (readmeFile) {
-          setSelectedFileId(readmeFile.id);
-        } else if (!selectedFileId) {
-          setSelectedFileId(codeFiles[0].id);
+        } else {
+          // Adding files to existing session - only auto-select local files
+          // Files from collaborators have source === "shared"
+          const localNewFiles = newFiles.filter(f => f.source !== "shared");
+          if (localNewFiles.length > 0) {
+            // Prioritize README if present in new files
+            const readmeFile = findReadme(localNewFiles);
+            if (readmeFile) {
+              setSelectedFileId(readmeFile.id);
+            } else {
+              // Select the last locally-added file
+              setSelectedFileId(localNewFiles[localNewFiles.length - 1].id);
+            }
+          }
+          // If only shared files were added, keep current selection
         }
       } else {
-        // If no file selected or selected file no longer exists, select the first one
+        // No new files - check if we need to fix selection
         const selectedExists = codeFiles.some((f) => f.id === selectedFileId);
         if (!selectedFileId || !selectedExists) {
           // Try to find README first, even among existing files

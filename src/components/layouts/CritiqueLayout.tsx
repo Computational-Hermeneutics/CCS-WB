@@ -1549,8 +1549,8 @@ export const CritiqueLayout = forwardRef<CritiqueLayoutRef, CritiqueLayoutProps>
   }, [session, projectName, codeContents, profile]);
 
   // Detect if we're on alpha/test deployment for visual indicator
-  const [isAlphaVersion, setIsAlphaVersion] = React.useState(false);
-  React.useEffect(() => {
+  const [isAlphaVersion, setIsAlphaVersion] = useState(false);
+  useEffect(() => {
     if (typeof window !== 'undefined') {
       const hostname = window.location.hostname;
       setIsAlphaVersion(
