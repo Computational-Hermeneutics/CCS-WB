@@ -142,6 +142,34 @@ export default function RootLayout({
             `,
           }}
         />
+
+        {/* Yellow favicon for alpha/test version */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                // Check if we're on alpha deployment
+                if (window.location.hostname.includes('alpha') ||
+                    window.location.hostname.includes('test') ||
+                    window.location.hostname.includes('staging')) {
+                  // Create and inject yellow favicon
+                  var link = document.createElement('link');
+                  link.rel = 'icon';
+                  link.type = 'image/svg+xml';
+                  link.href = '/icon-yellow.svg';
+
+                  // Remove existing favicon
+                  var existing = document.querySelector('link[rel="icon"]');
+                  if (existing) {
+                    existing.remove();
+                  }
+
+                  document.head.appendChild(link);
+                }
+              })();
+            `,
+          }}
+        />
       </head>
       <body className="font-body antialiased bg-ivory text-ink selection:bg-burgundy/20 selection:text-burgundy-900">
         <AppSettingsProvider>
