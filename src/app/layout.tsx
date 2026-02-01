@@ -116,6 +116,13 @@ export default function RootLayout({
           }}
         />
 
+        {/* Disable Vercel Toolbar */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `window.vercelToolbarEnabled = false;`,
+          }}
+        />
+
         {/* Service Worker Registration */}
         <script
           dangerouslySetInnerHTML={{

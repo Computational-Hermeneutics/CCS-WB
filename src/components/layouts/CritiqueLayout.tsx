@@ -1671,8 +1671,6 @@ export const CritiqueLayout = forwardRef<CritiqueLayoutRef, CritiqueLayoutProps>
                   <span className="font-sans text-[8px] text-emerald-600 font-medium">Public</span>
                 ) : currentProject?.owner?.initials ? (
                   <span className="font-sans text-[8px] text-slate/60">{currentProject.owner.initials}</span>
-                ) : user?.id === currentProject?.owner_id ? (
-                  <span className="font-sans text-[8px] text-slate/60">You</span>
                 ) : null}
               </div>
               <ChevronDown className={cn("h-2.5 w-2.5 text-slate transition-transform flex-shrink-0", showProjectInfo && "rotate-180")} strokeWidth={1.5} />

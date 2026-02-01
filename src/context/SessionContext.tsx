@@ -71,7 +71,12 @@ type SessionAction =
   // Display settings actions
   | { type: "UPDATE_DISPLAY_SETTINGS"; payload: Partial<DisplaySettings> }
   | { type: "UPDATE_ANNOTATION_DISPLAY_SETTINGS"; payload: Partial<AnnotationDisplaySettings> }
-  | { type: "UPDATE_PANEL_LAYOUT_SETTINGS"; payload: Partial<PanelLayoutSettings> };
+  | { type: "UPDATE_PANEL_LAYOUT_SETTINGS"; payload: Partial<PanelLayoutSettings> }
+  // Auto-save actions
+  | { type: "MARK_DIRTY" }
+  | { type: "MARK_CLEAN"; payload?: { lastSaved: string } }
+  | { type: "SET_FILE_HANDLE"; payload: { fileId: string; handleId: string } }
+  | { type: "REMOVE_FILE_HANDLE"; payload: string };
 
 // Initial state
 const createInitialSession = (): Session => ({
@@ -111,6 +116,7 @@ function sessionReducer(state: Session, action: SessionAction): Session {
       return {
         ...state,
         messages: [...state.messages, action.payload],
+        isDirty: true,
         lastModified: now,
       };
 
@@ -120,6 +126,7 @@ function sessionReducer(state: Session, action: SessionAction): Session {
         messages: state.messages.map((msg) =>
           msg.id === action.payload.id ? { ...msg, ...action.payload.updates } : msg
         ),
+        isDirty: true,
         lastModified: now,
       };
 
@@ -127,6 +134,7 @@ function sessionReducer(state: Session, action: SessionAction): Session {
       return {
         ...state,
         codeFiles: [...state.codeFiles, action.payload],
+        isDirty: true,
         lastModified: now,
       };
 
@@ -139,6 +147,7 @@ function sessionReducer(state: Session, action: SessionAction): Session {
         codeContents: remainingContents,
         // Also remove annotations for this file
         lineAnnotations: state.lineAnnotations.filter((a) => a.codeFileId !== action.payload),
+        isDirty: true,
         lastModified: now,
       };
     }
@@ -149,6 +158,7 @@ function sessionReducer(state: Session, action: SessionAction): Session {
         codeFiles: state.codeFiles.map((f) =>
           f.id === action.payload.id ? { ...f, ...action.payload.updates } : f
         ),
+        isDirty: true,
         lastModified: now,
       };
 
@@ -162,6 +172,7 @@ function sessionReducer(state: Session, action: SessionAction): Session {
       return {
         ...state,
         codeFiles: reorderedFiles,
+        isDirty: true,
         lastModified: now,
       };
     }
@@ -170,6 +181,7 @@ function sessionReducer(state: Session, action: SessionAction): Session {
       return {
         ...state,
         analysisResults: [...state.analysisResults, action.payload],
+        isDirty: true,
         lastModified: now,
       };
 
@@ -177,6 +189,7 @@ function sessionReducer(state: Session, action: SessionAction): Session {
       return {
         ...state,
         references: [...state.references, ...action.payload],
+        isDirty: true,
         lastModified: now,
       };
 
@@ -184,6 +197,7 @@ function sessionReducer(state: Session, action: SessionAction): Session {
       return {
         ...state,
         references: [],
+        isDirty: true,
         lastModified: now,
       };
 
@@ -191,6 +205,7 @@ function sessionReducer(state: Session, action: SessionAction): Session {
       return {
         ...state,
         critiqueArtifacts: [...state.critiqueArtifacts, action.payload],
+        isDirty: true,
         lastModified: now,
       };
 
@@ -198,6 +213,7 @@ function sessionReducer(state: Session, action: SessionAction): Session {
       return {
         ...state,
         currentPhase: action.payload,
+        isDirty: true,
         lastModified: now,
       };
 
@@ -205,6 +221,7 @@ function sessionReducer(state: Session, action: SessionAction): Session {
       return {
         ...state,
         feedbackEscalation: Math.min(state.feedbackEscalation + 1, 3),
+        isDirty: true,
         lastModified: now,
       };
 
@@ -212,6 +229,7 @@ function sessionReducer(state: Session, action: SessionAction): Session {
       return {
         ...state,
         settings: { ...state.settings, ...action.payload },
+        isDirty: true,
         lastModified: now,
       };
 
@@ -287,6 +305,7 @@ function sessionReducer(state: Session, action: SessionAction): Session {
           currentVersionId: undefined,
         },
         currentPhase: "concept",
+        isDirty: true,
         lastModified: now,
       };
 
@@ -312,6 +331,7 @@ function sessionReducer(state: Session, action: SessionAction): Session {
               versions: [newVersion],
               currentVersionId: newVersion.id,
             },
+        isDirty: true,
         lastModified: now,
       };
 
@@ -329,6 +349,7 @@ function sessionReducer(state: Session, action: SessionAction): Session {
               versions: [],
               currentVersionId: undefined,
             },
+        isDirty: true,
         lastModified: now,
       };
 
@@ -336,6 +357,7 @@ function sessionReducer(state: Session, action: SessionAction): Session {
       return {
         ...state,
         languageOverride: action.payload,
+        isDirty: true,
         lastModified: now,
       };
 
@@ -343,6 +365,7 @@ function sessionReducer(state: Session, action: SessionAction): Session {
       return {
         ...state,
         experienceLevel: action.payload,
+        isDirty: true,
         lastModified: now,
       };
 
@@ -350,6 +373,7 @@ function sessionReducer(state: Session, action: SessionAction): Session {
       return {
         ...state,
         mode: action.payload,
+        isDirty: true,
         lastModified: now,
       };
 
@@ -382,6 +406,7 @@ function sessionReducer(state: Session, action: SessionAction): Session {
               currentVersionId: action.payload,
             }
           : undefined,
+        isDirty: true,
         lastModified: now,
       };
 
@@ -412,6 +437,7 @@ function sessionReducer(state: Session, action: SessionAction): Session {
         mode: "critique",
         codeFiles: [...state.codeFiles, codeRef],
         currentPhase: "opening",
+        isDirty: true,
         lastModified: now,
       };
 
@@ -420,6 +446,7 @@ function sessionReducer(state: Session, action: SessionAction): Session {
       return {
         ...state,
         lineAnnotations: [...state.lineAnnotations, action.payload],
+        isDirty: true,
         lastModified: now,
       };
 
@@ -431,6 +458,7 @@ function sessionReducer(state: Session, action: SessionAction): Session {
             ? { ...ann, ...action.payload.updates }
             : ann
         ),
+        isDirty: true,
         lastModified: now,
       };
 
@@ -440,6 +468,7 @@ function sessionReducer(state: Session, action: SessionAction): Session {
         lineAnnotations: state.lineAnnotations.filter(
           (ann) => ann.id !== action.payload
         ),
+        isDirty: true,
         lastModified: now,
       };
 
@@ -449,6 +478,7 @@ function sessionReducer(state: Session, action: SessionAction): Session {
         lineAnnotations: action.payload
           ? state.lineAnnotations.filter((ann) => ann.codeFileId !== action.payload)
           : [],
+        isDirty: true,
         lastModified: now,
       };
 
@@ -460,6 +490,7 @@ function sessionReducer(state: Session, action: SessionAction): Session {
           ...state.codeContents,
           [action.payload.fileId]: action.payload.content,
         },
+        isDirty: true,
         lastModified: now,
       };
 
@@ -468,6 +499,7 @@ function sessionReducer(state: Session, action: SessionAction): Session {
       return {
         ...state,
         codeContents: remainingCodeContents,
+        isDirty: true,
         lastModified: now,
       };
     }
@@ -480,6 +512,7 @@ function sessionReducer(state: Session, action: SessionAction): Session {
           ...state.displaySettings,
           ...action.payload,
         },
+        isDirty: true,
         lastModified: now,
       };
 
@@ -493,6 +526,7 @@ function sessionReducer(state: Session, action: SessionAction): Session {
             ...action.payload,
           },
         },
+        isDirty: true,
         lastModified: now,
       };
 
@@ -506,8 +540,44 @@ function sessionReducer(state: Session, action: SessionAction): Session {
             ...action.payload,
           },
         },
+        isDirty: true,
         lastModified: now,
       };
+
+    case "MARK_DIRTY":
+      return {
+        ...state,
+        isDirty: true,
+        lastModified: now,
+      };
+
+    case "MARK_CLEAN":
+      return {
+        ...state,
+        isDirty: false,
+        lastSaved: action.payload?.lastSaved || now,
+        lastModified: now,
+      };
+
+    case "SET_FILE_HANDLE":
+      return {
+        ...state,
+        fileHandles: {
+          ...state.fileHandles,
+          [action.payload.fileId]: action.payload.handleId,
+        },
+        lastModified: now,
+      };
+
+    case "REMOVE_FILE_HANDLE": {
+      const newHandles = { ...(state.fileHandles || {}) };
+      delete newHandles[action.payload];
+      return {
+        ...state,
+        fileHandles: newHandles,
+        lastModified: now,
+      };
+    }
 
     default:
       return state;
@@ -560,6 +630,11 @@ interface SessionContextType {
   updateDisplaySettings: (settings: Partial<DisplaySettings>) => void;
   updateAnnotationDisplaySettings: (settings: Partial<AnnotationDisplaySettings>) => void;
   updatePanelLayoutSettings: (settings: Partial<PanelLayoutSettings>) => void;
+  // Auto-save functions
+  markDirty: () => void;
+  markClean: (lastSaved?: string) => void;
+  setFileHandle: (fileId: string, handleId: string) => void;
+  removeFileHandle: (fileId: string) => void;
 }
 
 const SessionContext = createContext<SessionContextType | null>(null);
@@ -830,6 +905,23 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     dispatch({ type: "UPDATE_PANEL_LAYOUT_SETTINGS", payload: settings });
   }, []);
 
+  // Auto-save functions
+  const markDirty = useCallback(() => {
+    dispatch({ type: "MARK_DIRTY" });
+  }, []);
+
+  const markClean = useCallback((lastSaved?: string) => {
+    dispatch({ type: "MARK_CLEAN", payload: lastSaved ? { lastSaved } : undefined });
+  }, []);
+
+  const setFileHandle = useCallback((fileId: string, handleId: string) => {
+    dispatch({ type: "SET_FILE_HANDLE", payload: { fileId, handleId } });
+  }, []);
+
+  const removeFileHandle = useCallback((fileId: string) => {
+    dispatch({ type: "REMOVE_FILE_HANDLE", payload: fileId });
+  }, []);
+
   const value: SessionContextType = {
     session,
     initSession,
@@ -875,6 +967,11 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     updateDisplaySettings,
     updateAnnotationDisplaySettings,
     updatePanelLayoutSettings,
+    // Auto-save
+    markDirty,
+    markClean,
+    setFileHandle,
+    removeFileHandle,
   };
 
   return (

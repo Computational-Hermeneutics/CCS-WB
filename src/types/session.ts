@@ -264,6 +264,10 @@ export interface Session {
   lastModified: string;
   // Create mode working memory
   createState?: CreateModeState;
+  // Auto-save state
+  isDirty?: boolean;  // Has unsaved changes
+  fileHandles?: Record<string, string>;  // Map of fileId -> handleId (for File System Access API)
+  lastSaved?: string;  // ISO timestamp of last successful save
 }
 
 export interface SessionExport {
