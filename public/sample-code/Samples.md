@@ -28,7 +28,7 @@ Each sample project is defined on a single line with the following format:
 - apollo-11-luminary/luminary099.ccs: 1969 - Apollo 11 Luminary099 | critique | Lunar Module guidance computer source code | 1960s | 0
 - xmodem-1977/xmodem-1977.ccs: 1977 - XMODEM Protocol | critique | Ward Christensen's MODEM.ASM - foundational BBS file transfer protocol | 1970s | 0
 - adventure-1977/adventure-1977.ccs: 1977 - Colossal Cave Adventure | critique | Will Crowther's original FORTRAN IV source code | 1970s | 0
-- 10print-1982/10print-1982.ccs: 2013 - 10 PRINT CHR$(205.5+RND(1)); GOTO 10 | archaeology | Montfort et al.'s book-length analysis of one line of C64 BASIC (1982) | 2010s | 11
+- 10print-2013/10print-2013.ccs: 2013 - 10 PRINT CHR$(205.5+RND(1)); GOTO 10 | archaeology | Montfort et al.'s book-length analysis of one line of C64 BASIC (1982) | 2010s | 11
 - gnu-emacs-1985/gnu-emacs-1985.ccs: 1985 - GNU Emacs | critique | Richard Stallman's free software manifesto - GPL, hacker culture, and software freedom | 1980s | 0
 - agrippa-1992/agrippa-1992.ccs: 1992 - Agrippa (A Book of the Dead) | critique | William Gibson's self-encrypting poem - electronic literature and digital preservation | 1990s | 0
 - my-boyfriend-1996/my-boyfriend-1996.ccs: 1996 - My Boyfriend Came Back from the War | critique | Olia Lialina's frame-splitting narrative - net.art and vernacular web aesthetics | 1990s | 0
