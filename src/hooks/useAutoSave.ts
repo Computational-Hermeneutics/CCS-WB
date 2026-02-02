@@ -1,240 +1,281 @@
 /**
- * useAutoSave Hook
+ * Auto-Save Hook
  *
- * Provides auto-save functionality with debouncing and status tracking.
- * Integrates with file system adapter for native file handling.
+ * Provides auto-save functionality using the file system adapter.
+ * Integrates with SessionContext for state management.
+ *
+ * Features:
+ * - Debounced auto-save (1 second by default)
+ * - Manual save trigger
+ * - Save status tracking
+ * - Error handling with retry
+ * - File handle management
  */
 
-import { useState, useCallback, useEffect, useRef } from 'react';
-import type { UseAutoSaveReturn, SaveStatus, FileHandle } from '@/lib/file-system';
-import { getFileSystemAdapter } from '@/lib/file-system';
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useSession } from "@/context/SessionContext";
+import { getFileSystemAdapter } from "@/lib/file-system";
+import { storeFileMetadata } from "@/lib/file-system/db";
+import type { SaveStatus, StoredFileMetadata } from "@/lib/file-system/types";
 
-interface UseAutoSaveOptions {
-  /**
-   * File ID from session
-   */
-  fileId: string;
-
-  /**
-   * Current file content to save
-   */
-  content: string;
-
-  /**
-   * File handle if one has been selected
-   */
-  fileHandle?: FileHandle | null;
-
-  /**
-   * Callback to update file handle when new one is created
-   */
-  onHandleChange?: (handle: FileHandle) => void;
-
-  /**
-   * Auto-save enabled
-   */
+/**
+ * Auto-save hook options
+ */
+export interface UseAutoSaveOptions {
   enabled?: boolean;
-
-  /**
-   * Debounce delay in milliseconds (default: 1000ms)
-   */
   debounceMs?: number;
-
-  /**
-   * Show toast notifications on save
-   */
-  showToasts?: boolean;
-
-  /**
-   * Callback when save completes successfully
-   */
   onSaveSuccess?: (timestamp: string) => void;
-
-  /**
-   * Callback when save fails
-   */
-  onSaveError?: (error: string) => void;
+  onSaveError?: (error: Error) => void;
 }
 
 /**
- * Auto-save hook with debouncing and file system integration
+ * Auto-save hook return type
  */
-export function useAutoSave(options: UseAutoSaveOptions): UseAutoSaveReturn {
+export interface UseAutoSaveReturn {
+  saveStatus: SaveStatus;
+  lastSaved: string | null;
+  isDirty: boolean;
+  save: () => Promise<void>;
+  requestNewFile: (suggestedName: string) => Promise<boolean>;
+  isSupported: boolean;
+}
+
+/**
+ * Hook for auto-saving session to native file system
+ *
+ * @param options - Auto-save configuration options
+ * @returns Auto-save state and functions
+ */
+export function useAutoSave(options: UseAutoSaveOptions = {}): UseAutoSaveReturn {
+  const { enabled = true, debounceMs = 1000, onSaveSuccess, onSaveError } = options;
+
   const {
-    fileId,
-    content,
-    fileHandle,
-    onHandleChange,
-    enabled = true,
-    debounceMs = 1000,
-    showToasts = true,
-    onSaveSuccess,
-    onSaveError,
-  } = options;
+    session,
+    markDirty,
+    markClean,
+    setFileHandle,
+    removeFileHandle,
+  } = useSession();
 
-  const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
-  const [lastSaved, setLastSaved] = useState<string | null>(null);
-  const [isDirty, setIsDirty] = useState(false);
-  const [autoSaveEnabled, setAutoSaveEnabled] = useState(enabled);
+  const adapter = getFileSystemAdapter();
 
+  // Save status state
+  const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
+  const [lastSaved, setLastSaved] = useState<string | null>(
+    session.lastSaved || null
+  );
+
+  // Track if adapter is supported
+  const [isSupported] = useState(() => adapter.isSupported());
+
+  // Debounce timer
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const lastContentRef = useRef<string>(content);
-  const adapterRef = useRef(getFileSystemAdapter());
+  const lastModifiedRef = useRef<string>(session.lastModified);
+  const isSavingRef = useRef(false);
 
   /**
-   * Perform the actual save operation
+   * Save session to file system
    */
-  const performSave = useCallback(async () => {
-    if (!fileHandle) {
-      // No file handle yet - can't auto-save
-      // User needs to explicitly request a new file first
+  const saveToFileSystem = useCallback(async (): Promise<void> => {
+    if (!enabled || !isSupported || isSavingRef.current) {
       return;
     }
+
+    // Check if we have a file handle for this session
+    const sessionFileId = session.id;
+    const handleId = session.fileHandles?.[sessionFileId];
+
+    if (!handleId) {
+      console.log("[useAutoSave] No file handle for session, skipping auto-save");
+      return;
+    }
+
+    isSavingRef.current = true;
+    setSaveStatus("saving");
 
     try {
-      setSaveStatus('saving');
+      // Retrieve the file handle
+      const handle = await adapter.retrieveHandle(handleId);
 
-      const result = await adapterRef.current.saveToHandle(fileHandle, content);
-
-      if (result.success) {
-        const timestamp = result.timestamp!;
-        setLastSaved(timestamp);
-        setIsDirty(false);
-        setSaveStatus('saved');
-
-        // Update metadata
-        await adapterRef.current.updateMetadata(fileId, {
-          lastSaved: timestamp,
-          isDirty: false,
-          size: result.size ?? new Blob([content]).size,
-        });
-
-        if (onSaveSuccess) {
-          onSaveSuccess(timestamp);
-        }
-
-        // Reset to idle after brief "saved" state
-        setTimeout(() => {
-          setSaveStatus('idle');
-        }, 2000);
-      } else {
-        setSaveStatus('error');
-        if (onSaveError) {
-          onSaveError(result.error ?? 'Unknown error');
-        }
+      if (!handle) {
+        throw new Error("File handle no longer available - permissions may have been revoked");
       }
+
+      // Serialize session to JSON
+      const sessionJson = JSON.stringify(session, null, 2);
+
+      // Save to file
+      await adapter.saveToHandle(handle, sessionJson);
+
+      // Update metadata
+      const now = new Date().toISOString();
+      await adapter.updateMetadata(sessionFileId, {
+        lastSaved: now,
+        isDirty: false,
+        size: sessionJson.length,
+      });
+
+      // Update state
+      setLastSaved(now);
+      markClean(now);
+      setSaveStatus("saved");
+
+      if (onSaveSuccess) {
+        onSaveSuccess(now);
+      }
+
+      console.log("[useAutoSave] Session saved successfully");
+
+      // Reset to idle after 2 seconds
+      setTimeout(() => {
+        setSaveStatus("idle");
+      }, 2000);
     } catch (error) {
-      setSaveStatus('error');
-      if (onSaveError) {
-        onSaveError((error as Error).message);
+      console.error("[useAutoSave] Save failed:", error);
+      setSaveStatus("error");
+
+      if (onSaveError && error instanceof Error) {
+        onSaveError(error);
       }
+
+      // Reset to idle after 5 seconds
+      setTimeout(() => {
+        setSaveStatus("idle");
+      }, 5000);
+    } finally {
+      isSavingRef.current = false;
     }
-  }, [fileHandle, content, fileId, onSaveSuccess, onSaveError]);
+  }, [
+    enabled,
+    isSupported,
+    session,
+    adapter,
+    markClean,
+    onSaveSuccess,
+    onSaveError,
+  ]);
 
   /**
-   * Trigger save with debouncing
+   * Manual save trigger
    */
-  const debouncedSave = useCallback(() => {
-    if (!autoSaveEnabled || !fileHandle) {
-      return;
-    }
-
-    // Clear existing timer
-    if (debounceTimerRef.current) {
-      clearTimeout(debounceTimerRef.current);
-    }
-
-    // Set new timer
-    debounceTimerRef.current = setTimeout(() => {
-      performSave();
-    }, debounceMs);
-  }, [autoSaveEnabled, fileHandle, debounceMs, performSave]);
-
-  /**
-   * Manual save (no debounce)
-   */
-  const save = useCallback(async () => {
-    // Clear debounce timer if active
+  const save = useCallback(async (): Promise<void> => {
+    // Cancel any pending debounced save
     if (debounceTimerRef.current) {
       clearTimeout(debounceTimerRef.current);
       debounceTimerRef.current = null;
     }
 
-    await performSave();
-  }, [performSave]);
+    await saveToFileSystem();
+  }, [saveToFileSystem]);
 
   /**
-   * Request new file handle for first save
+   * Request a new file from the user
+   * Shows native file picker
    */
-  const requestNewFile = useCallback(async () => {
-    try {
-      const suggestedName = `project-${fileId}.ccs`;
-      const handle = await adapterRef.current.requestWriteHandle(suggestedName);
+  const requestNewFile = useCallback(
+    async (suggestedName: string): Promise<boolean> => {
+      if (!isSupported) {
+        console.error("[useAutoSave] File system adapter not supported");
+        return false;
+      }
 
-      if (handle) {
-        // Store the handle
-        const handleId = await adapterRef.current.storeHandle(fileId, handle);
+      try {
+        // Request file handle
+        const handle = await adapter.requestWriteHandle(suggestedName);
 
-        // Create metadata
-        await adapterRef.current.updateMetadata(fileId, {
-          name: handle.name,
-          handleId,
-          lastSaved: new Date().toISOString(),
-          isDirty: false,
-          size: new Blob([content]).size,
-        });
-
-        // Notify parent component
-        if (onHandleChange) {
-          onHandleChange(handle);
+        if (!handle) {
+          // User cancelled
+          return false;
         }
 
-        // Perform initial save
-        await performSave();
+        // Save session immediately to the new file
+        const sessionJson = JSON.stringify(session, null, 2);
+        await adapter.saveToHandle(handle, sessionJson);
+
+        // Store handle in IndexedDB
+        const handleId = await adapter.storeHandle(session.id, handle);
+
+        // Create metadata
+        const now = new Date().toISOString();
+        const metadata: StoredFileMetadata = {
+          id: session.id,
+          name: typeof handle === "string" ? handle : handle.name,
+          handleId,
+          lastSaved: now,
+          isDirty: false,
+          size: sessionJson.length,
+          mode: session.mode,
+        };
+        await storeFileMetadata(metadata);
+
+        // Update SessionContext
+        setFileHandle(session.id, handleId);
+        markClean(now);
+
+        setLastSaved(now);
+        setSaveStatus("saved");
+
+        console.log("[useAutoSave] New file created and saved:", handleId);
+
+        // Reset to idle after 2 seconds
+        setTimeout(() => {
+          setSaveStatus("idle");
+        }, 2000);
+
+        return true;
+      } catch (error) {
+        console.error("[useAutoSave] Failed to create new file:", error);
+
+        if (onSaveError && error instanceof Error) {
+          onSaveError(error);
+        }
+
+        return false;
       }
-    } catch (error) {
-      console.error('Failed to request file handle:', error);
-      if (onSaveError) {
-        onSaveError((error as Error).message);
-      }
-    }
-  }, [fileId, content, onHandleChange, onSaveError, performSave]);
+    },
+    [isSupported, adapter, session, setFileHandle, markClean, onSaveError]
+  );
 
   /**
-   * Enable/disable auto-save
-   */
-  const enableAutoSave = useCallback((enabled: boolean) => {
-    setAutoSaveEnabled(enabled);
-  }, []);
-
-  /**
-   * Track content changes
+   * Auto-save effect - triggers when session changes
    */
   useEffect(() => {
-    if (content !== lastContentRef.current) {
-      lastContentRef.current = content;
-      setIsDirty(true);
-      debouncedSave();
+    if (!enabled || !isSupported) {
+      return;
     }
-  }, [content, debouncedSave]);
 
-  /**
-   * Cleanup on unmount
-   */
-  useEffect(() => {
+    // Check if session has changed since last save
+    if (
+      session.lastModified !== lastModifiedRef.current &&
+      session.isDirty
+    ) {
+      lastModifiedRef.current = session.lastModified;
+
+      // Cancel any existing timer
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+
+      // Set new debounce timer
+      debounceTimerRef.current = setTimeout(() => {
+        saveToFileSystem();
+      }, debounceMs);
+    }
+
+    // Cleanup
     return () => {
       if (debounceTimerRef.current) {
         clearTimeout(debounceTimerRef.current);
       }
     };
-  }, []);
+  }, [enabled, isSupported, session, debounceMs, saveToFileSystem]);
 
   return {
     saveStatus,
     lastSaved,
-    isDirty,
+    isDirty: session.isDirty || false,
     save,
-    enableAutoSave,
     requestNewFile,
+    isSupported,
   };
 }

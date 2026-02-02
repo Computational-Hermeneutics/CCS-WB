@@ -1,178 +1,79 @@
 /**
  * Electron File System Adapter (Stub)
  *
- * Future implementation will use Electron's fs and dialog APIs
- * for native file system access on desktop.
+ * This is a stub implementation for future Electron support.
+ * When implemented, it will use Electron's native fs and dialog APIs
+ * instead of File System Access API and IndexedDB.
  *
- * Hooks are in place for when Electron support is added.
+ * Implementation notes for future:
+ * - Use electron.ipcRenderer to communicate with main process
+ * - Main process uses fs module for file operations
+ * - dialog.showSaveDialog for file pickers
+ * - Store file paths as strings instead of FileSystemFileHandle
+ * - No need for IndexedDB - can use fs directly
  */
 
-import type {
-  FileSystemAdapter,
-  FileHandle,
-  StoredFileMetadata,
-  SaveResult,
-} from './types';
-import type { EntryMode } from '@/types';
+import type { EntryMode } from "@/types";
+import type { FileSystemAdapter, FileHandle, StoredFileMetadata } from "./types";
 
 /**
- * Check if running in Electron environment
- */
-function isElectronEnvironment(): boolean {
-  return (
-    typeof window !== 'undefined' &&
-    typeof (window as any).electron !== 'undefined'
-  );
-}
-
-/**
- * Electron implementation of FileSystemAdapter (stub)
+ * Electron implementation of FileSystemAdapter
  *
- * Future implementation will use:
- * - electron.dialog.showSaveDialog() for file picker
- * - electron.fs.writeFile() for saving
- * - electron.fs.readFile() for loading
- * - Store file paths instead of FileSystemFileHandle
+ * NOT YET IMPLEMENTED - All methods throw errors
  */
 export class ElectronFileSystemAdapter implements FileSystemAdapter {
   /**
-   * Check if Electron is available
+   * Check if running in Electron environment
    */
   isSupported(): boolean {
-    return isElectronEnvironment();
+    // Check for Electron's window.electron or process.versions.electron
+    if (typeof window !== "undefined") {
+      return (
+        "electron" in window ||
+        (typeof process !== "undefined" &&
+          process.versions &&
+          "electron" in process.versions)
+      );
+    }
+    return false;
   }
 
-  /**
-   * Request a writable file handle (Electron version)
-   * Future: Use electron.dialog.showSaveDialog()
-   */
-  async requestWriteHandle(_suggestedName: string): Promise<FileHandle | null> {
-    throw new Error('Electron adapter not yet implemented. Use browser version.');
+  async requestWriteHandle(_name: string): Promise<FileHandle | null> {
+    throw new Error("Electron adapter not yet implemented");
   }
 
-  /**
-   * Save content to file (Electron version)
-   * Future: Use electron.fs.writeFile()
-   */
-  async saveToHandle(_handle: FileHandle, _content: string): Promise<SaveResult> {
-    throw new Error('Electron adapter not yet implemented. Use browser version.');
+  async saveToHandle(_handle: FileHandle, _content: string): Promise<void> {
+    throw new Error("Electron adapter not yet implemented");
   }
 
-  /**
-   * Store file path for future use (Electron version)
-   * Future: Store in electron-store or similar
-   */
   async storeHandle(_fileId: string, _handle: FileHandle): Promise<string> {
-    throw new Error('Electron adapter not yet implemented. Use browser version.');
+    throw new Error("Electron adapter not yet implemented");
   }
 
-  /**
-   * Retrieve file path (Electron version)
-   * Future: Retrieve from electron-store
-   */
   async retrieveHandle(_handleId: string): Promise<FileHandle | null> {
-    throw new Error('Electron adapter not yet implemented. Use browser version.');
+    throw new Error("Electron adapter not yet implemented");
   }
 
-  /**
-   * Remove stored file path (Electron version)
-   */
   async removeHandle(_handleId: string): Promise<void> {
-    throw new Error('Electron adapter not yet implemented. Use browser version.');
+    throw new Error("Electron adapter not yet implemented");
   }
 
-  /**
-   * Get file metadata (Electron version)
-   * Future: Use electron-store for metadata
-   */
   async getMetadata(_fileId: string): Promise<StoredFileMetadata | null> {
-    throw new Error('Electron adapter not yet implemented. Use browser version.');
+    throw new Error("Electron adapter not yet implemented");
   }
 
-  /**
-   * Update file metadata (Electron version)
-   */
-  async updateMetadata(_fileId: string, _updates: Partial<StoredFileMetadata>): Promise<void> {
-    throw new Error('Electron adapter not yet implemented. Use browser version.');
+  async updateMetadata(
+    _fileId: string,
+    _updates: Partial<StoredFileMetadata>
+  ): Promise<void> {
+    throw new Error("Electron adapter not yet implemented");
   }
 
-  /**
-   * List files for mode (Electron version)
-   */
   async listFiles(_mode: EntryMode): Promise<StoredFileMetadata[]> {
-    throw new Error('Electron adapter not yet implemented. Use browser version.');
+    throw new Error("Electron adapter not yet implemented");
   }
 
-  /**
-   * Check write permission (Electron version)
-   * Future: Use electron.fs.access()
-   */
-  async hasWritePermission(_handle: FileHandle): Promise<boolean> {
-    throw new Error('Electron adapter not yet implemented. Use browser version.');
-  }
-
-  /**
-   * Request write permission (Electron version)
-   * Note: Electron uses OS file permissions, no explicit request needed
-   */
-  async requestWritePermission(_handle: FileHandle): Promise<boolean> {
-    throw new Error('Electron adapter not yet implemented. Use browser version.');
+  async clearAll(): Promise<void> {
+    throw new Error("Electron adapter not yet implemented");
   }
 }
-
-/**
- * Future Electron preload script API shape
- *
- * Add this to your Electron preload script when implementing:
- *
- * ```typescript
- * import { contextBridge, ipcRenderer } from 'electron';
- *
- * contextBridge.exposeInMainWorld('electron', {
- *   dialog: {
- *     showSaveDialog: (options) => ipcRenderer.invoke('dialog:showSaveDialog', options),
- *     showOpenDialog: (options) => ipcRenderer.invoke('dialog:showOpenDialog', options),
- *   },
- *   fs: {
- *     writeFile: (path, data) => ipcRenderer.invoke('fs:writeFile', path, data),
- *     readFile: (path) => ipcRenderer.invoke('fs:readFile', path),
- *     access: (path) => ipcRenderer.invoke('fs:access', path),
- *   },
- *   store: {
- *     get: (key) => ipcRenderer.invoke('store:get', key),
- *     set: (key, value) => ipcRenderer.invoke('store:set', key, value),
- *     delete: (key) => ipcRenderer.invoke('store:delete', key),
- *   },
- * });
- * ```
- *
- * Main process handlers:
- *
- * ```typescript
- * import { ipcMain, dialog } from 'electron';
- * import * as fs from 'fs/promises';
- * import Store from 'electron-store';
- *
- * const store = new Store();
- *
- * ipcMain.handle('dialog:showSaveDialog', async (_, options) => {
- *   return dialog.showSaveDialog(options);
- * });
- *
- * ipcMain.handle('fs:writeFile', async (_, path, data) => {
- *   return fs.writeFile(path, data, 'utf-8');
- * });
- *
- * ipcMain.handle('fs:readFile', async (_, path) => {
- *   return fs.readFile(path, 'utf-8');
- * });
- *
- * ipcMain.handle('store:get', async (_, key) => {
- *   return store.get(key);
- * });
- *
- * ipcMain.handle('store:set', async (_, key, value) => {
- *   store.set(key, value);
- * });
- * ```
- */

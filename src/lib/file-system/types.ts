@@ -1,36 +1,31 @@
 /**
- * File System Abstraction Layer - Types
+ * File System Abstraction Layer Types
  *
- * Provides unified interface for file operations across:
- * - Browser (File System Access API + IndexedDB fallback)
- * - Electron (future implementation)
+ * Provides a unified interface for file operations across different platforms:
+ * - Browser: File System Access API + IndexedDB fallback
+ * - Electron: Native fs/dialog APIs (future)
  */
 
-import type { EntryMode } from '@/types';
+import type { EntryMode } from "@/types";
 
 /**
- * Platform-agnostic file handle
- * Wraps browser FileSystemFileHandle or Electron file paths
+ * Opaque handle to a native file system file
+ * In browsers, this is FileSystemFileHandle
+ * In Electron, this would be a file path string
  */
-export interface FileHandle {
-  kind: 'file';
-  name: string;
-  // Browser: FileSystemFileHandle, Electron: file path string
-  nativeHandle?: FileSystemFileHandle | string;
-}
+export type FileHandle = FileSystemFileHandle | string;
 
 /**
- * Metadata for stored files
- * Persisted in IndexedDB alongside file handles
+ * Metadata about a stored file
  */
 export interface StoredFileMetadata {
-  id: string;           // Session file ID (matches SessionContext)
-  name: string;         // Filename with extension
-  handleId: string;     // IndexedDB key for file handle
-  lastSaved: string;    // ISO timestamp
-  isDirty: boolean;     // Has unsaved changes
-  size: number;         // File size in bytes
-  mode: EntryMode;      // critique | archaeology | interpret | create
+  id: string;              // Session file ID
+  name: string;            // File name
+  handleId: string;        // IndexedDB key for retrieving the file handle
+  lastSaved: string;       // ISO timestamp of last save
+  isDirty: boolean;        // Has unsaved changes
+  size: number;            // File size in bytes
+  mode: EntryMode;         // Which mode this file belongs to
 }
 
 /**
@@ -38,23 +33,35 @@ export interface StoredFileMetadata {
  */
 export interface AutoSaveConfig {
   enabled: boolean;
-  debounceMs: number;   // Default: 1000ms (matches SessionContext)
-  showToasts: boolean;  // Show save success/error notifications
+  debounceMs: number;      // Debounce time before auto-save triggers
+  showNotifications: boolean; // Show toast notifications on save
 }
 
 /**
- * Save operation result
+ * Default auto-save configuration
  */
-export interface SaveResult {
-  success: boolean;
-  error?: string;
-  timestamp?: string;   // ISO timestamp of successful save
-  size?: number;        // Size of saved content in bytes
-}
+export const DEFAULT_AUTO_SAVE_CONFIG: AutoSaveConfig = {
+  enabled: true,
+  debounceMs: 1000,        // 1 second debounce (matches SessionContext)
+  showNotifications: false, // Don't spam user with save notifications
+};
 
 /**
- * File system adapter interface
- * Implemented by BrowserFileSystemAdapter and ElectronFileSystemAdapter
+ * Save status states
+ */
+export type SaveStatus =
+  | 'idle'                 // No unsaved changes
+  | 'dirty'                // Has unsaved changes
+  | 'saving'               // Currently saving
+  | 'saved'                // Recently saved successfully
+  | 'error';               // Save failed
+
+/**
+ * File System Adapter Interface
+ *
+ * All file system operations must go through an adapter implementing this interface.
+ * This allows the same code to work in browsers (using File System Access API or IndexedDB)
+ * and in Electron (using native fs APIs).
  */
 export interface FileSystemAdapter {
   /**
@@ -63,39 +70,36 @@ export interface FileSystemAdapter {
   isSupported(): boolean;
 
   /**
-   * Request a writable file handle from the user
-   * Opens native file picker dialog
+   * Request write access to a file
+   * Shows native file picker in browsers
    *
-   * @param suggestedName - Suggested filename (e.g., "my-project.ccs")
-   * @returns FileHandle if user grants permission, null if cancelled
+   * @param name - Suggested file name
+   * @returns File handle or null if user cancelled
    */
-  requestWriteHandle(suggestedName: string): Promise<FileHandle | null>;
+  requestWriteHandle(name: string): Promise<FileHandle | null>;
 
   /**
    * Save content to an existing file handle
    *
-   * @param handle - File handle to write to
-   * @param content - Content to save
-   * @returns Save operation result
+   * @param handle - File handle obtained from requestWriteHandle
+   * @param content - File content to save
    */
-  saveToHandle(handle: FileHandle, content: string): Promise<SaveResult>;
+  saveToHandle(handle: FileHandle, content: string): Promise<void>;
 
   /**
-   * Store a file handle for future use
-   * Browser: Stores FileSystemFileHandle in IndexedDB
-   * Electron: Stores file path
+   * Store a file handle in persistent storage for later retrieval
    *
    * @param fileId - Session file ID
    * @param handle - File handle to store
-   * @returns Handle ID for retrieval
+   * @returns handleId for later retrieval
    */
   storeHandle(fileId: string, handle: FileHandle): Promise<string>;
 
   /**
    * Retrieve a previously stored file handle
    *
-   * @param handleId - Handle ID from storeHandle()
-   * @returns FileHandle if found and still valid, null otherwise
+   * @param handleId - Handle ID from storeHandle
+   * @returns File handle or null if not found/permission denied
    */
   retrieveHandle(handleId: string): Promise<FileHandle | null>;
 
@@ -107,10 +111,10 @@ export interface FileSystemAdapter {
   removeHandle(handleId: string): Promise<void>;
 
   /**
-   * Get metadata for a stored file
+   * Get metadata about a stored file
    *
    * @param fileId - Session file ID
-   * @returns Metadata if found, null otherwise
+   * @returns Metadata or null if not found
    */
   getMetadata(fileId: string): Promise<StoredFileMetadata | null>;
 
@@ -123,7 +127,7 @@ export interface FileSystemAdapter {
   updateMetadata(fileId: string, updates: Partial<StoredFileMetadata>): Promise<void>;
 
   /**
-   * List all stored files for a given mode
+   * List all stored files for a mode
    *
    * @param mode - Entry mode to filter by
    * @returns Array of file metadata
@@ -131,43 +135,8 @@ export interface FileSystemAdapter {
   listFiles(mode: EntryMode): Promise<StoredFileMetadata[]>;
 
   /**
-   * Check if file handle still has write permission
-   * Browser: Queries permission state
-   * Electron: Checks file exists and is writable
-   *
-   * @param handle - File handle to check
-   * @returns true if writable, false otherwise
+   * Clear all stored handles and metadata
+   * Useful for cleanup/reset
    */
-  hasWritePermission(handle: FileHandle): Promise<boolean>;
-
-  /**
-   * Request write permission for a file handle
-   * Browser: Triggers permission prompt
-   * Electron: Always returns true (uses fs permissions)
-   *
-   * @param handle - File handle to request permission for
-   * @returns true if permission granted, false otherwise
-   */
-  requestWritePermission(handle: FileHandle): Promise<boolean>;
-}
-
-/**
- * Save status for UI display
- */
-export type SaveStatus =
-  | 'idle'      // No pending saves
-  | 'saving'    // Save in progress
-  | 'saved'     // Recently saved successfully
-  | 'error';    // Save failed
-
-/**
- * Auto-save hook return value
- */
-export interface UseAutoSaveReturn {
-  saveStatus: SaveStatus;
-  lastSaved: string | null;     // ISO timestamp or null
-  isDirty: boolean;              // Has unsaved changes
-  save: () => Promise<void>;     // Manual save trigger
-  enableAutoSave: (enabled: boolean) => void;
-  requestNewFile: () => Promise<void>;  // Request file handle for new file
+  clearAll(): Promise<void>;
 }

@@ -1,78 +1,57 @@
 /**
- * File System Abstraction Layer - Entry Point
+ * File System Abstraction Layer - Factory
  *
- * Factory function that creates the appropriate file system adapter
- * based on the runtime environment (browser vs Electron).
+ * Exports the appropriate file system adapter based on the environment:
+ * - Electron: ElectronFileSystemAdapter (future)
+ * - Browser: BrowserFileSystemAdapter
  */
 
-import type { FileSystemAdapter } from './types';
-import { BrowserFileSystemAdapter } from './browser-adapter';
-import { ElectronFileSystemAdapter } from './electron-adapter';
+import { BrowserFileSystemAdapter } from "./browser-adapter";
+import { ElectronFileSystemAdapter } from "./electron-adapter";
+import type { FileSystemAdapter } from "./types";
+
+// Re-export types
+export * from "./types";
 
 /**
- * Create a file system adapter for the current environment
+ * Create the appropriate file system adapter for the current environment
  *
- * Priority order:
- * 1. Electron (if running in Electron environment)
- * 2. Browser (default for web)
- *
- * @returns FileSystemAdapter instance
+ * Priority:
+ * 1. Electron adapter (if in Electron)
+ * 2. Browser adapter (default)
  */
 export function createFileSystemAdapter(): FileSystemAdapter {
-  // Future: Check for Electron first
-  // if (typeof window !== 'undefined' && (window as any).electron) {
-  //   const electronAdapter = new ElectronFileSystemAdapter();
-  //   if (electronAdapter.isSupported()) {
-  //     return electronAdapter;
-  //   }
-  // }
+  // Check for Electron first (future)
+  const electronAdapter = new ElectronFileSystemAdapter();
+  if (electronAdapter.isSupported()) {
+    console.log("[FileSystem] Using Electron adapter");
+    return electronAdapter;
+  }
 
   // Default to browser adapter
+  console.log("[FileSystem] Using Browser adapter");
   return new BrowserFileSystemAdapter();
 }
 
 /**
- * Singleton instance for convenience
- * Created lazily on first access
+ * Singleton instance of the file system adapter
+ * Create once and reuse
  */
-let _adapterInstance: FileSystemAdapter | null = null;
+let adapterInstance: FileSystemAdapter | null = null;
 
 /**
  * Get the singleton file system adapter instance
- *
- * @returns FileSystemAdapter instance
  */
 export function getFileSystemAdapter(): FileSystemAdapter {
-  if (!_adapterInstance) {
-    _adapterInstance = createFileSystemAdapter();
+  if (!adapterInstance) {
+    adapterInstance = createFileSystemAdapter();
   }
-  return _adapterInstance;
+  return adapterInstance;
 }
 
 /**
- * Reset the singleton instance
- * Useful for testing or when switching environments
+ * Reset the adapter instance (useful for testing)
  */
 export function resetFileSystemAdapter(): void {
-  _adapterInstance = null;
+  adapterInstance = null;
 }
-
-// Re-export types for convenience
-export type {
-  FileSystemAdapter,
-  FileHandle,
-  StoredFileMetadata,
-  SaveResult,
-  AutoSaveConfig,
-  SaveStatus,
-  UseAutoSaveReturn,
-} from './types';
-
-// Re-export database utilities for direct access if needed
-export {
-  getAutoSaveConfig,
-  saveAutoSaveConfig,
-  getStorageQuota,
-  requestPersistentStorage,
-  isStoragePersisted,
-} from './db';

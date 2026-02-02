@@ -3,6 +3,8 @@
 import { useState, useRef, useEffect, useCallback, useMemo, useImperativeHandle, forwardRef } from "react";
 import { useRouter } from "next/navigation";
 import { useCollaborativeSession } from "@/hooks/useCollaborativeSession";
+import { useAutoSave } from "@/hooks/useAutoSave";
+import { useUnsavedWarning } from "@/hooks/useUnsavedWarning";
 import { useAISettings } from "@/context/AISettingsContext";
 import { cn, formatTimestamp, fetchWithTimeout, retryWithBackoff, generateId, getCurrentTimestamp } from "@/lib/utils";
 import type { Message, CodeReference, ExperienceLevel, Session } from "@/types";
@@ -63,6 +65,7 @@ import { CodeEditorPanel, generateAnnotatedCode, parseAnnotatedMarkdown } from "
 import { ContextPreview } from "@/components/chat";
 import { GuidedPrompts } from "@/components/prompts";
 import { SettingsModal } from "@/components/settings/SettingsModal";
+import { SaveStatusIndicator } from "@/components/ui/SaveStatusIndicator";
 import { UserMenu } from "@/components/auth/UserMenu";
 import { AISettingsPanel } from "@/components/settings/AISettingsPanel";
 import { useAppSettings } from "@/context/AppSettingsContext";
@@ -211,6 +214,21 @@ export const CritiqueLayout = forwardRef<CritiqueLayoutRef, CritiqueLayoutProps>
   } = useProjects();
   const { markLocalUpdate } = useProjectSync();
   const aiEnabled = aiSettings.aiEnabled;
+
+  // Auto-save hooks
+  const autoSave = useAutoSave({
+    enabled: true,
+    onSaveSuccess: (timestamp) => {
+      console.log("[CritiqueLayout] Auto-save successful:", timestamp);
+    },
+    onSaveError: (error) => {
+      console.error("[CritiqueLayout] Auto-save failed:", error);
+      // Could show a toast notification here
+    },
+  });
+
+  // Warn before closing with unsaved changes
+  useUnsavedWarning(autoSave.isDirty, true);
 
   // Get current project info for shared project indicator
   const currentProject = useMemo(() =>
@@ -1941,6 +1959,15 @@ export const CritiqueLayout = forwardRef<CritiqueLayoutRef, CritiqueLayoutProps>
           <button onClick={() => setShowExportModal(true)} className="p-2 md:p-1.5 text-slate hover:text-ink" title="Export session log">
             <Download className="h-4 w-4" strokeWidth={1.5} />
           </button>
+          {/* Save Status Indicator */}
+          {autoSave.isSupported && (
+            <SaveStatusIndicator
+              status={autoSave.saveStatus}
+              lastSaved={autoSave.lastSaved}
+              isDirty={autoSave.isDirty}
+              className="hidden md:flex"
+            />
+          )}
           {/* AI Status Button */}
           <button
             onClick={() => setShowAIPanel(true)}

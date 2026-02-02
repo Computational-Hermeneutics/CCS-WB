@@ -1,118 +1,111 @@
 /**
  * Save Status Indicator Component
  *
- * Displays the current save status with appropriate icons and colors.
- * Shows: Saving... | Saved 2m ago | Save failed | Unsaved changes
+ * Displays the current auto-save status in the UI.
+ * Shows: Saving..., Saved 2m ago, Save failed, Unsaved changes
  */
 
-'use client';
+import React from "react";
+import { Loader2, Check, AlertCircle, Circle } from "lucide-react";
+import type { SaveStatus } from "@/lib/file-system/types";
 
-import React from 'react';
-import { Loader2, Check, AlertCircle, Circle } from 'lucide-react';
-import type { SaveStatus } from '@/lib/file-system';
-
-interface SaveStatusIndicatorProps {
-  /**
-   * Current save status
-   */
+/**
+ * Props for SaveStatusIndicator
+ */
+export interface SaveStatusIndicatorProps {
   status: SaveStatus;
-
-  /**
-   * Last saved timestamp (ISO string)
-   */
   lastSaved: string | null;
-
-  /**
-   * Has unsaved changes
-   */
   isDirty: boolean;
-
-  /**
-   * Additional CSS classes
-   */
   className?: string;
 }
 
 /**
- * Format timestamp as relative time (e.g., "2m ago")
+ * Format timestamp as relative time
+ * e.g., "2m ago", "1h ago", "just now"
  */
 function formatRelativeTime(timestamp: string): string {
-  const now = Date.now();
-  const then = new Date(timestamp).getTime();
-  const diffMs = now - then;
-  const diffSeconds = Math.floor(diffMs / 1000);
-  const diffMinutes = Math.floor(diffSeconds / 60);
-  const diffHours = Math.floor(diffMinutes / 60);
+  const now = new Date();
+  const then = new Date(timestamp);
+  const diffMs = now.getTime() - then.getTime();
+  const diffSec = Math.floor(diffMs / 1000);
 
-  if (diffSeconds < 10) {
-    return 'just now';
-  } else if (diffSeconds < 60) {
-    return `${diffSeconds}s ago`;
-  } else if (diffMinutes < 60) {
-    return `${diffMinutes}m ago`;
-  } else if (diffHours < 24) {
-    return `${diffHours}h ago`;
+  if (diffSec < 10) {
+    return "just now";
+  } else if (diffSec < 60) {
+    return `${diffSec}s ago`;
+  } else if (diffSec < 3600) {
+    const minutes = Math.floor(diffSec / 60);
+    return `${minutes}m ago`;
+  } else if (diffSec < 86400) {
+    const hours = Math.floor(diffSec / 3600);
+    return `${hours}h ago`;
   } else {
-    return new Date(timestamp).toLocaleDateString();
+    const days = Math.floor(diffSec / 86400);
+    return `${days}d ago`;
   }
 }
 
+/**
+ * Save Status Indicator Component
+ */
 export function SaveStatusIndicator({
   status,
   lastSaved,
   isDirty,
-  className = '',
+  className = "",
 }: SaveStatusIndicatorProps): React.ReactElement {
-  // Determine display based on status
+  // Determine icon and text based on status
   let icon: React.ReactNode;
   let text: string;
   let colorClass: string;
 
   switch (status) {
-    case 'saving':
+    case "saving":
       icon = <Loader2 className="h-3 w-3 animate-spin" />;
-      text = 'Saving...';
-      colorClass = 'text-slate-500';
+      text = "Saving...";
+      colorClass = "text-slate-600";
       break;
 
-    case 'saved':
+    case "saved":
       icon = <Check className="h-3 w-3" />;
-      text = lastSaved ? `Saved ${formatRelativeTime(lastSaved)}` : 'Saved';
-      colorClass = 'text-green-600';
+      text = lastSaved ? `Saved ${formatRelativeTime(lastSaved)}` : "Saved";
+      colorClass = "text-green-600";
       break;
 
-    case 'error':
+    case "error":
       icon = <AlertCircle className="h-3 w-3" />;
-      text = 'Save failed';
-      colorClass = 'text-red-600';
+      text = "Save failed";
+      colorClass = "text-red-600";
       break;
 
-    case 'idle':
+    case "dirty":
+      icon = <Circle className="h-3 w-3 fill-amber-500" />;
+      text = "Unsaved changes";
+      colorClass = "text-amber-600";
+      break;
+
+    case "idle":
     default:
-      if (isDirty) {
-        icon = <Circle className="h-3 w-3 fill-current" />;
-        text = 'Unsaved changes';
-        colorClass = 'text-amber-500';
-      } else if (lastSaved) {
+      // Show last saved time if available, otherwise nothing
+      if (lastSaved) {
         icon = <Check className="h-3 w-3" />;
         text = `Saved ${formatRelativeTime(lastSaved)}`;
-        colorClass = 'text-slate-400';
+        colorClass = "text-slate-500";
+      } else if (isDirty) {
+        icon = <Circle className="h-3 w-3 fill-amber-500" />;
+        text = "Unsaved changes";
+        colorClass = "text-amber-600";
       } else {
-        icon = null;
-        text = '';
-        colorClass = '';
+        return <></>;
       }
       break;
-  }
-
-  if (!text) {
-    return <></>;
   }
 
   return (
     <div
       className={`flex items-center gap-1.5 text-xs ${colorClass} ${className}`}
-      title={lastSaved ? `Last saved: ${new Date(lastSaved).toLocaleString()}` : undefined}
+      role="status"
+      aria-live="polite"
     >
       {icon}
       <span>{text}</span>

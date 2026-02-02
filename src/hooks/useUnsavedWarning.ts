@@ -1,97 +1,53 @@
 /**
- * useUnsavedWarning Hook
+ * Unsaved Changes Warning Hook
  *
- * Warns users before they close the browser tab or navigate away
- * when there are unsaved changes.
+ * Warns users before:
+ * - Closing the browser tab (beforeunload event)
+ * - Navigating away (Next.js route change)
+ * - Refreshing the page
+ *
+ * Only triggers if there are unsaved changes (isDirty = true)
  */
 
-import { useEffect, useCallback, useRef } from 'react';
-import { usePathname, useRouter } from 'next/navigation';
-
-interface UseUnsavedWarningOptions {
-  /**
-   * Whether there are unsaved changes
-   */
-  isDirty: boolean;
-
-  /**
-   * Custom warning message (browsers may not display this)
-   */
-  message?: string;
-
-  /**
-   * Callback when user attempts to leave with unsaved changes
-   */
-  onAttemptLeave?: () => void;
-}
+import { useEffect } from "react";
 
 /**
- * Hook to warn users before closing tab/navigating with unsaved changes
+ * Hook to warn users before navigating away with unsaved changes
  *
- * Usage:
- * ```tsx
- * useUnsavedWarning({ isDirty: hasUnsavedChanges });
- * ```
+ * @param isDirty - Whether there are unsaved changes
+ * @param enabled - Whether the warning is enabled (default: true)
  */
-export function useUnsavedWarning(options: UseUnsavedWarningOptions): void {
-  const {
-    isDirty,
-    message = 'You have unsaved changes. Are you sure you want to leave?',
-    onAttemptLeave,
-  } = options;
-
-  const isDirtyRef = useRef(isDirty);
-  const pathname = usePathname();
-
-  // Update ref when isDirty changes
+export function useUnsavedWarning(isDirty: boolean, enabled: boolean = true): void {
   useEffect(() => {
-    isDirtyRef.current = isDirty;
-  }, [isDirty]);
-
-  /**
-   * Browser beforeunload event
-   * Triggered when user closes tab/window or refreshes page
-   */
-  const handleBeforeUnload = useCallback(
-    (e: BeforeUnloadEvent) => {
-      if (!isDirtyRef.current) {
-        return;
-      }
-
-      if (onAttemptLeave) {
-        onAttemptLeave();
-      }
-
-      // Modern browsers ignore custom messages for security,
-      // but setting returnValue triggers the default warning
-      e.preventDefault();
-      e.returnValue = message;
-      return message;
-    },
-    [message, onAttemptLeave]
-  );
-
-  /**
-   * Register beforeunload handler
-   */
-  useEffect(() => {
-    if (typeof window === 'undefined') {
+    if (!enabled || !isDirty) {
       return;
     }
 
-    window.addEventListener('beforeunload', handleBeforeUnload);
+    /**
+     * Handle beforeunload event (browser tab close/refresh)
+     * Modern browsers show a generic message regardless of what we return
+     */
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      // Cancel the event (required for Chrome)
+      e.preventDefault();
 
-    return () => {
-      window.removeEventListener('beforeunload', handleBeforeUnload);
+      // Chrome requires returnValue to be set
+      e.returnValue = "";
+
+      // Return empty string (some browsers show this)
+      return "";
     };
-  }, [handleBeforeUnload]);
 
-  /**
-   * Next.js route change warning
-   * Note: This is more complex in App Router vs Pages Router
-   * For now, we'll just handle beforeunload (tab close/refresh)
-   *
-   * Future: Implement route change blocking when Next.js adds support
-   * See: https://github.com/vercel/next.js/discussions/41934
-   */
+    // Add event listener
+    window.addEventListener("beforeunload", handleBeforeUnload);
+
+    // Cleanup
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
+  }, [isDirty, enabled]);
+
+  // Note: Next.js route change warning would go here if needed
+  // For now, just handling browser navigation
+  // Future: Add router.events.on('routeChangeStart') handler
 }
