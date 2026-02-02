@@ -70,6 +70,11 @@ export class BrowserFileSystemAdapter implements FileSystemAdapter {
     }
 
     try {
+      // TypeScript safety: showSaveFilePicker might not exist
+      if (!window.showSaveFilePicker) {
+        throw new Error("File System Access API not available");
+      }
+
       const handle = await window.showSaveFilePicker({
         suggestedName: name,
         types: [
