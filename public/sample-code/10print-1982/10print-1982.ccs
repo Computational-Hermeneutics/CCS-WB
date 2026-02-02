@@ -1,0 +1,195 @@
+{
+  "version": "2.0.0",
+  "exportedAt": "2026-02-02T18:30:00.000Z",
+  "projectName": "10 PRINT CHR$(205.5+RND(1)); : GOTO 10",
+  "session": {
+    "id": "10print-1982-archaeology",
+    "mode": "archaeology",
+    "experienceLevel": "practitioner",
+    "messages": [],
+    "codeFiles": [
+      {
+        "id": "readme-10print",
+        "name": "README.md",
+        "language": "markdown",
+        "source": "created",
+        "size": 3245,
+        "uploadedAt": "2026-02-02T18:30:00.000Z",
+        "summary": "Historical and cultural context for 10 PRINT",
+        "context": "Iconic one-liner from Commodore 64 era, subject of entire MIT Press book"
+      },
+      {
+        "id": "original-c64",
+        "name": "10print-c64.bas",
+        "language": "basic",
+        "source": "created",
+        "size": 45,
+        "uploadedAt": "2026-02-02T18:30:00.000Z",
+        "summary": "The original Commodore 64 one-liner",
+        "author": "Anonymous",
+        "date": "1982",
+        "platform": "Commodore 64",
+        "context": "Appeared in various forms in 1980s computer magazines and user groups"
+      },
+      {
+        "id": "variations-basic",
+        "name": "10print-variations.bas",
+        "language": "basic",
+        "source": "created",
+        "size": 1850,
+        "uploadedAt": "2026-02-02T18:30:00.000Z",
+        "summary": "Ten variations exploring different aspects of the maze algorithm"
+      },
+      {
+        "id": "modern-js",
+        "name": "10print-modern.js",
+        "language": "javascript",
+        "source": "created",
+        "size": 2340,
+        "uploadedAt": "2026-02-02T18:30:00.000Z",
+        "summary": "Modern JavaScript implementations revealing platform assumptions"
+      }
+    ],
+    "codeContents": {},
+    "lineAnnotations": [
+      {
+        "id": "ann-line-number",
+        "codeFileId": "original-c64",
+        "lineNumber": 1,
+        "endLineNumber": 1,
+        "lineContent": "10 PRINT CHR$(205.5+RND(1)); : GOTO 10",
+        "type": "context",
+        "content": "The line number '10' is not arbitrary. In BASIC, line numbers establish program structure and serve as GOTO targets. The convention of numbering by 10s (10, 20, 30...) allows inserting lines later (15, 25) without renumbering the entire program. This reflects a historical constraint: programs were often developed incrementally on limited systems.",
+        "createdAt": "2026-02-02T18:30:00.000Z"
+      },
+      {
+        "id": "ann-print-command",
+        "codeFileId": "original-c64",
+        "lineNumber": 1,
+        "endLineNumber": 1,
+        "lineContent": "10 PRINT CHR$(205.5+RND(1)); : GOTO 10",
+        "type": "observation",
+        "content": "PRINT is the fundamental output command in BASIC, inherited from Fortran's PRINT statement. Its conversational imperative form (\"print this\") reflects BASIC's design philosophy of natural language accessibility. The command directly addresses the hardware (the screen), revealing the tight coupling between language and platform in early computing.",
+        "createdAt": "2026-02-02T18:30:00.000Z"
+      },
+      {
+        "id": "ann-chr-function",
+        "codeFileId": "original-c64",
+        "lineNumber": 1,
+        "endLineNumber": 1,
+        "lineContent": "10 PRINT CHR$(205.5+RND(1)); : GOTO 10",
+        "type": "pattern",
+        "content": "CHR$() converts numbers to characters using the platform's character encoding. On the C64, this is PETSCII (PET Standard Code of Information Interchange), not ASCII. The '$' suffix indicates string return type—a convention from early BASIC dialects that made type explicit in function names. This reveals how type systems were linguistic rather than structural in early languages.",
+        "createdAt": "2026-02-02T18:30:00.000Z"
+      },
+      {
+        "id": "ann-magic-number",
+        "codeFileId": "original-c64",
+        "lineNumber": 1,
+        "endLineNumber": 1,
+        "lineContent": "10 PRINT CHR$(205.5+RND(1)); : GOTO 10",
+        "type": "metaphor",
+        "content": "The magic number 205.5 is the algorithmic heart of this code. PETSCII characters 205 and 206 are diagonal lines (╱ and ╲). The .5 offset exploits RND(1)'s range [0,1): adding RND(1) to 205.5 yields either 205 (when RND < 0.5) or 206 (when RND ≥ 0.5). This is mathematical elegance—a binary choice expressed through floating-point arithmetic. It's also deeply platform-specific: these exact character codes only exist on Commodore systems.",
+        "createdAt": "2026-02-02T18:30:00.000Z"
+      },
+      {
+        "id": "ann-randomness",
+        "codeFileId": "original-c64",
+        "lineNumber": 1,
+        "endLineNumber": 1,
+        "lineContent": "10 PRINT CHR$(205.5+RND(1)); : GOTO 10",
+        "type": "critique",
+        "content": "RND(1) generates pseudorandom numbers using a linear congruential generator. The (1) argument reseeds from the system timer on first call, then produces a deterministic sequence. This means the 'random' maze is reproducible if you know the seed. The aesthetics of randomness here are computational—not truly random, but random enough for human perception. This reveals early computing's pragmatic approach to randomness: good enough, fast enough.",
+        "createdAt": "2026-02-02T18:30:00.000Z"
+      },
+      {
+        "id": "ann-semicolon",
+        "codeFileId": "original-c64",
+        "lineNumber": 1,
+        "endLineNumber": 1,
+        "lineContent": "10 PRINT CHR$(205.5+RND(1)); : GOTO 10",
+        "type": "observation",
+        "content": "The semicolon after PRINT suppresses the newline, causing characters to print horizontally. This single punctuation mark determines the maze's fundamental structure—continuous horizontal flow. If replaced with nothing (or a comma), the output would be vertical or columnar. The semicolon is infrastructural: it shapes the aesthetic without being visible in the output.",
+        "createdAt": "2026-02-02T18:30:00.000Z"
+      },
+      {
+        "id": "ann-colon-separator",
+        "codeFileId": "original-c64",
+        "lineNumber": 1,
+        "endLineNumber": 1,
+        "lineContent": "10 PRINT CHR$(205.5+RND(1)); : GOTO 10",
+        "type": "pattern",
+        "content": "The colon ':' is BASIC's statement separator, allowing multiple statements per line. This convention enabled one-liners and compact code—a cultural artifact of the era when every character mattered (limited memory, slow typing on early keyboards). The one-liner aesthetic emerged from constraint and became a badge of skill, culminating in obfuscated code contests.",
+        "createdAt": "2026-02-02T18:30:00.000Z"
+      },
+      {
+        "id": "ann-goto",
+        "codeFileId": "original-c64",
+        "lineNumber": 1,
+        "endLineNumber": 1,
+        "lineContent": "10 PRINT CHR$(205.5+RND(1)); : GOTO 10",
+        "type": "critique",
+        "content": "GOTO 10 creates an infinite loop by jumping back to line 10. By 1982, GOTO was already considered harmful (Dijkstra, 1968), yet here it's essential and unavoidable. In BASIC's conversational paradigm, GOTO is the only loop construct available at the immediate prompt. This reveals the tension between structured programming ideology and practical necessity. The eternal return of GOTO 10 also creates an endless generative process—the maze has no beginning or end, only perpetual becoming.",
+        "createdAt": "2026-02-02T18:30:00.000Z"
+      },
+      {
+        "id": "ann-emergence",
+        "codeFileId": "original-c64",
+        "lineNumber": 1,
+        "endLineNumber": 1,
+        "lineContent": "10 PRINT CHR$(205.5+RND(1)); : GOTO 10",
+        "type": "metaphor",
+        "content": "This single line generates endless emergent complexity. The maze pattern—paths, dead ends, openings—appears from pure randomness and constraint. This is generative art avant la lettre: algorithmic aesthetics before the terminology existed. The code embodies ideas about creativity (constraint breeds innovation), randomness (order from chaos), and computation (simple rules, complex behavior). It's also deeply democratic: anyone with a C64 could type this and become a generative artist.",
+        "createdAt": "2026-02-02T18:30:00.000Z"
+      },
+      {
+        "id": "ann-platform-specificity",
+        "codeFileId": "original-c64",
+        "lineNumber": 1,
+        "endLineNumber": 1,
+        "lineContent": "10 PRINT CHR$(205.5+RND(1)); : GOTO 10",
+        "type": "context",
+        "content": "This code is inseparable from the Commodore 64 platform. The PETSCII character codes, the screen dimensions (40×25 characters), the speed of execution, the color palette—all shape the aesthetic. Port this to modern systems and something is lost: the specific texture of PETSCII graphics, the C64's distinct color scheme, the immediate execution from the READY prompt. Platform studies reveals that code is always material, always embodied in specific hardware and software contexts.",
+        "createdAt": "2026-02-02T18:30:00.000Z"
+      },
+      {
+        "id": "ann-book",
+        "codeFileId": "original-c64",
+        "lineNumber": 1,
+        "endLineNumber": 1,
+        "lineContent": "10 PRINT CHR$(205.5+RND(1)); : GOTO 10",
+        "type": "context",
+        "content": "In 2012, MIT Press published an entire book analyzing this one line of code. 'Platform Studies' series. Ten authors, ten chapters: Randomness, Mazes, The Commodore 64, BASIC, and more. This scholarly attention elevates a simple one-liner to the status of cultural artifact worthy of deep hermeneutic analysis. It demonstrates that code can be read as text, as cultural production, as historical document. Critical Code Studies emerges from recognizing that even (especially?) the simplest code carries meaning beyond its function.",
+        "createdAt": "2026-02-02T18:30:00.000Z"
+      }
+    ],
+    "analysisResults": [],
+    "references": [],
+    "critiqueArtifacts": [],
+    "settings": {
+      "beDirectMode": false,
+      "teachMeMode": false
+    },
+    "displaySettings": {
+      "annotations": {
+        "visible": true,
+        "brightness": "medium",
+        "showPillBackground": true,
+        "showBadge": true,
+        "lineHighlightIntensity": "medium",
+        "highlightAnnotatedLines": false,
+        "fontSize": 9,
+        "indent": 56
+      },
+      "panelLayout": {
+        "codePanelWidth": 70,
+        "chatCollapsed": false,
+        "annotationFullScreen": false
+      }
+    },
+    "currentPhase": "interpretation",
+    "feedbackEscalation": 0,
+    "createdAt": "2026-02-02T18:30:00.000Z",
+    "lastModified": "2026-02-02T18:30:00.000Z"
+  }
+}
