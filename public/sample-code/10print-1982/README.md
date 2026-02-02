@@ -2,7 +2,7 @@
 
 **Authors**: Nick Montfort, Patsy Baudoin, John Bell, Ian Bogost, Jeremy Douglass, Mark C. Marino, Michael Mateas, Casey Reas, Mark Sample, Noah Vawter
 
-**Published**: The MIT Press, 2012 (Cambridge, Massachusetts; London, England)
+**Published**: The MIT Press, 2013 (Cambridge, Massachusetts; London, England)
 
 **Year**: 1982 (original program)
 
