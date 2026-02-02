@@ -485,11 +485,14 @@ export function CodeEditorPanel({
     // Find newly added files (in current but not in previous)
     const newFiles = codeFiles.filter(f => !prevIds.has(f.id));
 
-    // CASE 1: Initial load (prevIds is empty and we haven't initialized yet)
-    // This handles: component mount with files OR sample project load
-    if (prevIds.size === 0 && !hasInitializedSelectionRef.current) {
+    // CASE 1: Initial load OR complete file replacement (like loading a different sample)
+    // Detect complete replacement: all current files are new
+    const isCompleteReplacement = codeFiles.length > 0 && newFiles.length === codeFiles.length;
+    const isInitialLoad = prevIds.size === 0 && !hasInitializedSelectionRef.current;
+
+    if (isInitialLoad || isCompleteReplacement) {
       const readmeFile = findReadme(codeFiles);
-      console.log('[CodeEditorPanel] Initial load - files:', codeFiles.length, 'README:', readmeFile?.name);
+      console.log('[CodeEditorPanel] Initial/replacement load - files:', codeFiles.length, 'README:', readmeFile?.name, 'isReplacement:', isCompleteReplacement);
 
       if (readmeFile) {
         setSelectedFileId(readmeFile.id);
