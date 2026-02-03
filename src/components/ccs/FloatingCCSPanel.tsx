@@ -47,8 +47,9 @@ export function FloatingCCSPanel({
       const constrainedX = Math.max(0, Math.min(newX, maxX));
       const constrainedY = Math.max(0, Math.min(newY, maxY));
 
-      // Update DOM directly during drag (no React re-render)
-      panel.style.transform = `translate(${constrainedX}px, ${constrainedY}px)`;
+      // Update position directly via left/top (bypassing React during drag)
+      panel.style.left = `${constrainedX}px`;
+      panel.style.top = `${constrainedY}px`;
     };
 
     const handleMouseUp = () => {
@@ -57,15 +58,10 @@ export function FloatingCCSPanel({
       dragStateRef.current.isDragging = false;
       panel.style.cursor = 'default';
 
-      // Extract final position from transform and update React state
-      const transform = panel.style.transform;
-      const match = transform.match(/translate\((-?\d+(?:\.\d+)?)px,\s*(-?\d+(?:\.\d+)?)px\)/);
-      if (match) {
-        setPosition({ x: parseFloat(match[1]), y: parseFloat(match[2]) });
-      }
-
-      // Clear transform so position state takes over
-      panel.style.transform = '';
+      // Update React state with final position
+      const left = parseFloat(panel.style.left);
+      const top = parseFloat(panel.style.top);
+      setPosition({ x: left, y: top });
     };
 
     document.addEventListener('mousemove', handleMouseMove);
