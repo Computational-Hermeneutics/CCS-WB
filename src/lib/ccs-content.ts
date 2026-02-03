@@ -43,19 +43,21 @@ export const CCS_METHODS: CCSMethod[] = [
   {
     id: 'materialist-reading',
     name: 'Materialist Reading',
-    shortDescription: 'Examine how code shapes experience and subjectivity',
-    definition: 'Analyze how computational systems mediate human experience, shape subjectivity, and produce particular forms of being-in-the-world through their material constraints and affordances.',
+    shortDescription: 'Hardware, technical conditions of possibility, media archaeology',
+    definition: 'Examine the material and technical conditions that make computation possible—hardware constraints, storage media, processing architectures, and the infrastructural layers that enable code to execute. Draws on Berlin School media theory (Kittler, Ernst) and Frankfurt School critical theory to understand how technical systems shape what can be thought, written, and executed.',
     keyQuestions: [
-      'How does this code configure user experience?',
-      'What forms of subjectivity does this software produce?',
-      'How do computational constraints shape possible actions?',
-      'What phenomenological effects emerge from this implementation?'
+      'What hardware constraints shaped this code\'s design?',
+      'What are the technical conditions of possibility for this computation?',
+      'How does the material substrate (storage, processing, memory) structure what\'s computable?',
+      'What media-archaeological layers does this code depend on or reveal?'
     ],
     suggestedReadings: [
+      { title: 'Gramophone, Film, Typewriter', author: 'Friedrich Kittler', year: 1999 },
+      { title: 'Digital Memory and the Archive', author: 'Wolfgang Ernst', year: 2013 },
       { title: 'The Philosophy of Software: Code and Mediation in the Digital Age', author: 'David M. Berry', year: 2011 },
       { title: 'Software Studies: A Lexicon', author: 'Matthew Fuller (ed.)', year: 2008 }
     ],
-    exampleSample: '1965 - ELIZA'
+    exampleSample: '1977 - XMODEM Protocol'
   },
   {
     id: 'interpretation',
