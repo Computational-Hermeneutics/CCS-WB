@@ -108,7 +108,7 @@ export default function ConversationPage() {
   useEffect(() => {
     // Only run this check once on mount
     const hasProperMode = session.mode && ['critique', 'interpret', 'create'].includes(session.mode);
-    const hasSavedContent = hasSavedSession();
+    const hasSavedContent = session.mode ? hasSavedSession(session.mode as any) : false;
 
     // If no proper mode and no saved session to restore, redirect to main page
     if (!hasProperMode && !hasSavedContent) {

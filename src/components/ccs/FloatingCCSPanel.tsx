@@ -11,6 +11,8 @@ interface FloatingCCSPanelProps {
   hasOnlyTechnicalAnnotations?: boolean;
   onInvokeCCSSkill?: (method: CCSMethod) => void;
   aiEnabled?: boolean;
+  isMinimized?: boolean;
+  onMinimize?: (minimized: boolean) => void;
 }
 
 export function FloatingCCSPanel({
@@ -18,16 +20,19 @@ export function FloatingCCSPanel({
   annotationCount = 0,
   hasOnlyTechnicalAnnotations = false,
   onInvokeCCSSkill,
-  aiEnabled = true
+  aiEnabled = true,
+  isMinimized = false,
+  onMinimize
 }: FloatingCCSPanelProps) {
   const [position, setPosition] = useState({ x: 20, y: 80 }); // Initial position (top-right area)
   const [isDragging, setIsDragging] = useState(false);
-  const [isMinimized, setIsMinimized] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(false); // Local collapse state for content
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  const [isAnimating, setIsAnimating] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
 
-  // Don't render if not enabled
-  if (!isEnabled) return null;
+  // Don't render if not enabled or minimized
+  if (!isEnabled || isMinimized) return null;
 
   const handleMouseDown = (e: React.MouseEvent) => {
     // Only start drag if clicking on the drag handle area (not buttons)
@@ -81,13 +86,16 @@ export function FloatingCCSPanel({
   return (
     <div
       ref={panelRef}
-      className="fixed bg-popover border border-parchment rounded-lg shadow-xl z-40"
+      className={`fixed bg-popover border border-parchment rounded-lg shadow-xl z-40 transition-all duration-300 ${
+        isAnimating ? 'opacity-0 scale-50' : 'opacity-100 scale-100'
+      }`}
       style={{
         left: `${position.x}px`,
         top: `${position.y}px`,
-        width: isMinimized ? '240px' : '420px',
+        width: isCollapsed ? '240px' : '420px',
         maxHeight: '80vh',
-        cursor: isDragging ? 'grabbing' : 'default'
+        cursor: isDragging ? 'grabbing' : 'default',
+        transformOrigin: 'top right' // Shrink toward top-right (toolbar area)
       }}
     >
       {/* Drag handle header */}
@@ -101,11 +109,22 @@ export function FloatingCCSPanel({
           <span className="font-sans text-xs font-semibold text-ink">CCS Methods Guide</span>
         </div>
         <button
-          onClick={() => setIsMinimized(!isMinimized)}
+          onClick={() => {
+            if (isCollapsed) {
+              setIsCollapsed(false);
+            } else {
+              // Minimize to toolbar - trigger animation and then call parent
+              setIsAnimating(true);
+              setTimeout(() => {
+                onMinimize?.(true);
+                setIsAnimating(false);
+              }, 300); // Match animation duration
+            }
+          }}
           className="p-1 hover:bg-cream rounded transition-colors"
-          title={isMinimized ? 'Expand' : 'Minimize'}
+          title={isCollapsed ? 'Expand content' : 'Minimize to toolbar'}
         >
-          {isMinimized ? (
+          {isCollapsed ? (
             <Maximize2 className="w-3.5 h-3.5 text-slate-muted" />
           ) : (
             <Minimize2 className="w-3.5 h-3.5 text-slate-muted" />
@@ -114,7 +133,7 @@ export function FloatingCCSPanel({
       </div>
 
       {/* Content */}
-      {!isMinimized && (
+      {!isCollapsed && (
         <div className="overflow-y-auto max-h-[calc(80vh-3rem)]">
           <CCSGuidancePanel
             isEnabled={isEnabled}

@@ -60,6 +60,7 @@ import {
   Library,
   Pencil,
   HardDrive,
+  BookOpen,
 } from "lucide-react";
 import { CodeEditorPanel, generateAnnotatedCode, parseAnnotatedMarkdown } from "@/components/code";
 import { ContextPreview } from "@/components/chat";
@@ -281,6 +282,7 @@ export const CritiqueLayout = forwardRef<CritiqueLayoutRef, CritiqueLayoutProps>
   const [projectMemberCount, setProjectMemberCount] = useState<number>(0);
   const [projectMembers, setProjectMembers] = useState<Array<{ user_id: string; initials?: string; avatar_url?: string; display_name?: string; role: string }>>([]);
   const [showProjectRestoredBanner, setShowProjectRestoredBanner] = useState(false);
+  const [isCCSPanelMinimized, setIsCCSPanelMinimized] = useState(false);
 
   // Check if cloud project was restored on page load
   useEffect(() => {
@@ -1604,6 +1606,8 @@ export const CritiqueLayout = forwardRef<CritiqueLayoutRef, CritiqueLayoutProps>
         hasOnlyTechnicalAnnotations={false}
         onInvokeCCSSkill={handleCCSMethodGuidance}
         aiEnabled={aiEnabled}
+        isMinimized={isCCSPanelMinimized}
+        onMinimize={setIsCCSPanelMinimized}
       />
 
       {/* Header */}
@@ -1945,6 +1949,25 @@ export const CritiqueLayout = forwardRef<CritiqueLayoutRef, CritiqueLayoutProps>
           </button>
         )}
         <div className="flex items-center gap-0.5 sm:gap-1 flex-shrink-0">
+          {/* CCS Methods Panel Toggle - only show in Learn Methods mode */}
+          {session.mode === 'interpret' && (
+            <>
+              <button
+                onClick={() => setIsCCSPanelMinimized(false)}
+                className={cn(
+                  "p-2 md:p-1.5 transition-all",
+                  isCCSPanelMinimized
+                    ? "text-burgundy hover:text-burgundy-dark animate-pulse"
+                    : "text-slate/40 cursor-not-allowed"
+                )}
+                title={isCCSPanelMinimized ? "Show CCS Methods Guide" : "CCS Methods Guide (already visible)"}
+                disabled={!isCCSPanelMinimized}
+              >
+                <BookOpen className="h-4 w-4" strokeWidth={1.5} />
+              </button>
+              <div className="w-px h-4 bg-parchment mx-0.5" />
+            </>
+          )}
           <input
             ref={sessionLoadInputRef}
             type="file"
