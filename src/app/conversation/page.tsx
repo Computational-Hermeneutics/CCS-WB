@@ -1363,17 +1363,18 @@ export default function ConversationPage() {
     setSuccessMessage("Session log exported as PDF!");
   }, [session, projectName, profile]);
 
-  // All modes use CritiqueLayout (IDE-style interface)
-  // Other mode-specific UIs will be developed in future versions
-  return (
-    <>
-      <CritiqueLayout
-        ref={critiqueLayoutRef}
-        onNavigateHome={handleNavigateHome}
-        triggerSave={triggerCritiqueSave}
-        onSaveTriggered={() => setTriggerCritiqueSave(false)}
-      />
-        {/* Unsaved Changes Warning Modal for Critique Mode */}
+  // Critique, archaeology, and interpret modes use CritiqueLayout (IDE-style interface)
+  // Create mode uses conversational chat UI
+  if (session.mode === "critique" || session.mode === "archaeology" || session.mode === "interpret") {
+    return (
+      <>
+        <CritiqueLayout
+          ref={critiqueLayoutRef}
+          onNavigateHome={handleNavigateHome}
+          triggerSave={triggerCritiqueSave}
+          onSaveTriggered={() => setTriggerCritiqueSave(false)}
+        />
+        {/* Unsaved Changes Warning Modal */}
         {showUnsavedWarning && (
           <div className="fixed inset-0 bg-ink/40 flex items-center justify-center z-50">
             <div className="bg-popover rounded-sm shadow-editorial-lg p-6 w-full max-w-md mx-4 border border-parchment modal-content">
@@ -1421,5 +1422,462 @@ export default function ConversationPage() {
         )}
       </>
     );
+  }
+
+  // Create mode: Chat-based conversational interface for generative coding
+  return (
+    <div className="h-screen flex flex-col bg-parchment overflow-hidden">
+      {/* Header */}
+      <header className="shrink-0 bg-ink text-parchment px-6 py-4 border-b border-slate/20">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <button
+              onClick={handleNavigateHome}
+              className="text-gold-light hover:text-gold transition-colors"
+              aria-label="Go home"
+            >
+              <ChevronLeft className="h-5 w-5" strokeWidth={1.5} />
+            </button>
+            <div>
+              <h1 className="font-display text-display-sm">
+                {projectName || "Untitled Project"}
+              </h1>
+              <p className="font-body text-body-xs text-slate-muted">
+                Create Mode - Generative Coding
+                {session.createState?.language && ` · ${session.createState.language}`}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            {/* Language selector */}
+            <div className="relative" data-dropdown>
+              <button
+                onClick={() => setShowLanguageDropdown(!showLanguageDropdown)}
+                className="btn-editorial-ghost text-xs px-3 py-1.5"
+              >
+                <Code className="h-4 w-4 mr-1.5" strokeWidth={1.5} />
+                {session.createState?.language || "Python"}
+              </button>
+              {showLanguageDropdown && (
+                <div className="absolute right-0 mt-2 w-48 bg-popover rounded-sm shadow-editorial border border-parchment z-50">
+                  <div className="p-2 max-h-64 overflow-y-auto">
+                    {CREATE_LANGUAGES.map((lang) => (
+                      <button
+                        key={lang}
+                        onClick={() => {
+                          setCreateLanguage(lang);
+                          setShowLanguageDropdown(false);
+                        }}
+                        className={cn(
+                          "w-full text-left px-3 py-2 rounded font-body text-body-sm transition-colors",
+                          session.createState?.language === lang
+                            ? "bg-gold-light text-ink"
+                            : "text-slate hover:bg-parchment"
+                        )}
+                      >
+                        {lang}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Save button */}
+            <button
+              onClick={handleSaveSession}
+              className="btn-editorial-primary text-xs px-3 py-1.5"
+              title="Save session (Cmd/Ctrl + S)"
+            >
+              <Save className="h-4 w-4 mr-1.5" strokeWidth={1.5} />
+              Save
+            </button>
+
+            {/* Settings */}
+            <button
+              onClick={() => {
+                setSettingsTab("ai");
+                setShowSettingsModal(true);
+              }}
+              className="btn-editorial-ghost text-xs px-3 py-1.5"
+            >
+              <Settings className="h-4 w-4" strokeWidth={1.5} />
+            </button>
+          </div>
+        </div>
+      </header>
+
+      {/* Main content: Split view on desktop, single column on mobile */}
+      <div className="flex-1 flex overflow-hidden">
+        {/* Chat panel */}
+        <div className="flex-1 flex flex-col overflow-hidden">
+          {/* Messages */}
+          <div className="flex-1 overflow-y-auto px-6 py-6">
+            <div className="max-w-3xl mx-auto space-y-6">
+              {session.messages.map((message, index) => (
+                <div
+                  key={message.id}
+                  className={cn(
+                    "flex gap-4",
+                    message.role === "user" ? "justify-end" : "justify-start"
+                  )}
+                >
+                  <div
+                    className={cn(
+                      "max-w-[80%] rounded-sm p-4",
+                      message.role === "user"
+                        ? "bg-gold-light text-ink ml-auto"
+                        : "bg-white text-slate border border-parchment"
+                    )}
+                    style={{ fontSize: `${chatFontSize}px` }}
+                  >
+                    <div className="font-body whitespace-pre-wrap leading-relaxed prose prose-sm max-w-none">
+                      {message.content}
+                    </div>
+                    <div className="mt-2 flex items-center gap-2 text-xs text-slate-muted">
+                      <span>{formatTimestamp(message.timestamp)}</span>
+                      <button
+                        onClick={() => handleCopyMessage(message.id, message.content)}
+                        className="hover:text-ink transition-colors"
+                        title="Copy message"
+                      >
+                        {copiedMessageId === message.id ? (
+                          <Check className="h-3.5 w-3.5" strokeWidth={1.5} />
+                        ) : (
+                          <Copy className="h-3.5 w-3.5" strokeWidth={1.5} />
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+              {isLoading && (
+                <div className="flex justify-start">
+                  <div className="bg-white text-slate border border-parchment rounded-sm p-4">
+                    <Loader2 className="h-5 w-5 animate-spin" strokeWidth={1.5} />
+                  </div>
+                </div>
+              )}
+              <div ref={messagesEndRef} />
+            </div>
+          </div>
+
+          {/* Input area */}
+          <div className="shrink-0 border-t border-parchment bg-white">
+            <div className="max-w-3xl mx-auto p-4">
+              <div className="flex gap-2">
+                <textarea
+                  ref={inputRef}
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  placeholder="Describe what you'd like to create..."
+                  disabled={!isAiReady || isLoading}
+                  className="flex-1 font-body text-body-md bg-parchment text-ink border border-slate/20 rounded-sm px-4 py-3 focus:outline-none focus:ring-1 focus:ring-gold resize-none"
+                  style={{ fontSize: `${chatFontSize}px`, minHeight: '44px' }}
+                  rows={1}
+                />
+                <button
+                  onClick={handleSend}
+                  disabled={!input.trim() || isLoading || !isAiReady}
+                  className="btn-editorial-primary px-4 shrink-0"
+                  title="Send message (Enter)"
+                >
+                  <Send className="h-5 w-5" strokeWidth={1.5} />
+                </button>
+              </div>
+              {!isAiReady && (
+                <p className="mt-2 text-xs text-slate-muted font-body">
+                  AI provider not configured. Please check settings.
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Context panel (desktop only) */}
+        {!isMobile && (
+          <div className="w-80 border-l border-parchment bg-white overflow-y-auto">
+            <div className="p-4">
+              <h3 className="font-display text-display-xs text-ink mb-4">
+                Context
+              </h3>
+
+              {/* Code files */}
+              {session.codeFiles.length > 0 && (
+                <div className="mb-6">
+                  <h4 className="font-body text-body-sm font-medium text-slate mb-2">
+                    Generated Code ({session.codeFiles.length})
+                  </h4>
+                  <div className="space-y-2">
+                    {session.codeFiles.map((file) => (
+                      <div
+                        key={file.id}
+                        className="p-3 bg-parchment rounded-sm border border-slate/10"
+                      >
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1 min-w-0">
+                            <p className="font-body text-body-sm font-medium text-ink truncate">
+                              {file.name}
+                            </p>
+                            {file.language && (
+                              <p className="font-body text-body-xs text-slate-muted mt-0.5">
+                                {file.language}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Upload/Add code */}
+              <div className="space-y-2">
+                <button
+                  onClick={handleUpload}
+                  disabled={isUploading}
+                  className="w-full btn-editorial-ghost text-sm py-2"
+                >
+                  <Upload className="h-4 w-4 mr-2" strokeWidth={1.5} />
+                  Upload Code File
+                </button>
+                <button
+                  onClick={() => setShowCodeInput(true)}
+                  className="w-full btn-editorial-ghost text-sm py-2"
+                >
+                  <Code className="h-4 w-4 mr-2" strokeWidth={1.5} />
+                  Paste Code
+                </button>
+              </div>
+
+              {/* References */}
+              {session.references.length > 0 && (
+                <div className="mt-6">
+                  <h4 className="font-body text-body-sm font-medium text-slate mb-2">
+                    References ({session.references.length})
+                  </h4>
+                  <div className="space-y-2">
+                    {session.references.map((ref) => (
+                      <button
+                        key={ref.id}
+                        onClick={() => setSelectedRefDetails(ref)}
+                        className="w-full text-left p-3 bg-parchment rounded-sm border border-slate/10 hover:border-gold transition-colors"
+                      >
+                        <p className="font-body text-body-xs font-medium text-ink line-clamp-2">
+                          {ref.title}
+                        </p>
+                        <p className="font-body text-body-xs text-slate-muted mt-1">
+                          {ref.authors.slice(0, 2).join(", ")}
+                          {ref.authors.length > 2 && " et al."}
+                          {ref.year && ` (${ref.year})`}
+                        </p>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* File upload input */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        onChange={handleFileChange}
+        className="hidden"
+        accept=".txt,.py,.js,.ts,.java,.c,.cpp,.h,.rb,.go,.rs,.md,.html,.css,.json,.xml,.bas,.asm,.lisp,.scm"
+      />
+
+      {/* Session load input */}
+      <input
+        ref={sessionLoadInputRef}
+        type="file"
+        onChange={handleLoadSession}
+        className="hidden"
+        accept=".ccs,.json"
+      />
+
+      {/* Code input modal */}
+      {showCodeInput && (
+        <div className="fixed inset-0 bg-ink/40 flex items-center justify-center z-50 p-4">
+          <div className="bg-popover rounded-sm shadow-editorial-lg p-6 w-full max-w-2xl border border-parchment">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-display text-display-md text-ink">Paste Code</h3>
+              <button
+                onClick={() => setShowCodeInput(false)}
+                className="text-slate-muted hover:text-ink transition-colors"
+              >
+                <X className="h-5 w-5" strokeWidth={1.5} />
+              </button>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <label className="block font-body text-body-sm text-slate mb-2">
+                  File name
+                </label>
+                <input
+                  type="text"
+                  value={codeInputName}
+                  onChange={(e) => setCodeInputName(e.target.value)}
+                  placeholder="e.g., my-algorithm.py"
+                  className="w-full font-body text-body-md bg-parchment text-ink border border-slate/20 rounded-sm px-4 py-2 focus:outline-none focus:ring-1 focus:ring-gold"
+                />
+              </div>
+              <div>
+                <label className="block font-body text-body-sm text-slate mb-2">
+                  Language (optional)
+                </label>
+                <input
+                  type="text"
+                  value={codeInputLanguage}
+                  onChange={(e) => setCodeInputLanguage(e.target.value)}
+                  placeholder="e.g., python, javascript"
+                  className="w-full font-body text-body-md bg-parchment text-ink border border-slate/20 rounded-sm px-4 py-2 focus:outline-none focus:ring-1 focus:ring-gold"
+                />
+              </div>
+              <div>
+                <label className="block font-body text-body-sm text-slate mb-2">
+                  Code
+                </label>
+                <textarea
+                  value={codeInputText}
+                  onChange={(e) => setCodeInputText(e.target.value)}
+                  placeholder="Paste your code here..."
+                  className="w-full h-64 font-mono text-sm bg-parchment text-ink border border-slate/20 rounded-sm px-4 py-3 focus:outline-none focus:ring-1 focus:ring-gold resize-none"
+                />
+              </div>
+              <div className="flex gap-3">
+                <button
+                  onClick={handleCodeSubmit}
+                  className="flex-1 btn-editorial-primary py-2"
+                >
+                  Add Code
+                </button>
+                <button
+                  onClick={() => setShowCodeInput(false)}
+                  className="flex-1 btn-editorial-ghost py-2"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Settings Modal */}
+      {showSettingsModal && (
+        <SettingsModal
+          isOpen={showSettingsModal}
+          onClose={() => setShowSettingsModal(false)}
+          initialTab={settingsTab}
+        />
+      )}
+
+      {/* Save Modal */}
+      {showSaveModal && (
+        <div className="fixed inset-0 bg-ink/40 flex items-center justify-center z-50 p-4">
+          <div className="bg-popover rounded-sm shadow-editorial-lg p-6 w-full max-w-md border border-parchment">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-display text-display-md text-ink">Save Session</h3>
+              <button
+                onClick={() => setShowSaveModal(false)}
+                className="text-slate-muted hover:text-ink transition-colors"
+              >
+                <X className="h-5 w-5" strokeWidth={1.5} />
+              </button>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <label className="block font-body text-body-sm text-slate mb-2">
+                  Project name
+                </label>
+                <input
+                  type="text"
+                  value={saveModalName}
+                  onChange={(e) => setSaveModalName(e.target.value)}
+                  placeholder="e.g., My Algorithm Implementation"
+                  className="w-full font-body text-body-md bg-parchment text-ink border border-slate/20 rounded-sm px-4 py-2 focus:outline-none focus:ring-1 focus:ring-gold"
+                  autoFocus
+                />
+              </div>
+              <div className="flex gap-3">
+                <button
+                  onClick={handleConfirmSave}
+                  disabled={!saveModalName.trim()}
+                  className="flex-1 btn-editorial-primary py-2"
+                >
+                  Save
+                </button>
+                <button
+                  onClick={() => setShowSaveModal(false)}
+                  className="flex-1 btn-editorial-ghost py-2"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Success message */}
+      {successMessage && (
+        <div className="fixed bottom-4 right-4 bg-gold text-ink px-4 py-3 rounded-sm shadow-editorial border border-gold-light z-50">
+          <p className="font-body text-body-sm">{successMessage}</p>
+        </div>
+      )}
+
+      {/* Reference details modal */}
+      {selectedRefDetails && (
+        <div className="fixed inset-0 bg-ink/40 flex items-center justify-center z-50 p-4">
+          <div className="bg-popover rounded-sm shadow-editorial-lg p-6 w-full max-w-2xl border border-parchment max-h-[80vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-display text-display-md text-ink">Reference Details</h3>
+              <button
+                onClick={() => setSelectedRefDetails(null)}
+                className="text-slate-muted hover:text-ink transition-colors"
+              >
+                <X className="h-5 w-5" strokeWidth={1.5} />
+              </button>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <h4 className="font-body text-body-sm font-medium text-slate mb-1">Title</h4>
+                <p className="font-body text-body-md text-ink">{selectedRefDetails.title}</p>
+              </div>
+              <div>
+                <h4 className="font-body text-body-sm font-medium text-slate mb-1">Authors</h4>
+                <p className="font-body text-body-md text-ink">{selectedRefDetails.authors.join(", ")}</p>
+              </div>
+              {selectedRefDetails.year && (
+                <div>
+                  <h4 className="font-body text-body-sm font-medium text-slate mb-1">Year</h4>
+                  <p className="font-body text-body-md text-ink">{selectedRefDetails.year}</p>
+                </div>
+              )}
+              {selectedRefDetails.repository && (
+                <div>
+                  <h4 className="font-body text-body-sm font-medium text-slate mb-1">Source</h4>
+                  <p className="font-body text-body-md text-ink">{selectedRefDetails.repository}</p>
+                </div>
+              )}
+              {selectedRefDetails.description && (
+                <div>
+                  <h4 className="font-body text-body-sm font-medium text-slate mb-1">Description</h4>
+                  <p className="font-body text-body-sm text-slate">{selectedRefDetails.description}</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
 
