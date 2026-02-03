@@ -65,7 +65,7 @@ import {
 // Opening prompts based on mode
 const openingPrompts: Record<string, string> = {
   critique: "What code would you like to explore? You can paste it directly, upload a file, or describe what you're looking at. I'm curious what drew your attention to this particular piece of software.",
-  interpret: "What aspects of code interpretation are you thinking about? We could explore hermeneutic frameworks, discuss the relationship between code and meaning, or work through how to approach a close reading.",
+  interpret: "Welcome to Learn Methods mode! Let's explore Critical Code Studies methodologies together. You can load a sample project, ask about CCS frameworks (close reading, materialist reading, interpretation, practice, software studies), or dive into how to read code as cultural text.",
   create: "Let's create some code together! Would you like to build a simple version of a classic algorithm? We could try:\n\n• ELIZA - A pattern-matching chatbot (Weizenbaum, 1966)\n• Love Letter Generator - Combinatorial text (Strachey, 1952)\n• Poetry Generator - Like Nick Montfort's ppg256\n• Sorting Algorithm - Bubble sort or selection sort\n• Cellular Automaton - Simple rule-based patterns\n\nWhat interests you, or do you have something else in mind?",
 };
 

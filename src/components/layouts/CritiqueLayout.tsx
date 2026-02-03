@@ -110,6 +110,13 @@ const MODE_COLORS: Record<string, string> = {
   create: "bg-blue-100 text-blue-700",
 };
 
+// Mode display names
+const MODE_DISPLAY_NAMES: Record<string, string> = {
+  critique: "Analyze Code",
+  interpret: "Learn Methods",
+  create: "Experiment",
+};
+
 // Strip $ namespace prefix from project names for display (library projects use $ prefix internally)
 const displayProjectName = (name: string) => name.replace(/^\$+/, "");
 
@@ -1606,9 +1613,9 @@ export const CritiqueLayout = forwardRef<CritiqueLayoutRef, CritiqueLayoutProps>
                 MODE_COLORS[session.mode] || "bg-slate-100 text-slate-700",
                 "hover:opacity-80"
               )}
-              title={`${session.mode.charAt(0).toUpperCase() + session.mode.slice(1)} Mode - Click to switch`}
+              title={`${MODE_DISPLAY_NAMES[session.mode] || session.mode} - Click to switch modes`}
             >
-              {session.mode.charAt(0).toUpperCase() + session.mode.slice(1)}
+              {MODE_DISPLAY_NAMES[session.mode] || session.mode}
               <ChevronDown className={cn("h-2.5 w-2.5 transition-transform", showModeDropdown && "rotate-180")} strokeWidth={1.5} />
             </button>
             {showModeDropdown && (
@@ -1627,7 +1634,7 @@ export const CritiqueLayout = forwardRef<CritiqueLayoutRef, CritiqueLayoutProps>
                       session.mode === mode ? "bg-burgundy/10 text-burgundy" : "text-ink hover:bg-cream"
                     )}
                   >
-                    <span>{mode.charAt(0).toUpperCase() + mode.slice(1)} Mode</span>
+                    <span>{MODE_DISPLAY_NAMES[mode] || mode}</span>
                     {hasSavedSession(mode) && mode !== session.mode && (
                       <span className="text-[9px] text-slate-muted">(saved)</span>
                     )}

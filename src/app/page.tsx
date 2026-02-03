@@ -23,21 +23,21 @@ interface EntryModeCard {
 const entryModes: EntryModeCard[] = [
   {
     mode: "critique",
-    title: "I have code to critique",
+    title: "Analyze Code",
     description:
       "You have specific code you want to analyse. Let's do a close reading together.",
     icon: Code,
   },
   {
     mode: "interpret",
-    title: "I want to interpret code",
+    title: "Learn Methods",
     description:
-      "You're curious about hermeneutic approaches to code. Let's explore frameworks together.",
+      "Learn CCS methodologies through guided exploration. Discover frameworks for reading code as cultural text.",
     icon: BookOpen,
   },
   {
     mode: "create",
-    title: "I want to create code",
+    title: "Experiment",
     description:
       "Explore algorithms by building them. Create simple versions of ELIZA, poetry generators, and more.",
     icon: Sparkles,
@@ -346,21 +346,21 @@ export default function WelcomePage() {
                 <h4 className="font-display text-sm text-ink mb-2">How the Workbench Works</h4>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="bg-cream border border-parchment rounded-sm p-3">
-                    <p className="font-sans text-xs font-medium text-burgundy mb-1">Code Critique</p>
+                    <p className="font-sans text-xs font-medium text-burgundy mb-1">Analyze Code</p>
                     <p className="font-body text-xs text-slate">
                       Paste or upload code for close reading. The AI guides you through lexical,
                       syntactic, semantic, and cultural layers of interpretation.
                     </p>
                   </div>
                   <div className="bg-cream border border-parchment rounded-sm p-3">
-                    <p className="font-sans text-xs font-medium text-burgundy mb-1">Interpret Code</p>
+                    <p className="font-sans text-xs font-medium text-burgundy mb-1">Learn Methods</p>
                     <p className="font-body text-xs text-slate">
-                      Develop hermeneutic frameworks for understanding code as text.
-                      Navigate intention, generation, and execution.
+                      Develop CCS frameworks for understanding code as cultural text.
+                      Guided exploration of close reading, materialist, and hermeneutic approaches.
                     </p>
                   </div>
                   <div className="bg-cream border border-parchment rounded-sm p-3">
-                    <p className="font-sans text-xs font-medium text-burgundy mb-1">Create Code</p>
+                    <p className="font-sans text-xs font-medium text-burgundy mb-1">Experiment</p>
                     <p className="font-body text-xs text-slate">
                       Vibe coding: build simple versions of ELIZA, poetry generators,
                       and other algorithms to understand them from the inside.
