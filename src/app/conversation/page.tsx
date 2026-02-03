@@ -1566,30 +1566,118 @@ export default function ConversationPage() {
           {/* Input area */}
           <div className="shrink-0 border-t border-parchment bg-white">
             <div className="max-w-3xl mx-auto p-4">
-              <div className="flex gap-2">
+              <div className={cn(
+                "bg-parchment rounded-lg border border-slate/20",
+                !isAiReady && "opacity-50"
+              )}>
+                {/* Textarea */}
                 <textarea
                   ref={inputRef}
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={handleKeyDown}
-                  placeholder="Describe what you'd like to create..."
+                  placeholder={!isAiReady ? "AI assistant not configured. Check settings to start chatting..." : "Describe what you'd like to create..."}
                   disabled={!isAiReady || isLoading}
-                  className="flex-1 font-body text-body-md bg-parchment text-ink border border-slate/20 rounded-sm px-4 py-3 focus:outline-none focus:ring-1 focus:ring-gold resize-none"
+                  className={cn(
+                    "w-full resize-none rounded-t-lg px-4 py-3 font-body bg-transparent focus:outline-none placeholder:text-slate-muted overflow-hidden",
+                    !isAiReady && "cursor-not-allowed"
+                  )}
                   style={{ fontSize: `${chatFontSize}px`, minHeight: '44px' }}
                   rows={1}
                 />
-                <button
-                  onClick={handleSend}
-                  disabled={!input.trim() || isLoading || !isAiReady}
-                  className="btn-editorial-primary px-4 shrink-0"
-                  title="Send message (Enter)"
-                >
-                  <Send className="h-5 w-5" strokeWidth={1.5} />
-                </button>
+
+                {/* Bottom toolbar */}
+                <div className="flex items-center justify-between px-3 pb-2">
+                  {/* Left side icons */}
+                  <div className="flex items-center gap-0.5">
+                    <button
+                      onClick={() => setShowCodeInput(true)}
+                      className="p-1.5 text-slate hover:text-ink rounded-md transition-colors"
+                      title="Add code"
+                    >
+                      <Code className="h-4 w-4" strokeWidth={1.5} />
+                    </button>
+                    <button
+                      onClick={handleUpload}
+                      disabled={isUploading}
+                      className={cn(
+                        "p-1.5 rounded-md transition-colors",
+                        isUploading
+                          ? "text-slate-muted cursor-not-allowed"
+                          : "text-slate hover:text-ink"
+                      )}
+                      title={isUploading ? "Uploading..." : "Load code from file"}
+                    >
+                      {isUploading ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Upload className="h-4 w-4" strokeWidth={1.5} />
+                      )}
+                    </button>
+                    <button
+                      onClick={handleSearchLiterature}
+                      disabled={isSearchingLiterature}
+                      className={cn(
+                        "p-1.5 rounded-md transition-colors",
+                        isSearchingLiterature
+                          ? "text-slate-muted cursor-not-allowed"
+                          : "text-slate hover:text-ink"
+                      )}
+                      title={isSearchingLiterature ? "Searching..." : "Search references"}
+                    >
+                      {isSearchingLiterature ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <BookOpen className="h-4 w-4" strokeWidth={1.5} />
+                      )}
+                    </button>
+                    <button
+                      onClick={handleGenerateOutput}
+                      disabled={!isAiReady}
+                      className={cn(
+                        "p-1.5 rounded-md transition-colors",
+                        isAiReady
+                          ? "text-slate hover:text-ink"
+                          : "text-slate-muted cursor-not-allowed"
+                      )}
+                      title={isAiReady ? "Generate output" : "AI not ready"}
+                    >
+                      <FileOutput className="h-4 w-4" strokeWidth={1.5} />
+                    </button>
+                  </div>
+
+                  {/* Right side - Send button */}
+                  <button
+                    onClick={handleSend}
+                    disabled={!input.trim() || isLoading || !isAiReady}
+                    className={cn(
+                      "px-3 py-1 rounded-md transition-colors text-sm font-medium",
+                      (!input.trim() || isLoading || !isAiReady)
+                        ? "bg-slate/10 text-slate-muted cursor-not-allowed"
+                        : "bg-gold text-ink hover:bg-gold-light"
+                    )}
+                  >
+                    {isLoading ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Send className="h-4 w-4" strokeWidth={1.5} />
+                    )}
+                  </button>
+                </div>
               </div>
+
               {!isAiReady && (
-                <p className="mt-2 text-xs text-slate-muted font-body">
-                  AI provider not configured. Please check settings.
+                <p className="mt-2 text-xs text-slate-muted font-body text-center">
+                  AI provider not configured. You can still add code and search references.{" "}
+                  <button
+                    onClick={() => {
+                      setSettingsTab("ai");
+                      setShowSettingsModal(true);
+                    }}
+                    className="text-gold hover:text-gold-light underline"
+                  >
+                    Open Settings
+                  </button>
                 </p>
               )}
             </div>
@@ -1683,6 +1771,210 @@ export default function ConversationPage() {
           </div>
         )}
       </div>
+
+      {/* Reference search modal */}
+      {showSearchModal && (
+        <div
+          className="fixed inset-0 bg-ink/40 flex items-center justify-center z-50"
+          onClick={() => setShowSearchModal(false)}
+        >
+          <div
+            className="bg-popover rounded-sm shadow-editorial-lg p-4 w-full max-w-sm mx-4 border border-parchment modal-content"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="font-display text-sm text-ink mb-2">Find References</h3>
+            <p className="font-body text-[11px] text-slate mb-3">
+              Search for related scholarship, code repositories, or historical software archives.
+            </p>
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && searchQuery.trim()) {
+                  executeSearchLiterature(searchQuery);
+                }
+              }}
+              placeholder="e.g., critical code studies, ELIZA, game programming"
+              className="w-full px-3 py-2 font-body text-[12px] bg-card border border-parchment rounded-sm focus:outline-none focus:border-gold/50 text-foreground placeholder:text-slate-muted mb-3"
+              autoFocus
+            />
+
+            {/* Suggested search terms based on context */}
+            {(() => {
+              const suggestions = getSuggestedSearchTerms();
+              if (suggestions.length > 0) {
+                return (
+                  <div className="mb-3">
+                    <p className="font-sans text-[9px] uppercase tracking-widest text-slate-muted mb-1.5">
+                      Suggested searches
+                    </p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {suggestions.map((term, i) => (
+                        <button
+                          key={i}
+                          onClick={() => setSearchQuery(term)}
+                          className="px-2 py-0.5 text-[10px] font-sans bg-parchment border border-slate/20 rounded-sm hover:border-gold hover:text-ink transition-colors"
+                        >
+                          {term}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                );
+              }
+              return null;
+            })()}
+
+            <div className="flex gap-2 justify-end">
+              <button
+                onClick={() => setShowSearchModal(false)}
+                className="btn-editorial-ghost text-[11px] px-3 py-1.5"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => executeSearchLiterature(searchQuery)}
+                disabled={!searchQuery.trim()}
+                className={cn(
+                  "text-[11px] px-3 py-1.5 rounded-sm",
+                  searchQuery.trim()
+                    ? "btn-editorial-primary"
+                    : "bg-parchment text-slate-muted cursor-not-allowed"
+                )}
+              >
+                Search
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Output generation modal */}
+      {showOutputModal && (
+        <div
+          className="fixed inset-0 bg-ink/40 flex items-center justify-center z-50"
+          onClick={() => setShowOutputModal(false)}
+        >
+          <div
+            className="bg-popover rounded-sm shadow-editorial-lg w-full max-w-xl mx-4 max-h-[90vh] flex flex-col border border-parchment modal-content"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal header */}
+            <div className="p-4 border-b border-parchment">
+              <div className="flex items-center justify-between">
+                <h3 className="font-display text-sm text-ink">Generate Critique</h3>
+                <button
+                  onClick={() => setShowOutputModal(false)}
+                  className="text-slate-muted hover:text-ink transition-colors"
+                >
+                  <X className="h-4 w-4" strokeWidth={1.5} />
+                </button>
+              </div>
+              {!generatedOutput && (
+                <p className="font-body text-[11px] text-slate mt-1.5">
+                  Choose the type of critical output you&apos;d like to generate from your analysis.
+                </p>
+              )}
+            </div>
+
+            {/* Modal content */}
+            <div className="flex-1 overflow-y-auto p-4">
+              {!generatedOutput && !isGenerating && (
+                <div className="grid gap-2">
+                  {/* Code Annotation option */}
+                  <button
+                    onClick={() => executeGenerateOutput("annotation")}
+                    className="text-left p-3 border border-parchment rounded-sm hover:border-gold hover:bg-gold/5 transition-all duration-300"
+                  >
+                    <h4 className="font-display text-caption text-ink mb-0.5">Code Annotation</h4>
+                    <p className="font-body text-[10px] text-slate">
+                      Line-by-line annotations exploring lexical choices, naming conventions, and structural decisions.
+                    </p>
+                  </button>
+
+                  {/* Code Critique option */}
+                  <button
+                    onClick={() => executeGenerateOutput("critique")}
+                    className="text-left p-3 border border-parchment rounded-sm hover:border-gold hover:bg-gold/5 transition-all duration-300"
+                  >
+                    <h4 className="font-display text-caption text-ink mb-0.5">Code Critique</h4>
+                    <p className="font-body text-[10px] text-slate">
+                      A structured critical analysis following the triadic hermeneutic framework (intention, generation, execution).
+                    </p>
+                  </button>
+
+                  {/* Close Reading option */}
+                  <button
+                    onClick={() => executeGenerateOutput("reading")}
+                    className="text-left p-3 border border-parchment rounded-sm hover:border-gold hover:bg-gold/5 transition-all duration-300"
+                  >
+                    <h4 className="font-display text-caption text-ink mb-0.5">Close Reading</h4>
+                    <p className="font-body text-[10px] text-slate">
+                      A comprehensive interpretive essay situating the code within its cultural, historical, and technical contexts.
+                    </p>
+                  </button>
+                </div>
+              )}
+
+              {isGenerating && (
+                <div className="flex flex-col items-center justify-center py-12">
+                  <Loader2 className="h-6 w-6 text-gold animate-spin mb-3" />
+                  <p className="font-body text-[11px] text-slate">Generating your {selectedOutputType === "annotation" ? "code annotation" : selectedOutputType === "critique" ? "code critique" : "close reading"}...</p>
+                </div>
+              )}
+
+              {generatedOutput && !isGenerating && (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h4 className="font-display text-caption text-ink">
+                      {generatedOutput.type === "annotation" ? "Code Annotation" :
+                        generatedOutput.type === "critique" ? "Code Critique" :
+                          generatedOutput.type === "reading" ? "Close Reading" : "Output"}
+                    </h4>
+                    <button
+                      onClick={() => copyToClipboard(generatedOutput.content)}
+                      className="font-sans text-[10px] text-gold hover:text-gold-light transition-colors"
+                    >
+                      Copy to clipboard
+                    </button>
+                  </div>
+                  <div className="prose prose-sm max-w-none bg-parchment rounded-sm p-4 border border-slate/10 whitespace-pre-wrap text-[11px]">
+                    {generatedOutput.content}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Modal footer */}
+            <div className="p-4 border-t border-parchment flex justify-between">
+              {generatedOutput && !isGenerating ? (
+                <>
+                  <button
+                    onClick={() => setGeneratedOutput(null)}
+                    className="btn-editorial-ghost text-[11px] px-3 py-1.5"
+                  >
+                    Generate Another
+                  </button>
+                  <button
+                    onClick={() => setShowOutputModal(false)}
+                    className="btn-editorial-primary text-[11px] px-3 py-1.5"
+                  >
+                    Done
+                  </button>
+                </>
+              ) : (
+                <button
+                  onClick={() => setShowOutputModal(false)}
+                  className="btn-editorial-ghost text-[11px] px-3 py-1.5 ml-auto"
+                >
+                  Cancel
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* File upload input */}
       <input
