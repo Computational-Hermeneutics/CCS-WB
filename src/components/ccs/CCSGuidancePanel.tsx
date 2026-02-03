@@ -48,10 +48,9 @@ export function CCSGuidancePanel({
   };
 
   const handleGuideMe = (method: CCSMethod) => {
-    if (onInvokeCCSSkill) {
-      onInvokeCCSSkill(method);
-    }
-    // Dismiss the methods card to make room for the conversation
+    // Just dismiss the card - all guidance is already visible in the expanded method
+    // This cleans up the UI so user can apply the method to their code
+    // If they want to discuss with AI, they can type their own question
     dismissCard('methods');
     trackActivity();
   };

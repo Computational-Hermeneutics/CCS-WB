@@ -106,31 +106,41 @@ export function useCCSGuidance(isLearnMethodsMode: boolean) {
     if (!isLearnMethodsMode) return;
 
     const checkForHints = () => {
-      const timeSinceActivity = Date.now() - state.lastActivityTime;
-      const TWO_MINUTES = 2 * 60 * 1000;
+      setState(prev => {
+        const timeSinceActivity = Date.now() - prev.lastActivityTime;
+        const TWO_MINUTES = 2 * 60 * 1000;
 
-      // Hint: User seems stuck (no activity for 2 minutes)
-      if (timeSinceActivity > TWO_MINUTES && state.annotationCount === 0) {
-        showHint("💡 Try adding an annotation to mark an interesting moment in the code. Click on a line number to get started.");
-        return;
-      }
+        // Hint: User seems stuck (no activity for 2 minutes)
+        if (timeSinceActivity > TWO_MINUTES && prev.annotationCount === 0 && !prev.currentHint) {
+          return {
+            ...prev,
+            currentHint: "💡 Try adding an annotation to mark an interesting moment in the code. Click on a line number to get started."
+          };
+        }
 
-      // Hint: User has only technical annotations (suggest expanding perspective)
-      if (state.annotationCount >= 3 && state.hasOnlyTechnicalAnnotations) {
-        showHint("📚 You've marked several technical details. Ready to explore their cultural or theoretical significance?");
-        return;
-      }
+        // Hint: User has only technical annotations (suggest expanding perspective)
+        if (prev.annotationCount >= 3 && prev.hasOnlyTechnicalAnnotations && !prev.currentHint) {
+          return {
+            ...prev,
+            currentHint: "📚 You've marked several technical details. Ready to explore their cultural or theoretical significance?"
+          };
+        }
 
-      // Hint: User has good annotations but hasn't explored methods
-      if (state.annotationCount >= 5 && state.dismissedCards.has('methods')) {
-        showHint("📖 You're building a rich analysis! Consider reviewing the CCS Reading Methods for additional perspectives.");
-        return;
-      }
+        // Hint: User has good annotations but hasn't explored methods
+        if (prev.annotationCount >= 5 && prev.dismissedCards.has('methods') && !prev.currentHint) {
+          return {
+            ...prev,
+            currentHint: "📖 You're building a rich analysis! Consider reviewing the CCS Reading Methods for additional perspectives."
+          };
+        }
+
+        return prev;
+      });
     };
 
     const interval = setInterval(checkForHints, 30000); // Check every 30 seconds
     return () => clearInterval(interval);
-  }, [isLearnMethodsMode, state, showHint]);
+  }, [isLearnMethodsMode]);
 
   return {
     // State
