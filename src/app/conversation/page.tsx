@@ -103,6 +103,20 @@ export default function ConversationPage() {
     }
   }, []);
 
+  // Guard: Redirect to main page if accessing /conversation directly without proper mode selection
+  // This prevents React errors from components rendering without proper initialization
+  useEffect(() => {
+    // Only run this check once on mount
+    const hasProperMode = session.mode && ['critique', 'interpret', 'create'].includes(session.mode);
+    const hasSavedContent = hasSavedSession();
+
+    // If no proper mode and no saved session to restore, redirect to main page
+    if (!hasProperMode && !hasSavedContent) {
+      console.log('[Guard] No valid mode detected, redirecting to main page');
+      router.replace('/');
+    }
+  }, []); // Empty deps - only run once on mount
+
   // Check if mobile viewport - only toggle panel when crossing threshold
   useEffect(() => {
     let wasMobile = window.innerWidth < 768;
