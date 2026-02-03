@@ -2582,8 +2582,13 @@ export const CritiqueLayout = forwardRef<CritiqueLayoutRef, CritiqueLayoutProps>
             onLoadCode={() => fileInputRef.current?.click()}
             onLoadSampleProject={(projectData) => {
               // Import the sample project as the current session
-              // The projectData is a parsed .ccs file which has Session structure
-              importSession(projectData as unknown as Session);
+              // BUT preserve the user's current mode (don't let sample override it)
+              const currentMode = session.mode;
+              const sampleData = projectData as unknown as Session;
+              importSession({
+                ...sampleData,
+                mode: currentMode, // Keep user's current mode
+              });
               // Reset manual resize flag
               userHasManuallyResized.current = false;
               // Note: importSession handles restoring all files, annotations, and messages
