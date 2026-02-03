@@ -64,6 +64,7 @@ import {
 import { CodeEditorPanel, generateAnnotatedCode, parseAnnotatedMarkdown } from "@/components/code";
 import { ContextPreview } from "@/components/chat";
 import { GuidedPrompts } from "@/components/prompts";
+import { CCSGuidancePanel } from "@/components/ccs";
 import { SettingsModal } from "@/components/settings/SettingsModal";
 import { SaveStatusIndicator } from "@/components/ui/SaveStatusIndicator";
 import { UserMenu } from "@/components/auth/UserMenu";
@@ -2745,6 +2746,12 @@ export const CritiqueLayout = forwardRef<CritiqueLayoutRef, CritiqueLayoutProps>
               </button>
             </div>
           )}
+          {/* CCS Guidance Panel - only in Learn Methods (interpret) mode */}
+          <CCSGuidancePanel
+            isEnabled={session.mode === 'interpret'}
+            annotationCount={session.lineAnnotations?.length || 0}
+            hasOnlyTechnicalAnnotations={false}
+          />
           {/* Messages */}
           <div className="flex-1 overflow-y-auto p-4 space-y-4">
             {session.messages
