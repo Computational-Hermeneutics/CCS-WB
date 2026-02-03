@@ -1363,8 +1363,9 @@ export default function ConversationPage() {
     setSuccessMessage("Session log exported as PDF!");
   }, [session, projectName, profile]);
 
-  // Use the new IDE-style layout for critique mode
-  if (session.mode === "critique") {
+  // Use the new IDE-style layout for all modes (sample loading needs code editor)
+  // Previously was critique-only; archaeology/interpret/create now also use this layout
+  if (true || session.mode === "critique") {  // Always use CritiqueLayout
     return (
       <>
         <CritiqueLayout
