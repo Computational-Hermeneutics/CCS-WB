@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { GripVertical, Minimize2, Maximize2 } from 'lucide-react';
 import { CCSGuidancePanel } from './CCSGuidancePanel';
 import type { CCSMethod } from '@/lib/ccs-content';
@@ -31,8 +31,26 @@ export function FloatingCCSPanel({
   const [isAnimating, setIsAnimating] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
 
-  // Don't render if not enabled or minimized
-  if (!isEnabled || isMinimized) return null;
+  // Event handlers - memoized to prevent recreation on every render
+  const handleMouseMove = useCallback((e: MouseEvent) => {
+    if (!panelRef.current) return;
+
+    const newX = e.clientX - dragOffset.x;
+    const newY = e.clientY - dragOffset.y;
+
+    // Constrain to viewport
+    const maxX = window.innerWidth - panelRef.current.offsetWidth;
+    const maxY = window.innerHeight - panelRef.current.offsetHeight;
+
+    setPosition({
+      x: Math.max(0, Math.min(newX, maxX)),
+      y: Math.max(0, Math.min(newY, maxY))
+    });
+  }, [dragOffset.x, dragOffset.y]);
+
+  const handleMouseUp = useCallback(() => {
+    setIsDragging(false);
+  }, []);
 
   const handleMouseDown = (e: React.MouseEvent) => {
     // Only start drag if clicking on the drag handle area (not buttons)
@@ -48,27 +66,8 @@ export function FloatingCCSPanel({
     }
   };
 
-  const handleMouseMove = (e: MouseEvent) => {
-    if (isDragging && panelRef.current) {
-      const newX = e.clientX - dragOffset.x;
-      const newY = e.clientY - dragOffset.y;
-
-      // Constrain to viewport
-      const maxX = window.innerWidth - panelRef.current.offsetWidth;
-      const maxY = window.innerHeight - panelRef.current.offsetHeight;
-
-      setPosition({
-        x: Math.max(0, Math.min(newX, maxX)),
-        y: Math.max(0, Math.min(newY, maxY))
-      });
-    }
-  };
-
-  const handleMouseUp = () => {
-    setIsDragging(false);
-  };
-
   // Set up global mouse event listeners for dragging
+  // MUST be called before early return to maintain consistent hook order
   // Only set up/tear down when isDragging changes, not on every mouse move
   useEffect(() => {
     if (!isDragging) return;
@@ -82,6 +81,9 @@ export function FloatingCCSPanel({
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isDragging]);
+
+  // Don't render if not enabled or minimized
+  if (!isEnabled || isMinimized) return null;
 
   return (
     <div
