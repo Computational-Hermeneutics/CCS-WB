@@ -11,7 +11,7 @@ interface FloatingCCSPanelProps {
   hasOnlyTechnicalAnnotations?: boolean;
   onInvokeCCSSkill?: (method: CCSMethod) => void;
   aiEnabled?: boolean;
-  isMinimized?: boolean;
+  isMinimized?: boolean; // Parent-controlled: hides panel to toolbar
   onMinimize?: (minimized: boolean) => void;
 }
 
@@ -24,52 +24,49 @@ export function FloatingCCSPanel({
   isMinimized = false,
   onMinimize
 }: FloatingCCSPanelProps) {
-  const [position, setPosition] = useState({ x: 20, y: 80 }); // Initial position (top-right area)
-  const [isDragging, setIsDragging] = useState(false);
-  const [isCollapsed, setIsCollapsed] = useState(false); // Local collapse state for content
-  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
-  const [isAnimating, setIsAnimating] = useState(false);
+  // Position state (only updated when drag ends)
+  const [position, setPosition] = useState({ x: 20, y: 80 });
+  const [isCollapsed, setIsCollapsed] = useState(false);
+
   const panelRef = useRef<HTMLDivElement>(null);
+  const dragStateRef = useRef({ isDragging: false, startX: 0, startY: 0 });
 
-  // Event handlers - defined as regular functions
-  const handleMouseMove = (e: MouseEvent) => {
-    if (!isDragging || !panelRef.current) return;
-
-    const newX = e.clientX - dragOffset.x;
-    const newY = e.clientY - dragOffset.y;
-
-    // Constrain to viewport
-    const maxX = window.innerWidth - panelRef.current.offsetWidth;
-    const maxY = window.innerHeight - panelRef.current.offsetHeight;
-
-    setPosition({
-      x: Math.max(0, Math.min(newX, maxX)),
-      y: Math.max(0, Math.min(newY, maxY))
-    });
-  };
-
-  const handleMouseUp = () => {
-    setIsDragging(false);
-  };
-
-  const handleMouseDown = (e: React.MouseEvent) => {
-    // Only start drag if clicking on the drag handle area (not buttons)
-    if ((e.target as HTMLElement).closest('[data-drag-handle]')) {
-      setIsDragging(true);
-      const rect = panelRef.current?.getBoundingClientRect();
-      if (rect) {
-        setDragOffset({
-          x: e.clientX - rect.left,
-          y: e.clientY - rect.top
-        });
-      }
-    }
-  };
-
-  // Set up global mouse event listeners for dragging
-  // Only set up/tear down when isDragging changes, not on every mouse move
+  // Drag handlers using refs and direct DOM manipulation (no React re-renders during drag)
   useEffect(() => {
-    if (!isDragging) return;
+    const panel = panelRef.current;
+    if (!panel) return;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!dragStateRef.current.isDragging) return;
+
+      const newX = e.clientX - dragStateRef.current.startX;
+      const newY = e.clientY - dragStateRef.current.startY;
+      const maxX = window.innerWidth - panel.offsetWidth;
+      const maxY = window.innerHeight - panel.offsetHeight;
+
+      const constrainedX = Math.max(0, Math.min(newX, maxX));
+      const constrainedY = Math.max(0, Math.min(newY, maxY));
+
+      // Update DOM directly during drag (no React re-render)
+      panel.style.transform = `translate(${constrainedX}px, ${constrainedY}px)`;
+    };
+
+    const handleMouseUp = () => {
+      if (!dragStateRef.current.isDragging) return;
+
+      dragStateRef.current.isDragging = false;
+      panel.style.cursor = 'default';
+
+      // Extract final position from transform and update React state
+      const transform = panel.style.transform;
+      const match = transform.match(/translate\((-?\d+(?:\.\d+)?)px,\s*(-?\d+(?:\.\d+)?)px\)/);
+      if (match) {
+        setPosition({ x: parseFloat(match[1]), y: parseFloat(match[2]) });
+      }
+
+      // Clear transform so position state takes over
+      panel.style.transform = '';
+    };
 
     document.addEventListener('mousemove', handleMouseMove);
     document.addEventListener('mouseup', handleMouseUp);
@@ -78,25 +75,50 @@ export function FloatingCCSPanel({
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isDragging]);
+  }, []);
 
   // Don't render if not enabled
   if (!isEnabled) return null;
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if ((e.target as HTMLElement).closest('[data-drag-handle]')) {
+      const panel = panelRef.current;
+      if (!panel) return;
+
+      const rect = panel.getBoundingClientRect();
+      dragStateRef.current = {
+        isDragging: true,
+        startX: e.clientX - rect.left,
+        startY: e.clientY - rect.top
+      };
+
+      panel.style.cursor = 'grabbing';
+    }
+  };
+
+  const handleMinimizeClick = () => {
+    if (isCollapsed) {
+      // Expand content
+      setIsCollapsed(false);
+    } else {
+      // Minimize to toolbar - just call parent immediately
+      onMinimize?.(true);
+    }
+  };
 
   return (
     <div
       ref={panelRef}
       className={`fixed bg-popover border border-parchment rounded-lg shadow-xl z-40 transition-all duration-300 ${
-        isAnimating ? 'opacity-0 scale-50' : 'opacity-100 scale-100'
-      } ${isMinimized ? 'hidden' : ''}`}
+        isMinimized ? 'opacity-0 scale-50 pointer-events-none' : 'opacity-100 scale-100'
+      }`}
       style={{
         left: `${position.x}px`,
         top: `${position.y}px`,
         width: isCollapsed ? '240px' : '420px',
         maxHeight: '80vh',
         cursor: isDragging ? 'grabbing' : 'default',
-        transformOrigin: 'top right' // Shrink toward top-right (toolbar area)
+        transformOrigin: 'top right'
       }}
     >
       {/* Drag handle header */}
@@ -110,18 +132,7 @@ export function FloatingCCSPanel({
           <span className="font-sans text-xs font-semibold text-ink">CCS Methods Guide</span>
         </div>
         <button
-          onClick={() => {
-            if (isCollapsed) {
-              setIsCollapsed(false);
-            } else {
-              // Minimize to toolbar - trigger animation and then call parent
-              setIsAnimating(true);
-              setTimeout(() => {
-                onMinimize?.(true);
-                setIsAnimating(false);
-              }, 300); // Match animation duration
-            }
-          }}
+          onClick={handleMinimizeClick}
           className="p-1 hover:bg-cream rounded transition-colors"
           title={isCollapsed ? 'Expand content' : 'Minimize to toolbar'}
         >
