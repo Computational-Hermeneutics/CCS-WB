@@ -90,7 +90,7 @@ export const CCS_METHODS: CCSMethod[] = [
     suggestedReadings: [
       { title: 'Programmed Inequality', author: 'Mar Hicks', year: 2017 },
       { title: 'Broad Band', author: 'Claire L. Evans', year: 2018 },
-      { title: 'Git Stash: Computational Thinking as Feminist Technology', author: 'David M. Berry', year: 2022 }
+      { title: 'Chasing Innovation: Making Entrepreneurial Citizens in Modern India', author: 'Lilly Irani', year: 2019 }
     ],
     exampleSample: '2007 - Git Stash'
   },
@@ -108,7 +108,7 @@ export const CCS_METHODS: CCSMethod[] = [
     suggestedReadings: [
       { title: 'Software Studies: A Lexicon', author: 'Matthew Fuller (ed.)', year: 2008 },
       { title: 'Protocol: How Control Exists after Decentralization', author: 'Alexander Galloway', year: 2004 },
-      { title: 'The Stack: On Software and Sovereignty', author: 'Benjamin Bratton', year: 2015 }
+      { title: 'Critical Theory and the Digital', author: 'David M. Berry', year: 2014 }
     ],
     exampleSample: '1977 - XMODEM Protocol'
   }
