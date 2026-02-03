@@ -64,7 +64,7 @@ import {
 import { CodeEditorPanel, generateAnnotatedCode, parseAnnotatedMarkdown } from "@/components/code";
 import { ContextPreview } from "@/components/chat";
 import { GuidedPrompts } from "@/components/prompts";
-import { CCSGuidancePanel } from "@/components/ccs";
+import { FloatingCCSPanel } from "@/components/ccs";
 import { SettingsModal } from "@/components/settings/SettingsModal";
 import { SaveStatusIndicator } from "@/components/ui/SaveStatusIndicator";
 import { UserMenu } from "@/components/auth/UserMenu";
@@ -1597,6 +1597,14 @@ export const CritiqueLayout = forwardRef<CritiqueLayoutRef, CritiqueLayoutProps>
 
   return (
     <div className="h-screen flex flex-col bg-background">
+      {/* Floating CCS Guidance Panel - only in Learn Methods mode */}
+      <FloatingCCSPanel
+        isEnabled={session.mode === 'interpret'}
+        annotationCount={session.lineAnnotations?.length || 0}
+        hasOnlyTechnicalAnnotations={false}
+        onInvokeCCSSkill={handleCCSMethodGuidance}
+      />
+
       {/* Header */}
       <header className="border-b border-parchment bg-background px-2 sm:px-4 py-1 grid grid-cols-[auto_1fr_auto] items-center gap-2 z-10 relative min-w-0">
         <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0">
@@ -2762,13 +2770,6 @@ export const CritiqueLayout = forwardRef<CritiqueLayoutRef, CritiqueLayoutProps>
               </button>
             </div>
           )}
-          {/* CCS Guidance Panel - only in Learn Methods (interpret) mode */}
-          <CCSGuidancePanel
-            isEnabled={session.mode === 'interpret'}
-            annotationCount={session.lineAnnotations?.length || 0}
-            hasOnlyTechnicalAnnotations={false}
-            onInvokeCCSSkill={handleCCSMethodGuidance}
-          />
           {/* Messages */}
           <div className="flex-1 overflow-y-auto p-4 space-y-4">
             {session.messages
