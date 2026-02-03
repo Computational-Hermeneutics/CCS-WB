@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { GripVertical, Minimize2, Maximize2 } from 'lucide-react';
 import { CCSGuidancePanel } from './CCSGuidancePanel';
 import type { CCSMethod } from '@/lib/ccs-content';
@@ -31,9 +31,9 @@ export function FloatingCCSPanel({
   const [isAnimating, setIsAnimating] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
 
-  // Event handlers - memoized to prevent recreation on every render
-  const handleMouseMove = useCallback((e: MouseEvent) => {
-    if (!panelRef.current) return;
+  // Event handlers - defined as regular functions
+  const handleMouseMove = (e: MouseEvent) => {
+    if (!isDragging || !panelRef.current) return;
 
     const newX = e.clientX - dragOffset.x;
     const newY = e.clientY - dragOffset.y;
@@ -46,11 +46,11 @@ export function FloatingCCSPanel({
       x: Math.max(0, Math.min(newX, maxX)),
       y: Math.max(0, Math.min(newY, maxY))
     });
-  }, [dragOffset.x, dragOffset.y]);
+  };
 
-  const handleMouseUp = useCallback(() => {
+  const handleMouseUp = () => {
     setIsDragging(false);
-  }, []);
+  };
 
   const handleMouseDown = (e: React.MouseEvent) => {
     // Only start drag if clicking on the drag handle area (not buttons)
