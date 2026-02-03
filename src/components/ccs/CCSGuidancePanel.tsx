@@ -49,6 +49,8 @@ export function CCSGuidancePanel({
     if (onInvokeCCSSkill) {
       onInvokeCCSSkill(method);
     }
+    // Dismiss the methods card to make room for the conversation
+    dismissCard('methods');
     trackActivity();
   };
 
