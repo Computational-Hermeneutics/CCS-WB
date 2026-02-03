@@ -117,7 +117,6 @@ export function FloatingCCSPanel({
         top: `${position.y}px`,
         width: isCollapsed ? '240px' : '420px',
         maxHeight: '80vh',
-        cursor: isDragging ? 'grabbing' : 'default',
         transformOrigin: 'top right'
       }}
     >
