@@ -67,7 +67,6 @@ export function FloatingCCSPanel({
   };
 
   // Set up global mouse event listeners for dragging
-  // MUST be called before early return to maintain consistent hook order
   // Only set up/tear down when isDragging changes, not on every mouse move
   useEffect(() => {
     if (!isDragging) return;
@@ -82,15 +81,15 @@ export function FloatingCCSPanel({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isDragging]);
 
-  // Don't render if not enabled or minimized
-  if (!isEnabled || isMinimized) return null;
+  // Don't render if not enabled
+  if (!isEnabled) return null;
 
   return (
     <div
       ref={panelRef}
       className={`fixed bg-popover border border-parchment rounded-lg shadow-xl z-40 transition-all duration-300 ${
         isAnimating ? 'opacity-0 scale-50' : 'opacity-100 scale-100'
-      }`}
+      } ${isMinimized ? 'hidden' : ''}`}
       style={{
         left: `${position.x}px`,
         top: `${position.y}px`,
