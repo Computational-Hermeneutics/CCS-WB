@@ -725,6 +725,15 @@ export const CritiqueLayout = forwardRef<CritiqueLayoutRef, CritiqueLayoutProps>
     [handleSend]
   );
 
+  // Handle CCS method guidance request
+  const handleCCSMethodGuidance = useCallback(
+    (method: import('@/lib/ccs-content').CCSMethod) => {
+      const prompt = `I'd like to learn about the "${method.name}" approach to Critical Code Studies. Can you explain this methodology and how I can apply it to analyze code?`;
+      addMessage({ role: "user", content: prompt });
+    },
+    [addMessage]
+  );
+
   // Global keyboard shortcuts
   // Auto-resize textarea as content grows
   useEffect(() => {
@@ -2758,6 +2767,7 @@ export const CritiqueLayout = forwardRef<CritiqueLayoutRef, CritiqueLayoutProps>
             isEnabled={session.mode === 'interpret'}
             annotationCount={session.lineAnnotations?.length || 0}
             hasOnlyTechnicalAnnotations={false}
+            onInvokeCCSSkill={handleCCSMethodGuidance}
           />
           {/* Messages */}
           <div className="flex-1 overflow-y-auto p-4 space-y-4">
