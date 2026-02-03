@@ -13,13 +13,15 @@ interface CCSGuidancePanelProps {
   annotationCount?: number;
   hasOnlyTechnicalAnnotations?: boolean;
   onInvokeCCSSkill?: (method: CCSMethod) => void;
+  aiEnabled?: boolean;
 }
 
 export function CCSGuidancePanel({
   isEnabled,
   annotationCount = 0,
   hasOnlyTechnicalAnnotations = false,
-  onInvokeCCSSkill
+  onInvokeCCSSkill,
+  aiEnabled = true
 }: CCSGuidancePanelProps) {
   const {
     visibleCards,
@@ -69,6 +71,7 @@ export function CCSGuidancePanel({
           <MethodCard
             onDismiss={() => dismissCard('methods')}
             onGuideMe={handleGuideMe}
+            aiEnabled={aiEnabled}
           />
         )}
 

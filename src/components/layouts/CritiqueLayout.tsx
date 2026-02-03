@@ -1603,6 +1603,7 @@ export const CritiqueLayout = forwardRef<CritiqueLayoutRef, CritiqueLayoutProps>
         annotationCount={session.lineAnnotations?.length || 0}
         hasOnlyTechnicalAnnotations={false}
         onInvokeCCSSkill={handleCCSMethodGuidance}
+        aiEnabled={aiEnabled}
       />
 
       {/* Header */}

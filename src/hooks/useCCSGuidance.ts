@@ -32,13 +32,19 @@ export function useCCSGuidance(isLearnMethodsMode: boolean) {
 
   // Show welcome card when entering Learn Methods mode
   useEffect(() => {
-    if (isLearnMethodsMode && !state.dismissedCards.has('welcome')) {
-      setState(prev => ({
-        ...prev,
-        visibleCards: new Set([...prev.visibleCards, 'welcome'])
-      }));
+    if (isLearnMethodsMode) {
+      setState(prev => {
+        // Only add welcome card if not already visible and not dismissed
+        if (!prev.visibleCards.has('welcome') && !prev.dismissedCards.has('welcome')) {
+          return {
+            ...prev,
+            visibleCards: new Set([...prev.visibleCards, 'welcome'])
+          };
+        }
+        return prev;
+      });
     }
-  }, [isLearnMethodsMode, state.dismissedCards]);
+  }, [isLearnMethodsMode]);
 
   // Show card
   const showCard = useCallback((cardType: CCSCardType) => {

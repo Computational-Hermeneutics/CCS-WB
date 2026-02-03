@@ -10,13 +10,15 @@ interface FloatingCCSPanelProps {
   annotationCount?: number;
   hasOnlyTechnicalAnnotations?: boolean;
   onInvokeCCSSkill?: (method: CCSMethod) => void;
+  aiEnabled?: boolean;
 }
 
 export function FloatingCCSPanel({
   isEnabled,
   annotationCount = 0,
   hasOnlyTechnicalAnnotations = false,
-  onInvokeCCSSkill
+  onInvokeCCSSkill,
+  aiEnabled = true
 }: FloatingCCSPanelProps) {
   const [position, setPosition] = useState({ x: 20, y: 80 }); // Initial position (top-right area)
   const [isDragging, setIsDragging] = useState(false);
@@ -116,6 +118,7 @@ export function FloatingCCSPanel({
             annotationCount={annotationCount}
             hasOnlyTechnicalAnnotations={hasOnlyTechnicalAnnotations}
             onInvokeCCSSkill={onInvokeCCSSkill}
+            aiEnabled={aiEnabled}
           />
         </div>
       )}

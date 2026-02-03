@@ -8,9 +8,10 @@ import { CCS_METHODS, type CCSMethod } from '@/lib/ccs-content';
 interface MethodCardProps {
   onDismiss: () => void;
   onGuideMe?: (method: CCSMethod) => void;
+  aiEnabled?: boolean;
 }
 
-export function MethodCard({ onDismiss, onGuideMe }: MethodCardProps) {
+export function MethodCard({ onDismiss, onGuideMe, aiEnabled = true }: MethodCardProps) {
   const [expandedMethod, setExpandedMethod] = useState<string | null>(null);
 
   const toggleMethod = (methodId: string) => {
@@ -100,11 +101,15 @@ export function MethodCard({ onDismiss, onGuideMe }: MethodCardProps) {
                   </div>
                 )}
 
-                {onGuideMe && (
+                {aiEnabled && onGuideMe ? (
                   <div className="pt-2">
                     <CCSCardButton onClick={() => onGuideMe(method)} variant="primary">
                       Guide me through this method
                     </CCSCardButton>
+                  </div>
+                ) : !aiEnabled && (
+                  <div className="pt-2 px-3 py-2 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded text-xs text-slate-600 dark:text-slate-400">
+                    <p><span className="font-semibold">Note:</span> Enable AI in settings to get interactive guidance with this method. The information above provides a comprehensive overview you can use for analysis.</p>
                   </div>
                 )}
               </div>
