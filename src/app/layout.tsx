@@ -15,6 +15,7 @@ import { AdminModal } from "@/components/projects/AdminModal";
 import { ProjectSyncBanner } from "@/components/projects/ProjectSyncBanner";
 import { Clippy } from "@/components/easter-eggs/Clippy";
 import { InstallPrompt } from "@/components/pwa/InstallPrompt";
+import { AlphaFavicon } from "@/components/pwa/AlphaFavicon";
 
 const libreBaskerville = Libre_Baskerville({
   subsets: ["latin"],
@@ -142,58 +143,6 @@ export default function RootLayout({
             `,
           }}
         />
-
-        {/* Yellow favicon for alpha/test version - TEMPORARILY DISABLED FOR DEBUGGING */}
-        {/*
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              (function() {
-                // Check if we're on alpha deployment
-                if (window.location.hostname.includes('alpha') ||
-                    window.location.hostname.includes('test') ||
-                    window.location.hostname.includes('staging')) {
-
-                  // Remove ALL existing favicons (Next.js adds them automatically)
-                  var existingIcons = document.querySelectorAll('link[rel="icon"], link[rel="shortcut icon"]');
-                  existingIcons.forEach(function(icon) {
-                    if (icon && icon.parentNode) {
-                      icon.parentNode.removeChild(icon);
-                    }
-                  });
-
-                  // Create and inject yellow favicon
-                  var link = document.createElement('link');
-                  link.rel = 'icon';
-                  link.type = 'image/svg+xml';
-                  link.href = '/icon-yellow.svg';
-                  if (document.head) {
-                    document.head.appendChild(link);
-                  }
-
-                  // Also watch for Next.js trying to re-add the default icon
-                  var observer = new MutationObserver(function(mutations) {
-                    mutations.forEach(function(mutation) {
-                      mutation.addedNodes.forEach(function(node) {
-                        if (node.tagName === 'LINK' &&
-                            (node.rel === 'icon' || node.rel === 'shortcut icon') &&
-                            !node.href.includes('icon-yellow.svg')) {
-                          if (node.parentNode) {
-                            node.parentNode.removeChild(node);
-                          }
-                        }
-                      });
-                    });
-                  });
-                  if (document.head) {
-                    observer.observe(document.head, { childList: true, subtree: true });
-                  }
-                }
-              })();
-            `,
-          }}
-        />
-        */}
       </head>
       <body className="font-body antialiased bg-ivory text-ink selection:bg-burgundy/20 selection:text-burgundy-900">
         <AppSettingsProvider>
@@ -210,6 +159,7 @@ export default function RootLayout({
                     <ProjectSyncBanner />
                     <Clippy />
                     <InstallPrompt />
+                    <AlphaFavicon />
                   </ProjectsProvider>
                 </SessionProvider>
                 <LoginModal />
