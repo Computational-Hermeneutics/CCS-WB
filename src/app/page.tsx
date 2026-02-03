@@ -29,13 +29,6 @@ const entryModes: EntryModeCard[] = [
     icon: Code,
   },
   {
-    mode: "archaeology",
-    title: "I'm doing code archaeology",
-    description:
-      "You're exploring historical software. Let's uncover its context and significance.",
-    icon: Archive,
-  },
-  {
     mode: "interpret",
     title: "I want to interpret code",
     description:
@@ -117,7 +110,7 @@ export default function WelcomePage() {
   };
 
   // Valid modes for the workbench
-  const VALID_MODES: EntryMode[] = ["critique", "archaeology", "interpret", "create"];
+  const VALID_MODES: EntryMode[] = ["critique", "interpret", "create"];
 
   const handleLoadProjectFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -266,7 +259,7 @@ export default function WelcomePage() {
                 <h4 className="font-display text-sm text-ink mb-2">About the Workbench</h4>
                 <p className="font-body text-sm text-slate leading-relaxed">
                   The Critical Code Studies Workbench facilitates close reading and hermeneutic analysis
-                  of software as cultural artefact. It supports code critique, code archaeology, and
+                  of software as cultural artefact. It supports code critique and
                   interpretive exploration of algorithms, following the methodology developed by
                   CCS theorists and practitioners.
                 </p>
@@ -357,13 +350,6 @@ export default function WelcomePage() {
                     <p className="font-body text-xs text-slate">
                       Paste or upload code for close reading. The AI guides you through lexical,
                       syntactic, semantic, and cultural layers of interpretation.
-                    </p>
-                  </div>
-                  <div className="bg-cream border border-parchment rounded-sm p-3">
-                    <p className="font-sans text-xs font-medium text-burgundy mb-1">Code Archaeology</p>
-                    <p className="font-body text-xs text-slate">
-                      Explore historical software in context. Understand the platform, era,
-                      and cultural moment that shaped the code.
                     </p>
                   </div>
                   <div className="bg-cream border border-parchment rounded-sm p-3">

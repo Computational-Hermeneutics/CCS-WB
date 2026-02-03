@@ -48,7 +48,6 @@ export const metadata: Metadata = {
     "critical code studies",
     "code hermeneutics",
     "software analysis",
-    "code archaeology",
     "digital humanities",
     "code annotation",
   ],

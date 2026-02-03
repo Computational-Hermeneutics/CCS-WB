@@ -247,6 +247,9 @@ function sessionReducer(state: Session, action: SessionAction): Session {
       return {
         ...defaultSession, // Start with all default values
         ...action.payload, // Override with imported values
+        // Migrate archaeology mode to interpret mode (archaeology mode removed in v2.21.0)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        mode: (action.payload.mode as any) === "archaeology" ? "interpret" : action.payload.mode,
         // Ensure arrays are always arrays (handle missing fields from old formats)
         // Support both old (uploadedFiles) and new (codeFiles) field names
         codeFiles: Array.isArray(imported.codeFiles) ? imported.codeFiles :

@@ -23,7 +23,7 @@ The user is new to critical code studies. Adapt your engagement accordingly:
     case "practitioner":
       return `## Your Approach: Supporting a Practitioner
 The user is familiar with critical code studies methods. Adapt your engagement accordingly:
-- **Use CCS vocabulary freely** without lengthy explanations (triadic structure, close reading, code archaeology, etc.)
+- **Use CCS vocabulary freely** without lengthy explanations (triadic structure, close reading, hermeneutic analysis, etc.)
 - **Focus on their analysis** rather than teaching methodology
 - **Engage substantively** with their interpretive observations
 - **Suggest connections** to relevant scholarship when it would enrich the discussion
@@ -138,14 +138,6 @@ The analyst has specific code they want to examine closely. Focus on:
 - Identifying interpretive entry points
 - Exploring multiple layers of meaning
 - Connecting observations to broader patterns`;
-    case "archaeology":
-      return `## Mode: Code Archaeology
-The analyst is exploring historical software. Focus on:
-- Reconstructing the original context (platform, era, constraints)
-- Understanding what was possible and conventional at the time
-- Tracing influences and lineages
-- Connecting to computing history and culture
-- Considering what the code reveals about its moment`;
     case "interpret":
       return `## Mode: Hermeneutic Exploration
 The analyst wants to explore interpretive approaches without a fixed code object. Focus on:
@@ -190,7 +182,7 @@ Suggest and help implement simple versions of:
 
 function getPhaseGuidance(phase: string): string {
   switch (phase) {
-    // Critique/archaeology/interpret phases
+    // Critique/interpret phases
     case "opening":
       return `You're beginning the analysis. Understand what code they're examining and what drew their attention to it. If they haven't shared code yet, invite them to do so.`;
     case "surface":

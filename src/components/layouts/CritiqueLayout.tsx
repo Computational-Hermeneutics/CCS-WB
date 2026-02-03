@@ -105,7 +105,6 @@ const CRITIQUE_OPENING = "What code would you like to explore? You can paste it 
 // Mode colors for badges
 const MODE_COLORS: Record<string, string> = {
   critique: "bg-burgundy/10 text-burgundy",
-  archaeology: "bg-amber-100 text-amber-700",
   interpret: "bg-emerald-100 text-emerald-700",
   create: "bg-blue-100 text-blue-700",
 };
@@ -1597,18 +1596,23 @@ export const CritiqueLayout = forwardRef<CritiqueLayoutRef, CritiqueLayoutProps>
             <span className="hidden sm:inline">CCS Workbench</span>
             <span className="sm:hidden">CCS-WB</span>
           </button>
-          {/* Mode indicator - clickable to switch */}
+          {/* Mode badge - clickable to switch */}
           <div className="relative" data-dropdown>
             <button
               onClick={() => setShowModeDropdown(!showModeDropdown)}
-              className="font-sans text-[10px] text-slate hover:text-ink px-2 py-0.5 border border-parchment hover:border-slate-muted rounded-sm transition-colors flex items-center gap-1"
+              className={cn(
+                "font-sans text-[10px] px-2 py-0.5 border rounded-sm transition-colors flex items-center gap-1",
+                MODE_COLORS[session.mode] || "bg-slate-100 text-slate-700",
+                "hover:opacity-80"
+              )}
+              title={`${session.mode.charAt(0).toUpperCase() + session.mode.slice(1)} Mode - Click to switch`}
             >
               {session.mode.charAt(0).toUpperCase() + session.mode.slice(1)}
               <ChevronDown className={cn("h-2.5 w-2.5 transition-transform", showModeDropdown && "rotate-180")} strokeWidth={1.5} />
             </button>
             {showModeDropdown && (
               <div className="absolute top-full left-0 mt-1 w-48 bg-popover rounded-sm shadow-lg border border-parchment p-1 z-50">
-                {(["critique", "archaeology", "interpret", "create"] as const).map((mode) => (
+                {(["critique", "interpret", "create"] as const).map((mode) => (
                   <button
                     key={mode}
                     onClick={() => {

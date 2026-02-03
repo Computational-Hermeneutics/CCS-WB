@@ -66,7 +66,7 @@ interface CritiqueArtifact {
 
 interface SessionData {
   id: string;
-  mode: "critique" | "archaeology" | "interpret" | "create";
+  mode: "critique" | "interpret" | "create";
   experienceLevel?: "learning" | "practitioner" | "research";
   messages: Message[];
   codeFiles: CodeReference[];
@@ -133,7 +133,6 @@ function generatePDF(session: SessionData): Buffer {
   doc.setFont("helvetica", "normal");
   doc.setTextColor(100, 100, 100);
   const modeLabel = session.mode === "critique" ? "Code Critique" :
-                    session.mode === "archaeology" ? "Code Archaeology" :
                     session.mode === "create" ? "Code Creation" :
                     "Hermeneutic Exploration";
   doc.text(`Mode: ${modeLabel}`, margin, yPos);

@@ -35,14 +35,12 @@ import { getSupabaseClient } from "@/lib/supabase/client";
 
 const MODE_LABELS: Record<EntryMode, string> = {
   critique: "Critique",
-  archaeology: "Archaeology",
   interpret: "Interpret",
   create: "Create",
 };
 
 const MODE_COLORS: Record<EntryMode, string> = {
   critique: "bg-burgundy/10 text-burgundy",
-  archaeology: "bg-amber-100 text-amber-700",
   interpret: "bg-blue-100 text-blue-700",
   create: "bg-emerald-100 text-emerald-700",
 };

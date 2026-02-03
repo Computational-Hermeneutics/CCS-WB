@@ -10,7 +10,6 @@ The Critical Code Studies Workbench facilitates rigorous interpretation of code 
 
 - **Code critique** - Close reading, annotation, and interpretation in the Marino tradition
 - **Hermeneutic analysis** - Navigating the triadic structure of human intention, computational generation, and executable code
-- **Code archaeology** - Analysing historical software in its original context
 - **Vibe coding** - Creating code to understand algorithms through building
 
 Software deserves the same close reading we give literature. The Workbench helps scholars engage with code as meaningful text.
@@ -19,8 +18,7 @@ Software deserves the same close reading we give literature. The Workbench helps
 
 ### Entry Modes
 - **I have code to critique**: IDE-style three-panel layout for close reading with inline annotations
-- **I'm doing code archaeology**: Exploring historical software with attention to context
-- **I want to interpret code**: Developing hermeneutic frameworks and approaches
+- **I want to interpret code**: Exploring hermeneutic frameworks, historical software, and contextual analysis
 - **I want to create code**: Explore algorithms by building them (vibe coding)
 
 ### Experience Levels
@@ -81,16 +79,36 @@ The critique mode features a three-panel layout for focused code analysis:
 
 ### Sample Projects
 Load pre-packaged historical code for immediate critique and analysis:
+
+**1950s - Early Programming Languages:**
+- **FLOW-MATIC (1958)**: Grace Hopper's business English programming language - first natural language programming
+- **IPL-V (1958)**: Newell, Shaw, and Simon's list processing - Logic Theorist and General Problem Solver
+
+**1960s - AI and Space Exploration:**
 - **ELIZA (1965b)**: Weizenbaum's chatbot with 30+ scholarly annotations
-- **Colossal Cave Adventure (1977)**: Will Crowther's original FORTRAN IV source code
 - **Apollo 11 Comanche055 (1969)**: Command Module guidance computer source code (85 AGC files)
 - **Apollo 11 Luminary099 (1969)**: Lunar Module guidance computer source code (90 AGC files)
 
-Sample projects demonstrate annotation practices and provide rich material for exploring computational culture of the 1960s. Add your own samples by editing `public/sample-code/Samples.md`.
+**1970s - Adventure Gaming and Protocols:**
+- **Colossal Cave Adventure (1977)**: Will Crowther's original FORTRAN IV source code
+- **XMODEM Protocol (1977)**: Ward Christensen's MODEM.ASM - foundational BBS file transfer protocol
+
+**1980s-1990s - Free Software and Electronic Literature:**
+- **GNU Emacs (1985)**: Richard Stallman's free software manifesto - GPL, hacker culture, and software freedom
+- **Agrippa (1992)**: William Gibson's self-encrypting poem - electronic literature and digital preservation
+- **My Boyfriend Came Back from the War (1996)**: Olia Lialina's frame-splitting narrative - net.art and vernacular web aesthetics
+
+**2000s-Present - Feminist Computing and Contemporary Analysis:**
+- **Git Stash (2007)**: Nanako Shiraishi's original script - feminist computing history and workplace interruption
+- **10 PRINT CHR$(205.5+RND(1)); GOTO 10 (2013)**: Montfort et al.'s book-length analysis of one line of C64 BASIC
+- **Transformer Architecture (2017)**: Attention Is All You Need - multi-head attention and the foundation of modern LLMs
+- **Esoteric Programming Languages Collection (2026)**: Nine foundational esolangs (INTERCAL, FALSE, brainfuck, Befunge, Malbolge, Piet, Shakespeare, Chef, Whitespace) demonstrating computational critique and hacker folk art
+
+Sample projects demonstrate annotation practices and provide rich material for exploring computational culture from 1958 to the present. Add your own samples by editing `public/sample-code/Samples.md`.
 
 ### Conversation Phases
 
-**Critique/Archaeology/Interpret modes:**
+**Critique/Interpret modes:**
 1. **Opening**: Initial code presentation and context gathering
 2. **Surface**: Syntax, structure, naming conventions
 3. **Context**: Historical, cultural, platform context

@@ -15,7 +15,6 @@ export const CCS_SKILL_VERSION = "2.5";
 // Mode codes for file naming
 export const MODE_CODES: Record<string, string> = {
   critique: "CR",
-  archaeology: "AR",
   interpret: "IN",
   create: "WR",
 };
@@ -23,7 +22,6 @@ export const MODE_CODES: Record<string, string> = {
 // Mode labels for display
 export const MODE_LABELS: Record<string, string> = {
   CR: "Critique",
-  AR: "Archaeology",
   IN: "Interpret",
   WR: "Create",
 };

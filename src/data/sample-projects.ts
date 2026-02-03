@@ -47,7 +47,7 @@ export function parseSamplesManifest(markdown: string): SampleProject[] {
 
       if (parts.length >= 3) {
         const [name, mode, description, era, countStr] = parts;
-        const validModes: EntryMode[] = ["critique", "archaeology", "interpret", "create"];
+        const validModes: EntryMode[] = ["critique", "interpret", "create"];
         const projectMode = validModes.includes(mode as EntryMode) ? (mode as EntryMode) : "critique";
 
         // Parse annotation count - handle both numeric strings and undefined

@@ -2,11 +2,11 @@
  * Core types for the CCS-WB (Critical Code Studies Workbench) application
  */
 
-export type EntryMode = 'critique' | 'archaeology' | 'interpret' | 'create';
+export type EntryMode = 'critique' | 'interpret' | 'create';
 
 export type MessageRole = 'user' | 'assistant' | 'system';
 
-// Phases for critique/archaeology/interpret modes
+// Phases for critique/interpret modes
 export type CritiquePhase =
   | 'opening'        // Initial code presentation and context gathering
   | 'surface'        // Surface-level reading: syntax, structure, names
@@ -63,7 +63,7 @@ export interface CodeReference {
   size: number;
   uploadedAt: string;
   summary?: string;
-  // Code archaeology metadata
+  // Historical context metadata
   author?: string;
   date?: string;          // When code was written (if known)
   platform?: string;      // Original platform/system
@@ -354,32 +354,6 @@ export const GUIDED_PROMPTS: Record<EntryMode, Partial<Record<ConversationPhase,
       "Generate a formal code critique document",
       "Create detailed line-by-line annotations",
       "Write a close reading essay on this code",
-    ],
-  },
-  archaeology: {
-    opening: [
-      "Research when this code was written and by whom",
-      "What platform or system was this written for?",
-      "Trace the provenance of this code",
-    ],
-    surface: [
-      "Identify the language dialect and version",
-      "What historical idioms and patterns appear?",
-      "How does the structure reflect its era?",
-    ],
-    context: [
-      "What were the technical constraints of the time?",
-      "Research the intended audience for this software",
-      "What contemporary software might have influenced this?",
-    ],
-    interpretation: [
-      "Compare this to modern approaches to the same problem",
-      "What assumptions reveal its historical moment?",
-      "What has been lost or gained since this was written?",
-    ],
-    synthesis: [
-      "What does this code reveal about its era?",
-      "How does historical context change our reading?",
     ],
   },
   interpret: {

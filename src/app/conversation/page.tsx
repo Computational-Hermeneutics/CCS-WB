@@ -65,7 +65,6 @@ import {
 // Opening prompts based on mode
 const openingPrompts: Record<string, string> = {
   critique: "What code would you like to explore? You can paste it directly, upload a file, or describe what you're looking at. I'm curious what drew your attention to this particular piece of software.",
-  archaeology: "What historical software are you investigating? Tell me about the code and its context. When was it written, for what platform, and what interests you about it?",
   interpret: "What aspects of code interpretation are you thinking about? We could explore hermeneutic frameworks, discuss the relationship between code and meaning, or work through how to approach a close reading.",
   create: "Let's create some code together! Would you like to build a simple version of a classic algorithm? We could try:\n\n• ELIZA - A pattern-matching chatbot (Weizenbaum, 1966)\n• Love Letter Generator - Combinatorial text (Strachey, 1952)\n• Poetry Generator - Like Nick Montfort's ppg256\n• Sorting Algorithm - Bubble sort or selection sort\n• Cellular Automaton - Simple rule-based patterns\n\nWhat interests you, or do you have something else in mind?",
 };
@@ -340,8 +339,8 @@ export default function ConversationPage() {
               defaultLanguage: effectiveLanguage || undefined,
               analysisContext: session.analysisResults,
               literatureContext: session.references,
-              // Include annotations for archaeology and interpret modes
-              codeContext: (session.mode === "archaeology" || session.mode === "interpret")
+              // Include annotations for interpret mode
+              codeContext: (session.mode === "interpret")
                 ? buildAnnotatedCodeContext()
                 : session.codeFiles,
             }),
@@ -541,7 +540,7 @@ export default function ConversationPage() {
     setShowGuidedPrompts(false);
   }, []);
 
-  // Build code context with annotations for LLM (for archaeology/interpret modes)
+  // Build code context with annotations for LLM (for interpret mode)
   const buildAnnotatedCodeContext = useCallback((): (CodeReference & { content?: string })[] => {
     if (session.codeFiles.length === 0) return session.codeFiles;
 
@@ -562,7 +561,7 @@ export default function ConversationPage() {
     });
   }, [session.codeFiles, session.lineAnnotations, findCodeContentForFile]);
 
-  // Generate context preview string for modal (archaeology/interpret modes)
+  // Generate context preview string for modal (interpret mode)
   const contextPreviewText = useMemo(() => {
     if (session.codeFiles.length === 0) return "";
 
@@ -695,7 +694,7 @@ export default function ConversationPage() {
     }
 
     // Add suggestions based on mode
-    if (session.mode === "archaeology") {
+    if (session.mode === "interpret") {
       suggestions.push("computing history");
     }
 
@@ -803,8 +802,8 @@ export default function ConversationPage() {
           references: session.references,
           analysisResults: session.analysisResults,
           experienceLevel: session.experienceLevel,
-          // Include annotations for archaeology and interpret modes
-          codeContext: (session.mode === "archaeology" || session.mode === "interpret")
+          // Include annotations for interpret mode
+          codeContext: (session.mode === "interpret")
             ? buildAnnotatedCodeContext()
             : session.codeFiles,
         }),
@@ -1240,7 +1239,7 @@ export default function ConversationPage() {
       doc.text(`Experience: ${EXPERIENCE_LEVEL_LABELS[session.experienceLevel as ExperienceLevel] || session.experienceLevel}`, margin, yPos);
       yPos += 5;
     }
-    doc.text(`Mode: ${session.mode === 'critique' ? 'Code Critique' : session.mode === 'archaeology' ? 'Code Archaeology' : session.mode === 'create' ? 'Code Creation' : "Hermeneutic Exploration"}`, margin, yPos);
+    doc.text(`Mode: ${session.mode === 'critique' ? 'Code Critique' : session.mode === 'create' ? 'Code Creation' : "Hermeneutic Exploration"}`, margin, yPos);
     yPos += 10;
 
     // Reset text color
@@ -1363,9 +1362,9 @@ export default function ConversationPage() {
     setSuccessMessage("Session log exported as PDF!");
   }, [session, projectName, profile]);
 
-  // Critique, archaeology, and interpret modes use CritiqueLayout (IDE-style interface)
+  // Critique and interpret modes use CritiqueLayout (IDE-style interface)
   // Create mode uses conversational chat UI
-  if (session.mode === "critique" || session.mode === "archaeology" || session.mode === "interpret") {
+  if (session.mode === "critique" || session.mode === "interpret") {
     return (
       <>
         <CritiqueLayout

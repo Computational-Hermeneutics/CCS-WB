@@ -1,6 +1,6 @@
 // App-wide settings types
 
-export type AppMode = "critique" | "archaeology" | "interpret" | "create";
+export type AppMode = "critique" | "interpret" | "create";
 
 // Theme options
 export type ThemeMode = "light" | "dark" | "system";
@@ -108,7 +108,6 @@ export interface FontSizeSettings {
 
 export interface ModeOverrides {
   critique?: Partial<FontSizeSettings>;
-  archaeology?: Partial<FontSizeSettings>;
   interpret?: Partial<FontSizeSettings>;
   create?: Partial<FontSizeSettings>;
 }

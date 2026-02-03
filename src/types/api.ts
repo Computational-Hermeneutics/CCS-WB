@@ -18,7 +18,7 @@ export interface ChatRequest {
   settings: SessionSettings;
   currentPhase: string;
   experienceLevel?: string;  // CCS experience level (learning, practitioner, research)
-  mode?: string;      // Entry mode (critique, archaeology, interpret, create)
+  mode?: string;      // Entry mode (critique, interpret, create)
   createLanguage?: string;  // Language for create mode code generation
   defaultLanguage?: string;  // User's preferred programming language (from app settings)
   analysisContext?: AnalysisResult[];

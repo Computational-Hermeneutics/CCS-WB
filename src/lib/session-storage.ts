@@ -88,7 +88,7 @@ export function clearSessionForMode(mode: EntryMode): void {
 export function clearAllSessions(): void {
   if (typeof window === "undefined") return;
 
-  const modes: EntryMode[] = ["critique", "archaeology", "interpret", "create"];
+  const modes: EntryMode[] = ["critique", "interpret", "create"];
   modes.forEach(clearSessionForMode);
 }
 
@@ -146,7 +146,7 @@ export function getLastMode(): EntryMode | null {
   if (typeof window === "undefined") return null;
   try {
     const mode = localStorage.getItem(LAST_MODE_KEY);
-    if (mode && ["critique", "archaeology", "interpret", "create"].includes(mode)) {
+    if (mode && ["critique", "interpret", "create"].includes(mode)) {
       return mode as EntryMode;
     }
     return null;

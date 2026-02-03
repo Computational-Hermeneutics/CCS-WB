@@ -94,9 +94,8 @@ CCS applies critical hermeneutics to interpretation of computer source code, pro
 function extractModeSection(fullDocument: string, mode: string): string {
   const modeMap: Record<string, string> = {
     critique: "MODE 1: CRITIQUE",
-    archaeology: "MODE 2: ARCHAEOLOGY",
-    interpret: "MODE 3: INTERPRET",
-    create: "MODE 4: CREATE",
+    interpret: "MODE 2: INTERPRET",
+    create: "MODE 3: CREATE",
   };
 
   const modeHeader = modeMap[mode];
