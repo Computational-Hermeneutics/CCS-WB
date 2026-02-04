@@ -79,10 +79,17 @@ export function SaveStatusIndicator({
       break;
 
     case "dirty":
-      icon = <Circle className="h-2 w-2 fill-red-500" />;
-      text = "Unsaved";
-      colorClass = "text-red-600";
-      break;
+      // Just show a small red dot, no text
+      return (
+        <div
+          className={`flex items-center ${className}`}
+          role="status"
+          aria-live="polite"
+          title="Unsaved changes"
+        >
+          <Circle className="h-2 w-2 fill-red-500" />
+        </div>
+      );
 
     case "idle":
     default:
@@ -92,9 +99,17 @@ export function SaveStatusIndicator({
         text = `Saved ${formatRelativeTime(lastSaved)}`;
         colorClass = "text-slate-500";
       } else if (isDirty) {
-        icon = <Circle className="h-2 w-2 fill-red-500" />;
-        text = "Unsaved";
-        colorClass = "text-red-600";
+        // Just show a small red dot, no text
+        return (
+          <div
+            className={`flex items-center ${className}`}
+            role="status"
+            aria-live="polite"
+            title="Unsaved changes"
+          >
+            <Circle className="h-2 w-2 fill-red-500" />
+          </div>
+        );
       } else {
         return <></>;
       }
