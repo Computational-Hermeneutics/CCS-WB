@@ -802,11 +802,11 @@ export const WorkbenchLayout = forwardRef<WorkbenchLayoutRef, WorkbenchLayoutPro
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "X-AI-Provider": settings.provider,
-          "X-AI-Model": settings.model,
-          "X-AI-API-Key": settings.apiKey || "",
-          "X-AI-Base-URL": settings.baseUrl || "",
-          "X-AI-Custom-Model": settings.customModelId || "",
+          "X-AI-Provider": aiSettings.provider,
+          "X-AI-Model": aiSettings.model,
+          "X-AI-API-Key": aiSettings.apiKey || "",
+          "X-AI-Base-URL": aiSettings.baseUrl || "",
+          "X-AI-Custom-Model": aiSettings.customModelId || "",
         },
       });
 
@@ -829,7 +829,7 @@ export const WorkbenchLayout = forwardRef<WorkbenchLayoutRef, WorkbenchLayoutPro
       );
       return false;
     }
-  }, [connectionStatus, settings, setConnectionStatus]);
+  }, [connectionStatus, aiSettings, setConnectionStatus]);
 
   // Handle send message
   const handleSend = useCallback(async () => {
@@ -1264,9 +1264,9 @@ export const WorkbenchLayout = forwardRef<WorkbenchLayoutRef, WorkbenchLayoutPro
 
     try {
       // Get LLM name for attribution
-      const llmName = settings.provider === 'custom' && settings.customModelId
-        ? settings.customModelId
-        : settings.model || settings.provider || 'AI';
+      const llmName = aiSettings.provider === 'custom' && aiSettings.customModelId
+        ? aiSettings.customModelId
+        : aiSettings.model || aiSettings.provider || 'AI';
 
       // Build the prompt for annotation suggestions
       const systemPrompt = `You are an expert in Critical Code Studies. Analyze the provided code and suggest 3-5 annotations that would be valuable for close reading and critical analysis.
@@ -1379,7 +1379,7 @@ Remember: Respond ONLY with valid JSON. Focus on interesting interpretive entry 
     } finally {
       setIsRequestingAnnotations(false);
     }
-  }, [selectedFileId, session.codeFiles, session.settings, codeContents, isAiReady, settings, getRequestHeaders, autoTestConnection]);
+  }, [selectedFileId, session.codeFiles, session.settings, codeContents, isAiReady, aiSettings, getRequestHeaders, autoTestConnection]);
 
   const handleAddSelectedAnnotations = useCallback(() => {
     if (selectedAnnotations.size === 0 || !selectedFileId) {
@@ -1388,9 +1388,9 @@ Remember: Respond ONLY with valid JSON. Focus on interesting interpretive entry 
     }
 
     // Get LLM name for attribution
-    const llmName = settings.provider === 'custom' && settings.customModelId
-      ? settings.customModelId
-      : settings.model || settings.provider || 'AI';
+    const llmName = aiSettings.provider === 'custom' && aiSettings.customModelId
+      ? aiSettings.customModelId
+      : aiSettings.model || aiSettings.provider || 'AI';
 
     let annotationsAdded = 0;
 
@@ -1414,7 +1414,7 @@ Remember: Respond ONLY with valid JSON. Focus on interesting interpretive entry 
     setShowAnnotationSuggestionsModal(false);
     setAnnotationSuggestions([]);
     setSelectedAnnotations(new Set());
-  }, [selectedAnnotations, annotationSuggestions, selectedFileId, settings, addLineAnnotation]);
+  }, [selectedAnnotations, annotationSuggestions, selectedFileId, aiSettings, addLineAnnotation]);
 
   // Save to cloud (for cloud projects)
   const [isSavingToCloud, setIsSavingToCloud] = useState(false);
