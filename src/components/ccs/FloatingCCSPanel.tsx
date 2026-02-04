@@ -24,10 +24,9 @@ export function FloatingCCSPanel({
   isMinimized = false,
   onMinimize
 }: FloatingCCSPanelProps) {
-  // Position state (only updated when drag ends)
-  const [position, setPosition] = useState({ x: 20, y: 80 });
+  // Position state (null = use CSS centering, object = use absolute positioning after drag)
+  const [position, setPosition] = useState<{ x: number; y: number } | null>(null);
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const [isCentered, setIsCentered] = useState(false);
 
   const panelRef = useRef<HTMLDivElement>(null);
   const dragStateRef = useRef({ isDragging: false, startX: 0, startY: 0 });
@@ -77,23 +76,6 @@ export function FloatingCCSPanel({
     };
   }, []);
 
-  // Center panel on first render
-  useEffect(() => {
-    if (!panelRef.current || isCentered) return;
-
-    const panel = panelRef.current;
-    const panelWidth = panel.offsetWidth;
-    const panelHeight = panel.offsetHeight;
-    const viewportWidth = window.innerWidth;
-    const viewportHeight = window.innerHeight;
-
-    // Calculate center position
-    const centerX = Math.max(0, (viewportWidth - panelWidth) / 2);
-    const centerY = Math.max(0, (viewportHeight - panelHeight) / 2);
-
-    setPosition({ x: centerX, y: centerY });
-    setIsCentered(true);
-  }, [isCentered]);
 
   // Don't render if not enabled
   if (!isEnabled) return null;
@@ -129,19 +111,31 @@ export function FloatingCCSPanel({
     }
   };
 
+  // Use CSS centering if position hasn't been set by drag, otherwise use absolute positioning
+  const positionStyles = position
+    ? {
+        left: `${position.x}px`,
+        top: `${position.y}px`,
+        width: isCollapsed ? '240px' : '420px',
+        maxHeight: '80vh',
+        transformOrigin: 'top right'
+      }
+    : {
+        left: '50%',
+        top: '50%',
+        transform: isMinimized ? 'translate(-50%, -50%) scale(0.5)' : 'translate(-50%, -50%)',
+        width: isCollapsed ? '240px' : '420px',
+        maxHeight: '80vh',
+        transformOrigin: 'top right'
+      };
+
   return (
     <div
       ref={panelRef}
       className={`fixed bg-popover border border-parchment rounded-lg shadow-xl z-40 transition-all duration-300 ${
         isMinimized ? 'opacity-0 scale-50 pointer-events-none' : 'opacity-100 scale-100'
       }`}
-      style={{
-        left: `${position.x}px`,
-        top: `${position.y}px`,
-        width: isCollapsed ? '240px' : '420px',
-        maxHeight: '80vh',
-        transformOrigin: 'top right'
-      }}
+      style={positionStyles}
     >
       {/* Drag handle header */}
       <div
