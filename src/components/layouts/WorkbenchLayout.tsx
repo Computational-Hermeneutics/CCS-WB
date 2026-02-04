@@ -1282,8 +1282,51 @@ export const WorkbenchLayout = forwardRef<WorkbenchLayoutRef, WorkbenchLayoutPro
       const requestedTypesArray = Array.from(requestedTypes);
       const typesDescription = requestedTypesArray.map(t => `"${t}"`).join(', ');
 
+      // Mode-specific annotation guidance
+      let modeGuidance = '';
+      if (session.mode === 'critique') {
+        // Analyze mode: comment on, explain, critique, and signpost code
+        modeGuidance = `
+ANALYZE MODE GUIDANCE:
+Your annotations should comment on, explain, and critique the code lines. Focus on:
+- Explaining what the code does and why it matters
+- Critiquing design decisions, patterns, or implications
+- Signposting connections to other parts of the code (e.g., "This connects to the initialization at line X")
+- Creating holistic understanding by linking different code sections together
+- Noting interesting technical, cultural, or theoretical aspects
+
+Your goal is to help the reader develop a comprehensive understanding of how all parts work together.`;
+      } else if (session.mode === 'interpret') {
+        // Learn mode: teach CCS methodology
+        modeGuidance = `
+LEARN MODE GUIDANCE:
+Your annotations should teach Critical Code Studies methodology. Focus on:
+- Helping the user understand where CCS can provide insights
+- Explaining historical, cultural, or theoretical context
+- Demonstrating how to apply CCS reading methods to code
+- Pointing out moments where code reveals power structures, cultural assumptions, or ideological positions
+- Teaching interpretive approaches (materialist, hermeneutic, archaeological, etc.)
+- Linking code practices to broader social and cultural implications
+
+Your goal is to teach the user HOW to read code critically using CCS methods.`;
+      } else if (session.mode === 'create') {
+        // Create mode: generative suggestions
+        modeGuidance = `
+CREATE MODE GUIDANCE:
+Your annotations should support creative code generation and exploration. Focus on:
+- Suggesting where code could be expanded or extended
+- Noting interesting possibilities for further development
+- Proposing creative variations or alternative approaches
+- Identifying opportunities for experimentation
+- Highlighting areas ripe for algorithmic exploration
+- Encouraging playful and creative engagement with the code
+
+Your goal is to inspire and support the creative coding process.`;
+      }
+
       // Build the prompt for annotation suggestions
       const systemPrompt = `You are an expert in Critical Code Studies. Analyze the provided code and suggest 3-5 annotations that would be valuable for close reading and critical analysis.
+${modeGuidance}
 
 CRITICAL: You MUST respond with valid JSON in the exact format specified below. Do not add any explanatory text before or after the JSON.
 
@@ -1319,7 +1362,12 @@ Do NOT use: "line_number", "comment", "annotation", "id", "code_excerpt", or any
 Do NOT set lineNumber to null or 0.
 Use only: "lineNumber" (integer 1-${lineCount}), "type" (string from the list), "content" (string).`;
 
-      const userPrompt = `Analyze this code file and suggest 3-5 annotations:
+      // Mode display name for context
+      const modeContext = session.mode === 'critique' ? 'Analyze Code'
+        : session.mode === 'interpret' ? 'Learn Methods'
+        : 'Create Code';
+
+      const userPrompt = `Analyze this code file and suggest 3-5 annotations for ${modeContext} mode:
 
 File: ${selectedFile.name}
 Language: ${selectedFile.language || 'unknown'}
@@ -1329,7 +1377,7 @@ Lines: ${lineCount} (valid line numbers: 1-${lineCount})
 ${fileContent}
 \`\`\`
 
-Remember: Respond ONLY with valid JSON. All lineNumber values must be between 1 and ${lineCount}. Focus on interesting interpretive entry points for close reading.`;
+Remember: Respond ONLY with valid JSON. All lineNumber values must be between 1 and ${lineCount}. Follow the ${modeContext} guidance provided above.`;
 
       const response = await fetch("/api/chat", {
         method: "POST",
