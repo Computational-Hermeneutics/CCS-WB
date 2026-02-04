@@ -1320,24 +1320,47 @@ Remember: Respond ONLY with valid JSON. Focus on interesting interpretive entry 
       const data = await response.json();
       const aiResponse = data.message.content;
 
-      // Try to extract JSON from the response
-      let jsonMatch = aiResponse.match(/\{[\s\S]*"annotations"[\s\S]*\}/);
+      console.log("[AI Annotation Suggestions] Raw AI response:", aiResponse);
+
+      // Try to extract JSON from the response (handle markdown code fences)
+      let jsonText = aiResponse;
+
+      // Remove markdown code fences if present
+      const codeBlockMatch = aiResponse.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+      if (codeBlockMatch) {
+        jsonText = codeBlockMatch[1];
+      }
+
+      // Try to find JSON object with annotations array
+      let jsonMatch = jsonText.match(/\{[\s\S]*?"annotations"[\s\S]*?\}/);
       if (!jsonMatch) {
-        // Try to find any JSON array
-        jsonMatch = aiResponse.match(/\[[\s\S]*\]/);
-        if (jsonMatch) {
-          jsonMatch[0] = `{"annotations": ${jsonMatch[0]}}`;
+        // Try to find just the array
+        const arrayMatch = jsonText.match(/\[[\s\S]*?\]/);
+        if (arrayMatch) {
+          jsonText = `{"annotations": ${arrayMatch[0]}}`;
+          jsonMatch = [jsonText];
         }
       }
 
       if (!jsonMatch) {
-        console.error("Could not extract JSON from AI response:", aiResponse);
+        console.error("[AI Annotation Suggestions] Could not extract JSON from response");
+        console.error("Response text:", aiResponse);
         setSuccessMessage("AI response was not in expected format");
         return;
       }
 
-      const parsed = JSON.parse(jsonMatch[0]);
+      let parsed;
+      try {
+        parsed = JSON.parse(jsonMatch[0]);
+      } catch (parseError) {
+        console.error("[AI Annotation Suggestions] JSON parse error:", parseError);
+        console.error("Attempted to parse:", jsonMatch[0]);
+        setSuccessMessage("Failed to parse AI response");
+        return;
+      }
+
       const suggestions = parsed.annotations || [];
+      console.log("[AI Annotation Suggestions] Parsed suggestions:", suggestions);
 
       if (suggestions.length === 0) {
         setSuccessMessage("AI did not suggest any annotations");
@@ -1348,21 +1371,38 @@ Remember: Respond ONLY with valid JSON. Focus on interesting interpretive entry 
       const codeLines = fileContent.split('\n');
       const validSuggestions = suggestions
         .filter((s: any) => {
-          return s.lineNumber &&
-                 s.lineNumber > 0 &&
-                 s.lineNumber <= codeLines.length &&
+          // Convert string line numbers to integers
+          const lineNum = typeof s.lineNumber === 'string' ? parseInt(s.lineNumber, 10) : s.lineNumber;
+
+          const isValid = lineNum &&
+                 lineNum > 0 &&
+                 lineNum <= codeLines.length &&
                  s.type &&
                  s.content;
+
+          if (!isValid) {
+            console.log("[AI Annotation Suggestions] Invalid suggestion filtered out:", s);
+            console.log("  - lineNumber:", lineNum, "(valid range: 1-" + codeLines.length + ")");
+            console.log("  - type:", s.type);
+            console.log("  - content:", s.content ? "present" : "missing");
+          }
+
+          return isValid;
         })
-        .map((s: any) => ({
-          lineNumber: s.lineNumber,
-          type: s.type as LineAnnotationType,
-          content: s.content,
-          lineContent: codeLines[s.lineNumber - 1] || '',
-        }));
+        .map((s: any) => {
+          const lineNum = typeof s.lineNumber === 'string' ? parseInt(s.lineNumber, 10) : s.lineNumber;
+          return {
+            lineNumber: lineNum,
+            type: s.type as LineAnnotationType,
+            content: s.content,
+            lineContent: codeLines[lineNum - 1] || '',
+          };
+        });
+
+      console.log("[AI Annotation Suggestions] Valid suggestions after filtering:", validSuggestions.length);
 
       if (validSuggestions.length === 0) {
-        setSuccessMessage("No valid annotation suggestions found");
+        setSuccessMessage("No valid annotation suggestions found. Check browser console for details.");
         return;
       }
 
