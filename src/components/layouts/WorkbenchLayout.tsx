@@ -2201,30 +2201,7 @@ export const WorkbenchLayout = forwardRef<WorkbenchLayoutRef, WorkbenchLayoutPro
           <button onClick={() => setShowExportModal(true)} className="p-2 md:p-1.5 text-slate hover:text-ink" title="Export session log">
             <Download className="h-4 w-4" strokeWidth={1.5} />
           </button>
-          {/* AI Status Button */}
-          <button
-            onClick={() => setShowAIPanel(true)}
-            className={cn(
-              "font-sans text-[10px] px-2 py-0.5 border rounded-sm transition-colors",
-              !aiEnabled
-                ? "text-red-700 bg-red-50 border-red-200 hover:border-red-400 dark:text-red-400 dark:bg-red-950 dark:border-red-800 dark:hover:border-red-600"
-                : connectionStatus === "success"
-                  ? "text-green-700 bg-green-50 border-green-200 hover:border-green-400 dark:text-green-400 dark:bg-green-950 dark:border-green-800 dark:hover:border-green-600"
-                  : "text-amber-700 bg-amber-50 border-amber-200 hover:border-amber-400 dark:text-amber-400 dark:bg-amber-950 dark:border-amber-800 dark:hover:border-amber-600"
-            )}
-            title={
-              !aiEnabled
-                ? "AI disabled - click to enable"
-                : connectionStatus === "success"
-                  ? "AI connected - click to configure"
-                  : connectionStatus === "error"
-                    ? "Connection failed - click to configure"
-                    : "AI not verified - click to test connection"
-            }
-          >
-            {!aiEnabled ? "AI: Off" : connectionStatus === "success" ? "AI: On" : "AI: ??"}
-          </button>
-          {/* Cloud projects button - next to AI status */}
+          {/* Cloud projects button */}
           <div className="relative" data-dropdown>
             <button
               onClick={() => {
@@ -3228,9 +3205,18 @@ export const WorkbenchLayout = forwardRef<WorkbenchLayoutRef, WorkbenchLayoutPro
                     className={cn(
                       "p-2 rounded-lg flex items-center justify-center transition-colors",
                       input.trim() && !isLoading && isAiReady
-                        ? "bg-burgundy text-ivory hover:bg-burgundy-dark"
+                        ? connectionStatus === "success"
+                          ? "bg-burgundy text-ivory hover:bg-burgundy-dark"
+                          : "bg-amber-500 text-ivory hover:bg-amber-600"
                         : "bg-parchment text-slate-muted cursor-not-allowed"
                     )}
+                    title={
+                      !input.trim() || isLoading || !isAiReady
+                        ? undefined
+                        : connectionStatus === "success"
+                          ? "Send message"
+                          : "Disconnected - trying to reconnect..."
+                    }
                   >
                     {isLoading ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
