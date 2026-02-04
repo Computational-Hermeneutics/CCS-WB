@@ -1756,6 +1756,19 @@ export function CodeEditorPanel({
                           )}
                         </span>
                       </button>
+                      {/* Quick delete button - appears on hover */}
+                      {!readOnly && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setDeleteConfirmFile({ id: file.id, name: file.name });
+                          }}
+                          className="p-1 opacity-0 group-hover:opacity-100 text-slate-muted hover:text-burgundy transition-all flex-shrink-0"
+                          title="Delete file"
+                        >
+                          <X className="h-3 w-3" strokeWidth={1.5} />
+                        </button>
+                      )}
                     </div>
                   )}
                 </li>
