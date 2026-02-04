@@ -40,7 +40,11 @@ export function FloatingCCSPanel({
       if (!dragStateRef.current.isDragging) return;
 
       // Mark that actual dragging has occurred
-      dragStateRef.current.hasMoved = true;
+      if (!dragStateRef.current.hasMoved) {
+        dragStateRef.current.hasMoved = true;
+        // Disable transitions only when we start actually dragging
+        panel.style.transition = 'none';
+      }
 
       const newX = e.clientX - dragStateRef.current.startX;
       const newY = e.clientY - dragStateRef.current.startY;
@@ -101,11 +105,7 @@ export function FloatingCCSPanel({
       };
 
       panel.style.cursor = 'grabbing';
-
-      // Disable transitions on next frame to avoid blocking drag start
-      requestAnimationFrame(() => {
-        if (panel) panel.style.transition = 'none';
-      });
+      // Note: Transitions are disabled in handleMouseMove when actual dragging starts
     }
   };
 
