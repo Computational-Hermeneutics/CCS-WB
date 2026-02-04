@@ -1285,17 +1285,18 @@ export const WorkbenchLayout = forwardRef<WorkbenchLayoutRef, WorkbenchLayoutPro
       // Mode-specific annotation guidance
       let modeGuidance = '';
       if (session.mode === 'critique') {
-        // Analyze mode: comment on, explain, critique, and signpost code
+        // Analyze mode: rigorous CCS practice for practitioners
         modeGuidance = `
 ANALYZE MODE GUIDANCE:
-Your annotations should comment on, explain, and critique the code lines. Focus on:
-- Explaining what the code does and why it matters
-- Critiquing design decisions, patterns, or implications
-- Signposting connections to other parts of the code (e.g., "This connects to the initialization at line X")
-- Creating holistic understanding by linking different code sections together
-- Noting interesting technical, cultural, or theoretical aspects
+You are supporting a CCS practitioner engaged in rigorous critical code studies work. Your annotations should provide methodological support for serious analysis. Focus on:
+- Identifying critical entry points for close reading and hermeneutic engagement
+- Signposting connections between code sections to reveal structural patterns and power relations
+- Noting moments where technical decisions encode cultural, political, or ideological positions
+- Highlighting areas where materialist, archaeological, or interpretive reading methods would yield insights
+- Pointing to specific lines that warrant deeper theoretical engagement
+- Supporting rigorous scholarly analysis by marking significant interpretive opportunities
 
-Your goal is to help the reader develop a comprehensive understanding of how all parts work together.`;
+Your goal is to provide methodologically sound support for practitioners conducting critical code studies research.`;
       } else if (session.mode === 'interpret') {
         // Learn mode: teach CCS methodology
         modeGuidance = `
@@ -1373,11 +1374,13 @@ File: ${selectedFile.name}
 Language: ${selectedFile.language || 'unknown'}
 Lines: ${lineCount} (valid line numbers: 1-${lineCount})
 
+CRITICAL: This file has ${lineCount} lines total. The code below may contain embedded line numbers (like 000010, 001400, etc.) at the end of each line - these are PART OF THE SOURCE CODE, not the actual line positions. IGNORE those embedded numbers completely. Use only the sequential line positions: line 1 is the first line, line 2 is the second line, etc., up to line ${lineCount}.
+
 \`\`\`
 ${fileContent}
 \`\`\`
 
-Remember: Respond ONLY with valid JSON. All lineNumber values must be between 1 and ${lineCount}. Follow the ${modeContext} guidance provided above.`;
+Remember: Respond ONLY with valid JSON. All lineNumber values must be between 1 and ${lineCount} (the actual file line count). IGNORE any embedded line numbers in the code itself. Follow the ${modeContext} guidance provided above.`;
 
       const response = await fetch("/api/chat", {
         method: "POST",
