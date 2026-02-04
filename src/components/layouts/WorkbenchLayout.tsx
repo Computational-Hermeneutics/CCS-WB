@@ -1266,13 +1266,21 @@ export const WorkbenchLayout = forwardRef<WorkbenchLayoutRef, WorkbenchLayoutPro
       // Get LLM name for attribution
       const llmName = aiSettings.customModelId || aiSettings.model || aiSettings.provider || 'AI';
 
+      // Calculate actual line count for this file
+      const lineCount = fileContent.split('\n').length;
+
       // Build the prompt for annotation suggestions
       const systemPrompt = `You are an expert in Critical Code Studies. Analyze the provided code and suggest 3-5 annotations that would be valuable for close reading and critical analysis.
 
 CRITICAL: You MUST respond with valid JSON in the exact format specified below. Do not add any explanatory text before or after the JSON.
 
+IMPORTANT LINE NUMBER CONSTRAINT: The file you are analyzing has exactly ${lineCount} lines (numbered 1 to ${lineCount}).
+All lineNumber values MUST be between 1 and ${lineCount} inclusive.
+Do NOT use line numbers from any original source code if this is an excerpt or sample.
+Only use line numbers that actually exist in the provided file (1-${lineCount}).
+
 For each annotation, provide exactly these three fields:
-1. "lineNumber" (required): A positive integer indicating which line to annotate (lines are numbered starting from 1)
+1. "lineNumber" (required): A positive integer between 1 and ${lineCount} indicating which line to annotate
 2. "type" (required): Must be one of these exact strings: "observation", "question", "metaphor", "pattern", "context", or "critique"
 3. "content" (required): Your annotation text (1-2 concise sentences explaining the interpretive entry point)
 
@@ -1294,18 +1302,19 @@ Respond ONLY with this JSON structure (no other fields, no other text):
 
 Do NOT use: "line_number", "comment", "annotation", "id", "code_excerpt", or any other field names.
 Do NOT set lineNumber to null or 0.
-Use only: "lineNumber" (integer > 0), "type" (string from the list), "content" (string).`;
+Use only: "lineNumber" (integer 1-${lineCount}), "type" (string from the list), "content" (string).`;
 
       const userPrompt = `Analyze this code file and suggest 3-5 annotations:
 
 File: ${selectedFile.name}
 Language: ${selectedFile.language || 'unknown'}
+Lines: ${lineCount} (valid line numbers: 1-${lineCount})
 
 \`\`\`
 ${fileContent}
 \`\`\`
 
-Remember: Respond ONLY with valid JSON. Focus on interesting interpretive entry points for close reading.`;
+Remember: Respond ONLY with valid JSON. All lineNumber values must be between 1 and ${lineCount}. Focus on interesting interpretive entry points for close reading.`;
 
       const response = await fetch("/api/chat", {
         method: "POST",
