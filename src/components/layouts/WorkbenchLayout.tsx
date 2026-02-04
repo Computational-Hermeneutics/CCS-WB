@@ -3198,24 +3198,32 @@ export const WorkbenchLayout = forwardRef<WorkbenchLayoutRef, WorkbenchLayoutPro
                     )}
                   </div>
 
-                  {/* Send button */}
+                  {/* Send button - color indicates connection status */}
                   <button
                     onClick={handleSend}
                     disabled={!input.trim() || isLoading || !isAiReady}
                     className={cn(
                       "p-2 rounded-lg flex items-center justify-center transition-colors",
-                      input.trim() && !isLoading && isAiReady
-                        ? connectionStatus === "success"
-                          ? "bg-burgundy text-ivory hover:bg-burgundy-dark"
-                          : "bg-amber-500 text-ivory hover:bg-amber-600"
-                        : "bg-parchment text-slate-muted cursor-not-allowed"
+                      isLoading
+                        ? "bg-parchment text-slate-muted cursor-not-allowed"
+                        : connectionStatus === "success"
+                          ? input.trim() && isAiReady
+                            ? "bg-burgundy text-ivory hover:bg-burgundy-dark"
+                            : "bg-burgundy/30 text-burgundy cursor-not-allowed"
+                          : input.trim() && isAiReady
+                            ? "bg-amber-500 text-ivory hover:bg-amber-600"
+                            : "bg-amber-500/30 text-amber-700 cursor-not-allowed"
                     )}
                     title={
-                      !input.trim() || isLoading || !isAiReady
-                        ? undefined
-                        : connectionStatus === "success"
-                          ? "Send message"
-                          : "Disconnected - trying to reconnect..."
+                      isLoading
+                        ? "Sending..."
+                        : !input.trim()
+                          ? "Type a message"
+                          : !isAiReady
+                            ? "AI not ready"
+                            : connectionStatus === "success"
+                              ? "Send message"
+                              : "Disconnected - trying to reconnect..."
                     }
                   >
                     {isLoading ? (
