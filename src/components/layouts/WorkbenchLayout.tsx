@@ -498,20 +498,44 @@ export const WorkbenchLayout = forwardRef<WorkbenchLayoutRef, WorkbenchLayoutPro
   // Auto-create files from AI code responses in Create mode
   const processedMessageIds = useRef(new Set<string>());
   useEffect(() => {
+    console.log('[Auto-file-creation] useEffect fired, messages:', session.messages.length);
+
     // Only process in Create mode
-    if (session.mode !== 'create') return;
+    if (session.mode !== 'create') {
+      console.log('[Auto-file-creation] Not in Create mode, skipping. Mode:', session.mode);
+      return;
+    }
 
     // Get the latest assistant message
     const lastMessage = session.messages[session.messages.length - 1];
-    if (!lastMessage || lastMessage.role !== 'assistant') return;
+    console.log('[Auto-file-creation] Last message:', {
+      exists: !!lastMessage,
+      role: lastMessage?.role,
+      id: lastMessage?.id,
+      contentLength: lastMessage?.content?.length
+    });
+
+    if (!lastMessage || lastMessage.role !== 'assistant') {
+      console.log('[Auto-file-creation] No assistant message, skipping');
+      return;
+    }
 
     // Skip if already processed
-    if (processedMessageIds.current.has(lastMessage.id)) return;
+    if (processedMessageIds.current.has(lastMessage.id)) {
+      console.log('[Auto-file-creation] Message already processed:', lastMessage.id);
+      return;
+    }
     processedMessageIds.current.add(lastMessage.id);
+    console.log('[Auto-file-creation] Processing new message:', lastMessage.id);
 
     // Extract code blocks from the message
     const codeBlocks = extractCodeBlocks(lastMessage.content);
-    if (codeBlocks.length === 0) return;
+    console.log('[Auto-file-creation] Extracted code blocks:', codeBlocks.length);
+
+    if (codeBlocks.length === 0) {
+      console.log('[Auto-file-creation] No code blocks found');
+      return;
+    }
 
     // Get existing file names for uniqueness check
     const existingFileNames = session.codeFiles.map(f => f.name);
@@ -523,6 +547,13 @@ export const WorkbenchLayout = forwardRef<WorkbenchLayoutRef, WorkbenchLayoutPro
     codeBlocks.forEach((block, index) => {
       const baseName = generateFileName(block.language, index, timestamp);
       const uniqueName = getUniqueFileName(baseName, existingFileNames);
+
+      console.log('[Auto-file-creation] Creating file:', {
+        language: block.language,
+        baseName,
+        uniqueName,
+        codeLength: block.code.length
+      });
 
       // Add to existing names to avoid duplicates within this batch
       existingFileNames.push(uniqueName);
@@ -538,6 +569,8 @@ export const WorkbenchLayout = forwardRef<WorkbenchLayoutRef, WorkbenchLayoutPro
       setCodeContent(fileId, block.code);
       filesCreated++;
     });
+
+    console.log('[Auto-file-creation] Files created:', filesCreated);
 
     // Show success notification
     if (filesCreated > 0) {
