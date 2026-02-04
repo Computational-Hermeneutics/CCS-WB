@@ -6,7 +6,7 @@
  */
 
 import React from "react";
-import { Loader2, Check, AlertCircle, Circle } from "lucide-react";
+import { Loader2, Check, AlertCircle, Circle, Save } from "lucide-react";
 import type { SaveStatus } from "@/lib/file-system/types";
 
 /**
@@ -79,14 +79,15 @@ export function SaveStatusIndicator({
       break;
 
     case "dirty":
-      // Just show a small red dot, no text
+      // Show save icon with red dot on right
       return (
         <div
-          className={`flex items-center ${className}`}
+          className={`flex items-center gap-1 ${className}`}
           role="status"
           aria-live="polite"
           title="Unsaved changes"
         >
+          <Save className="h-3 w-3 text-slate" />
           <Circle className="h-2 w-2 fill-red-500" />
         </div>
       );
@@ -99,14 +100,15 @@ export function SaveStatusIndicator({
         text = `Saved ${formatRelativeTime(lastSaved)}`;
         colorClass = "text-slate-500";
       } else if (isDirty) {
-        // Just show a small red dot, no text
+        // Show save icon with red dot on right
         return (
           <div
-            className={`flex items-center ${className}`}
+            className={`flex items-center gap-1 ${className}`}
             role="status"
             aria-live="polite"
             title="Unsaved changes"
           >
+            <Save className="h-3 w-3 text-slate" />
             <Circle className="h-2 w-2 fill-red-500" />
           </div>
         );
