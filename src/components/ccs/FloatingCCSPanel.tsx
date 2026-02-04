@@ -58,6 +58,9 @@ export function FloatingCCSPanel({
       dragStateRef.current.isDragging = false;
       panel.style.cursor = 'default';
 
+      // Re-enable transitions after drag
+      panel.style.transition = '';
+
       // Update React state with final position
       const left = parseFloat(panel.style.left);
       const top = parseFloat(panel.style.top);
@@ -88,6 +91,8 @@ export function FloatingCCSPanel({
         startY: e.clientY - rect.top
       };
 
+      // Disable transitions during drag for smooth performance
+      panel.style.transition = 'none';
       panel.style.cursor = 'grabbing';
     }
   };
