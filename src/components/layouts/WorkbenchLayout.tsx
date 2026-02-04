@@ -2652,7 +2652,8 @@ Follow the ${modeContext} guidance provided above.`;
                   untitled-{MODE_CODES[session.mode] || "XX"}.ccs
                 </span>
               )}
-              {autoSave.isSupported && (
+              {/* Only show save status if we have a file handle (using File System Access API) */}
+              {autoSave.isSupported && session.fileHandles?.[session.id] && (
                 <SaveStatusIndicator
                   status={autoSave.saveStatus}
                   lastSaved={autoSave.lastSaved}

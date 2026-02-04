@@ -58,29 +58,25 @@ export function SaveStatusIndicator({
   inline = false,
 }: SaveStatusIndicatorProps): React.ReactElement {
   // Inline mode: return text-only status for integration with project name
+  // All text matches parent color (no separate coloring)
   if (inline) {
     let text: string | null = null;
-    let colorClass = "";
 
     switch (status) {
       case "saving":
         text = "Saving...";
-        colorClass = "text-slate-600";
         break;
 
       case "saved":
         text = lastSaved ? `Saved ${formatRelativeTime(lastSaved)}` : "Saved";
-        colorClass = "text-green-600";
         break;
 
       case "error":
         text = "Save failed";
-        colorClass = "text-red-600";
         break;
 
       case "dirty":
         text = "Unsaved";
-        colorClass = "text-red-600";
         break;
 
       case "idle":
@@ -88,10 +84,8 @@ export function SaveStatusIndicator({
         // Check isDirty first - if there are unsaved changes, show that
         if (isDirty) {
           text = "Unsaved";
-          colorClass = "text-red-600";
         } else if (lastSaved) {
           text = `Saved ${formatRelativeTime(lastSaved)}`;
-          colorClass = "text-slate-500";
         }
         break;
     }
@@ -100,7 +94,7 @@ export function SaveStatusIndicator({
 
     return (
       <span
-        className={`font-sans text-[10px] ${colorClass} ${className}`}
+        className={`font-sans text-[10px] ${className}`}
         role="status"
         aria-live="polite"
       >
