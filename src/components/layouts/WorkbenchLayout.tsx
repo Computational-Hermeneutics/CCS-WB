@@ -197,7 +197,7 @@ export const WorkbenchLayout = forwardRef<WorkbenchLayoutRef, WorkbenchLayoutPro
     permanentlyDeleteFileFromTrash,
     emptyAllFileTrash,
   } = useCollaborativeSession();
-  const { settings: aiSettings, getRequestHeaders, isConfigured: isAIConfigured, connectionStatus, isAiReady } = useAISettings();
+  const { settings: aiSettings, getRequestHeaders, isConfigured: isAIConfigured, connectionStatus, setConnectionStatus, isAiReady } = useAISettings();
   const { settings: appSettings, getFontSizes, setModeCodeFontSize, setModeChatFontSize, getDisplayName, profile } = useAppSettings();
   const { isAuthenticated, setShowLoginModal, profile: authProfile, user, isAdmin } = useAuth();
   const {
