@@ -1379,11 +1379,21 @@ Remember: Respond ONLY with valid JSON. Focus on interesting interpretive entry 
       }
 
       // Normalize field names (handle alternative naming from different LLMs)
-      const suggestions = rawSuggestions.map((s: any) => ({
-        lineNumber: s.lineNumber || s.line_number || s.lineNum,
-        type: s.type || 'observation', // Default to observation if missing
-        content: s.content || s.comment || s.annotation || s.text || '',
-      }));
+      const suggestions = rawSuggestions.map((s: any) => {
+        // Try various field names for line number
+        let lineNum = s.lineNumber || s.line_number || s.lineNum || s.line || s.line_start;
+
+        // If lineNum is a string (like "000010"), parse it
+        if (typeof lineNum === 'string') {
+          lineNum = parseInt(lineNum, 10);
+        }
+
+        return {
+          lineNumber: lineNum,
+          type: s.type || 'observation', // Default to observation if missing
+          content: s.content || s.comment || s.annotation || s.text || '',
+        };
+      });
 
       console.log("[AI Annotation Suggestions] Normalized suggestions:", suggestions);
 
