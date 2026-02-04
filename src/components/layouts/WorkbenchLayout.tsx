@@ -2645,17 +2645,15 @@ Follow the ${modeContext} guidance provided above.`;
           {session.mode === 'interpret' && (
             <>
               <button
-                onClick={() => setIsCCSPanelMinimized(false)}
-                className={cn(
-                  "p-2 md:p-1.5 transition-all",
-                  isCCSPanelMinimized
-                    ? "text-burgundy hover:text-burgundy-dark animate-pulse"
-                    : "text-slate/40 cursor-not-allowed"
-                )}
-                title={isCCSPanelMinimized ? "Show CCS Methods Guide" : "CCS Methods Guide (already visible)"}
-                disabled={!isCCSPanelMinimized}
+                onClick={() => setIsCCSPanelMinimized(!isCCSPanelMinimized)}
+                className="p-2 md:p-1.5 text-slate hover:text-burgundy transition-colors"
+                title={isCCSPanelMinimized ? "Show CCS Methods Guide" : "Hide CCS Methods Guide"}
               >
-                <BookOpen className="h-4 w-4" strokeWidth={1.5} />
+                {isCCSPanelMinimized ? (
+                  <Library className="h-4 w-4" strokeWidth={1.5} />
+                ) : (
+                  <Library className="h-4 w-4" strokeWidth={2.5} />
+                )}
               </button>
               <div className="w-px h-4 bg-parchment mx-0.5" />
             </>
