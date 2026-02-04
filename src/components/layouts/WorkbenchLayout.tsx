@@ -62,6 +62,7 @@ import {
   Pencil,
   HardDrive,
   BookOpen,
+  FileSearch,
 } from "lucide-react";
 import { CodeEditorPanel, generateAnnotatedCode, parseAnnotatedMarkdown } from "@/components/code";
 import { ContextPreview } from "@/components/chat";
@@ -259,6 +260,7 @@ export const WorkbenchLayout = forwardRef<WorkbenchLayoutRef, WorkbenchLayoutPro
   const [showSearchModal, setShowSearchModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchingLiterature, setIsSearchingLiterature] = useState(false);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [settingsTab, setSettingsTab] = useState<"profile" | "code" | "appearance" | "ai" | "about">("appearance");
   const [showAIPanel, setShowAIPanel] = useState(false);
   const [showModeDropdown, setShowModeDropdown] = useState(false);
@@ -302,6 +304,14 @@ export const WorkbenchLayout = forwardRef<WorkbenchLayoutRef, WorkbenchLayoutPro
       }
     }
   }, [currentProjectId, currentProject]);
+
+  // Auto-clear success message after 3 seconds
+  useEffect(() => {
+    if (successMessage) {
+      const timer = setTimeout(() => setSuccessMessage(null), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [successMessage]);
 
   // Local file trash (for when not in cloud mode)
   // Persisted to localStorage so it survives page refreshes and project switches
@@ -3098,7 +3108,7 @@ export const WorkbenchLayout = forwardRef<WorkbenchLayoutRef, WorkbenchLayoutPro
                     {isSearchingLiterature ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
                     ) : (
-                      <BookOpen className="h-4 w-4" strokeWidth={1.5} />
+                      <FileSearch className="h-4 w-4" strokeWidth={1.5} />
                     )}
                   </button>
                 </div>
@@ -3266,6 +3276,13 @@ export const WorkbenchLayout = forwardRef<WorkbenchLayoutRef, WorkbenchLayoutPro
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Success Toast */}
+      {successMessage && (
+        <div className="fixed bottom-4 right-4 bg-popover border border-parchment rounded-sm shadow-editorial-lg px-4 py-2 z-50 animate-in fade-in slide-in-from-bottom-2 duration-300">
+          <p className="font-body text-[12px] text-ink">{successMessage}</p>
         </div>
       )}
 
