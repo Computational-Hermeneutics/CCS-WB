@@ -1269,21 +1269,32 @@ export const WorkbenchLayout = forwardRef<WorkbenchLayoutRef, WorkbenchLayoutPro
       // Build the prompt for annotation suggestions
       const systemPrompt = `You are an expert in Critical Code Studies. Analyze the provided code and suggest 3-5 annotations that would be valuable for close reading and critical analysis.
 
-For each annotation, provide:
-1. lineNumber: The line number to annotate (1-indexed)
-2. type: One of 'observation', 'question', 'metaphor', 'pattern', 'context', or 'critique'
-3. content: The annotation text (2-3 sentences explaining the interpretive entry point)
+CRITICAL: You MUST respond with valid JSON in the exact format specified below. Do not add any explanatory text before or after the JSON.
 
-Respond ONLY with valid JSON in this exact format:
+For each annotation, provide exactly these three fields:
+1. "lineNumber" (required): A positive integer indicating which line to annotate (lines are numbered starting from 1)
+2. "type" (required): Must be one of these exact strings: "observation", "question", "metaphor", "pattern", "context", or "critique"
+3. "content" (required): Your annotation text (2-3 sentences explaining the interpretive entry point)
+
+Respond ONLY with this JSON structure (no other fields, no other text):
 {
   "annotations": [
     {
       "lineNumber": 5,
       "type": "observation",
       "content": "Your annotation text here."
+    },
+    {
+      "lineNumber": 12,
+      "type": "critique",
+      "content": "Another annotation."
     }
   ]
-}`;
+}
+
+Do NOT use: "line_number", "comment", "annotation", "id", "code_excerpt", or any other field names.
+Do NOT set lineNumber to null or 0.
+Use only: "lineNumber" (integer > 0), "type" (string from the list), "content" (string).`;
 
       const userPrompt = `Analyze this code file and suggest 3-5 annotations:
 
@@ -1359,13 +1370,22 @@ Remember: Respond ONLY with valid JSON. Focus on interesting interpretive entry 
         return;
       }
 
-      const suggestions = parsed.annotations || [];
-      console.log("[AI Annotation Suggestions] Parsed suggestions:", suggestions);
+      const rawSuggestions = parsed.annotations || [];
+      console.log("[AI Annotation Suggestions] Parsed suggestions:", rawSuggestions);
 
-      if (suggestions.length === 0) {
+      if (rawSuggestions.length === 0) {
         setSuccessMessage("AI did not suggest any annotations");
         return;
       }
+
+      // Normalize field names (handle alternative naming from different LLMs)
+      const suggestions = rawSuggestions.map((s: any) => ({
+        lineNumber: s.lineNumber || s.line_number || s.lineNum,
+        type: s.type || 'observation', // Default to observation if missing
+        content: s.content || s.comment || s.annotation || s.text || '',
+      }));
+
+      console.log("[AI Annotation Suggestions] Normalized suggestions:", suggestions);
 
       // Validate and prepare annotations
       const codeLines = fileContent.split('\n');
