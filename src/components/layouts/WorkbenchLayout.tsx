@@ -7,7 +7,7 @@ import { useAutoSave } from "@/hooks/useAutoSave";
 import { useUnsavedWarning } from "@/hooks/useUnsavedWarning";
 import { useAISettings } from "@/context/AISettingsContext";
 import { cn, formatTimestamp, fetchWithTimeout, retryWithBackoff, generateId, getCurrentTimestamp } from "@/lib/utils";
-import type { Message, CodeReference, ExperienceLevel, Session, ReferenceResult } from "@/types";
+import type { Message, CodeReference, ExperienceLevel, Session, ReferenceResult, LineAnnotationType } from "@/types";
 import { formatReferenceAsMarkdown, generateReferenceFileName, getUniqueFileName, extractCodeBlocks, generateFileName, languageToExtension } from "@/lib/code-extraction";
 import { EXPERIENCE_LEVEL_LABELS, EXPERIENCE_LEVEL_DESCRIPTIONS, GUIDED_PROMPTS } from "@/types";
 import {
