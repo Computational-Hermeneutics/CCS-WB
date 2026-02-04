@@ -709,6 +709,54 @@ export const WorkbenchLayout = forwardRef<WorkbenchLayoutRef, WorkbenchLayoutPro
     }
   }, []);
 
+  // Handle manual code extraction to files (Create mode backup)
+  const handleExtractCodeToFiles = useCallback((messageId: string, content: string) => {
+    console.log('[Manual code extraction] Extracting from message:', messageId);
+
+    const codeBlocks = extractCodeBlocks(content);
+    console.log('[Manual code extraction] Found code blocks:', codeBlocks.length);
+
+    if (codeBlocks.length === 0) {
+      setSuccessMessage("No code blocks found in message");
+      return;
+    }
+
+    // Get existing file names for uniqueness check
+    const existingFileNames = session.codeFiles.map(f => f.name);
+
+    // Create files for each code block
+    const timestamp = Date.now();
+    let filesCreated = 0;
+
+    codeBlocks.forEach((block, index) => {
+      const baseName = generateFileName(block.language, index, timestamp);
+      const uniqueName = getUniqueFileName(baseName, existingFileNames);
+
+      console.log('[Manual code extraction] Creating file:', uniqueName);
+
+      // Add to existing names to avoid duplicates within this batch
+      existingFileNames.push(uniqueName);
+
+      // Create the file
+      const fileId = addCode({
+        name: uniqueName,
+        language: block.language,
+        source: "created",
+        size: block.code.length,
+      });
+
+      setCodeContent(fileId, block.code);
+      filesCreated++;
+    });
+
+    // Show success notification
+    setSuccessMessage(
+      filesCreated === 1
+        ? "Created 1 file from message"
+        : `Created ${filesCreated} files from message`
+    );
+  }, [session.codeFiles, addCode, setCodeContent]);
+
   // Handle toggle favourite message - persists to session for export
   const handleToggleFavourite = useCallback((messageId: string) => {
     // Update local UI state
@@ -3045,6 +3093,16 @@ export const WorkbenchLayout = forwardRef<WorkbenchLayoutRef, WorkbenchLayoutPro
                         <Copy className="h-3 w-3" strokeWidth={1.5} />
                       )}
                     </button>
+                    {/* Extract code to files button - only in Create mode for assistant messages */}
+                    {session.mode === 'create' && message.role === 'assistant' && (
+                      <button
+                        onClick={() => handleExtractCodeToFiles(message.id, message.content)}
+                        className="p-0.5 text-slate-muted hover:text-ink rounded-sm transition-colors opacity-0 group-hover/message:opacity-100"
+                        title="Extract code to files"
+                      >
+                        <FileCode className="h-3 w-3" strokeWidth={1.5} />
+                      </button>
+                    )}
                     <button
                       onClick={() => handleToggleFavourite(message.id)}
                       className={cn(

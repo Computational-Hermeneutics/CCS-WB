@@ -24,14 +24,15 @@ export function extractCodeBlocks(markdown: string): CodeBlock[] {
   let currentBlock: { language: string; code: string[]; startLine: number } | null = null;
 
   lines.forEach((line, index) => {
-    const fenceMatch = line.match(/^```(\w+)?/);
+    // More flexible regex: allow leading whitespace and any language name
+    const fenceMatch = line.trim().match(/^```([a-zA-Z0-9+#-]*)?$/);
 
     if (fenceMatch && !inCodeBlock) {
       // Start of code block
       inCodeBlock = true;
       const language = fenceMatch[1] || 'plaintext';
       currentBlock = { language, code: [], startLine: index };
-    } else if (line.match(/^```$/) && inCodeBlock && currentBlock) {
+    } else if (line.trim().match(/^```$/) && inCodeBlock && currentBlock) {
       // End of code block
       inCodeBlock = false;
       codeBlocks.push({
