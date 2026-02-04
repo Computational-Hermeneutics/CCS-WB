@@ -2493,6 +2493,12 @@ export function CodeEditorPanel({
                       </li>
                     </ul>
 
+                    {/* AI Auto-annotation */}
+                    <div className="font-sans text-[8px] uppercase tracking-wider text-slate-muted mb-1">AI Auto-Annotation</div>
+                    <p className="font-body text-[10px] text-slate mb-3">
+                      Click the ✨ <strong>Sparkles</strong> button to request AI-suggested annotations. Select types to generate, then review suggestions one-by-one with Add/Discard buttons.
+                    </p>
+
                     {/* Display controls */}
                     <div className="font-sans text-[8px] uppercase tracking-wider text-slate-muted mb-1">Display</div>
                     <ul className="space-y-0.5 text-[10px] text-slate mb-3">

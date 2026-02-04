@@ -1055,11 +1055,11 @@ export const WorkbenchLayout = forwardRef<WorkbenchLayoutRef, WorkbenchLayoutPro
         // Reset manual resize flag to allow 80-column auto-extend for new files
         userHasManuallyResized.current = false;
 
-        // Add message
-        addMessage({
-          role: "user",
-          content: `I've uploaded **${file.name}**${language ? ` (${language})` : ""} for analysis.`,
-        });
+        // System message removed - internal file loading notification
+        // addMessage({
+        //   role: "user",
+        //   content: `I've uploaded **${file.name}**${language ? ` (${language})` : ""} for analysis.`,
+        // });
       } catch (error) {
         console.error("File read error:", error);
       } finally {
@@ -1091,11 +1091,11 @@ export const WorkbenchLayout = forwardRef<WorkbenchLayoutRef, WorkbenchLayoutPro
     // Reset manual resize flag to allow 80-column auto-extend for new files
     userHasManuallyResized.current = false;
 
-    // Add message
-    addMessage({
-      role: "user",
-      content: `I've added **${codeName}**${language ? ` (${language})` : ""} for analysis.`,
-    });
+    // System message removed - internal code addition notification
+    // addMessage({
+    //   role: "user",
+    //   content: `I've added **${codeName}**${language ? ` (${language})` : ""} for analysis.`,
+    // });
 
     // Reset
     setCodeInputText("");
@@ -2264,11 +2264,11 @@ Follow the ${modeContext} guidance provided above.`;
           }
         }
 
-        // Add welcome message
-        addMessage({
-          role: "assistant",
-          content: `Session "${importedData.projectName || "Untitled"}" restored from ${importedData.exportedAt ? new Date(importedData.exportedAt).toLocaleDateString() : "file"}. ${importedData.codeFiles?.length || 0} code file(s) and ${importedData.lineAnnotations?.length || 0} annotation(s) loaded.`,
-        });
+        // System message removed - internal session restore notification
+        // addMessage({
+        //   role: "assistant",
+        //   content: `Session "${importedData.projectName || "Untitled"}" restored from ${importedData.exportedAt ? new Date(importedData.exportedAt).toLocaleDateString() : "file"}. ${importedData.codeFiles?.length || 0} code file(s) and ${importedData.lineAnnotations?.length || 0} annotation(s) loaded.`,
+        // });
       } catch (error) {
         console.error("Load error:", error);
         alert("Failed to load session. Please check the file format.");
@@ -3189,7 +3189,15 @@ Follow the ${modeContext} guidance provided above.`;
                     {aiEnabled && (
                       <div>
                         <h4 className="font-medium text-ink text-[11px] uppercase tracking-wide mb-1">Right Panel: AI Chat</h4>
-                        <p>Dialogue with AI assistant. Guided prompts suggest phase-appropriate questions. "Help Annotate" asks AI to suggest annotations.</p>
+                        <p>Dialogue with AI assistant. Guided prompts suggest phase-appropriate questions.</p>
+                      </div>
+                    )}
+                    {aiEnabled && (
+                      <div>
+                        <h4 className="font-medium text-ink text-[11px] uppercase tracking-wide mb-1">AI Auto-Annotation (✨)</h4>
+                        <p><strong>Sparkles button</strong> in annotation toolbar requests AI-suggested annotations.<br/>
+                        <strong>Two-stage workflow:</strong> (1) Select annotation types to generate, (2) Review suggestions one-by-one with Add/Discard buttons.<br/>
+                        <strong>Mode-specific:</strong> Analyze mode critiques, Learn mode teaches methods, Create mode suggests expansions.</p>
                       </div>
                     )}
                     <div>
