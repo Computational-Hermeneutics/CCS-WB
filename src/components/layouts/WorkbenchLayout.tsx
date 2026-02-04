@@ -1264,9 +1264,7 @@ export const WorkbenchLayout = forwardRef<WorkbenchLayoutRef, WorkbenchLayoutPro
 
     try {
       // Get LLM name for attribution
-      const llmName = aiSettings.provider === 'custom' && aiSettings.customModelId
-        ? aiSettings.customModelId
-        : aiSettings.model || aiSettings.provider || 'AI';
+      const llmName = aiSettings.customModelId || aiSettings.model || aiSettings.provider || 'AI';
 
       // Build the prompt for annotation suggestions
       const systemPrompt = `You are an expert in Critical Code Studies. Analyze the provided code and suggest 3-5 annotations that would be valuable for close reading and critical analysis.
@@ -1388,9 +1386,7 @@ Remember: Respond ONLY with valid JSON. Focus on interesting interpretive entry 
     }
 
     // Get LLM name for attribution
-    const llmName = aiSettings.provider === 'custom' && aiSettings.customModelId
-      ? aiSettings.customModelId
-      : aiSettings.model || aiSettings.provider || 'AI';
+    const llmName = aiSettings.customModelId || aiSettings.model || aiSettings.provider || 'AI';
 
     let annotationsAdded = 0;
 
