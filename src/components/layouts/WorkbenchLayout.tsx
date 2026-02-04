@@ -8,7 +8,7 @@ import { useUnsavedWarning } from "@/hooks/useUnsavedWarning";
 import { useAISettings } from "@/context/AISettingsContext";
 import { cn, formatTimestamp, fetchWithTimeout, retryWithBackoff, generateId, getCurrentTimestamp } from "@/lib/utils";
 import type { Message, CodeReference, ExperienceLevel, Session, ReferenceResult } from "@/types";
-import { formatReferenceAsMarkdown, generateReferenceFileName, getUniqueFileName } from "@/lib/code-extraction";
+import { formatReferenceAsMarkdown, generateReferenceFileName, getUniqueFileName, extractCodeBlocks, generateFileName, languageToExtension } from "@/lib/code-extraction";
 import { EXPERIENCE_LEVEL_LABELS, EXPERIENCE_LEVEL_DESCRIPTIONS, GUIDED_PROMPTS } from "@/types";
 import {
   Send,
@@ -494,6 +494,60 @@ export const WorkbenchLayout = forwardRef<WorkbenchLayoutRef, WorkbenchLayoutPro
       });
     }
   }, [session.messages.length, addMessage]);
+
+  // Auto-create files from AI code responses in Create mode
+  const processedMessageIds = useRef(new Set<string>());
+  useEffect(() => {
+    // Only process in Create mode
+    if (session.mode !== 'create') return;
+
+    // Get the latest assistant message
+    const lastMessage = session.messages[session.messages.length - 1];
+    if (!lastMessage || lastMessage.role !== 'assistant') return;
+
+    // Skip if already processed
+    if (processedMessageIds.current.has(lastMessage.id)) return;
+    processedMessageIds.current.add(lastMessage.id);
+
+    // Extract code blocks from the message
+    const codeBlocks = extractCodeBlocks(lastMessage.content);
+    if (codeBlocks.length === 0) return;
+
+    // Get existing file names for uniqueness check
+    const existingFileNames = session.codeFiles.map(f => f.name);
+
+    // Create files for each code block
+    const timestamp = Date.now();
+    let filesCreated = 0;
+
+    codeBlocks.forEach((block, index) => {
+      const baseName = generateFileName(block.language, index, timestamp);
+      const uniqueName = getUniqueFileName(baseName, existingFileNames);
+
+      // Add to existing names to avoid duplicates within this batch
+      existingFileNames.push(uniqueName);
+
+      // Create the file
+      const fileId = addCode({
+        name: uniqueName,
+        language: block.language,
+        source: "created",
+        size: block.code.length,
+      });
+
+      setCodeContent(fileId, block.code);
+      filesCreated++;
+    });
+
+    // Show success notification
+    if (filesCreated > 0) {
+      setSuccessMessage(
+        filesCreated === 1
+          ? "Created 1 file from AI response"
+          : `Created ${filesCreated} files from AI response`
+      );
+    }
+  }, [session.messages, session.mode, session.codeFiles, addCode, setCodeContent]);
 
   // Refresh projects when cloud menu opens (handles stale state from Safari suspension)
   useEffect(() => {
