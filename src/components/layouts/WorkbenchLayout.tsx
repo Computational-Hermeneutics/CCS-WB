@@ -2438,7 +2438,7 @@ Follow the ${modeContext} guidance provided above.`;
                     <SaveStatusIndicator
                       status={autoSave.saveStatus}
                       lastSaved={autoSave.lastSaved}
-                      isDirty={autoSave.isDirty}
+                      isDirty={false}
                       inline={true}
                     />
                   )}
@@ -2555,7 +2555,7 @@ Follow the ${modeContext} guidance provided above.`;
                           className={cn(
                             "w-full px-2 py-1.5 rounded",
                             "text-[11px] text-ink",
-                            "bg-white border border-parchment",
+                            "bg-card border border-parchment",
                             "focus:outline-none focus:ring-1 focus:ring-burgundy/30 focus:border-burgundy"
                           )}
                           disabled={isRenamingLoading}
