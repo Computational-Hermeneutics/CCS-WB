@@ -1,2 +1,2 @@
-export { CritiqueLayout } from "./CritiqueLayout";
-export type { CritiqueLayoutRef } from "./CritiqueLayout";
+export { WorkbenchLayout } from "./WorkbenchLayout";
+export type { WorkbenchLayoutRef } from "./WorkbenchLayout";

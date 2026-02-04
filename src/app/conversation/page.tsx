@@ -46,7 +46,7 @@ import type { AppMode } from "@/types/app-settings";
 import { FONT_SIZE_MIN, FONT_SIZE_MAX, PROGRAMMING_LANGUAGES } from "@/types/app-settings";
 import { AnnotatedCodeViewer, generateAnnotatedCode } from "@/components/code";
 import { GuidedPrompts } from "@/components/prompts";
-import { CritiqueLayout, type CritiqueLayoutRef } from "@/components/layouts";
+import { WorkbenchLayout, type WorkbenchLayoutRef } from "@/components/layouts";
 import { PROVIDER_CONFIGS } from "@/lib/ai/config";
 import { APP_VERSION, APP_NAME } from "@/lib/config";
 import { GUIDED_PROMPTS } from "@/types";
@@ -182,7 +182,7 @@ export default function ConversationPage() {
   const sessionLoadInputRef = useRef<HTMLInputElement>(null);
   const chatSearchInputRef = useRef<HTMLInputElement>(null);
   const hasAddedOpeningMessage = useRef(false);
-  const critiqueLayoutRef = useRef<CritiqueLayoutRef>(null);
+  const workbenchLayoutRef = useRef<WorkbenchLayoutRef>(null);
 
   // Use ref for session to avoid stale closure issues in hasUnsavedChanges
   const sessionRef = useRef(session);
@@ -191,8 +191,8 @@ export default function ConversationPage() {
   // Check if there are unsaved changes (more than just the initial assistant message)
   const hasUnsavedChanges = useCallback(() => {
     // For critique mode, use the ref method if available
-    if (sessionRef.current.mode === "critique" && critiqueLayoutRef.current) {
-      return critiqueLayoutRef.current.hasUnsavedChanges();
+    if (sessionRef.current.mode === "critique" && workbenchLayoutRef.current) {
+      return workbenchLayoutRef.current.hasUnsavedChanges();
     }
 
     // For other modes, check directly using ref to get latest session data
@@ -1376,13 +1376,12 @@ export default function ConversationPage() {
     setSuccessMessage("Session log exported as PDF!");
   }, [session, projectName, profile]);
 
-  // Critique and interpret modes use CritiqueLayout (IDE-style interface)
-  // Create mode uses conversational chat UI
-  if (session.mode === "critique" || session.mode === "interpret") {
+  // All three modes use WorkbenchLayout (unified IDE-style interface)
+  if (session.mode === "critique" || session.mode === "interpret" || session.mode === "create") {
     return (
       <>
-        <CritiqueLayout
-          ref={critiqueLayoutRef}
+        <WorkbenchLayout
+          ref={workbenchLayoutRef}
           onNavigateHome={handleNavigateHome}
           triggerSave={triggerCritiqueSave}
           onSaveTriggered={() => setTriggerCritiqueSave(false)}
@@ -1401,7 +1400,7 @@ export default function ConversationPage() {
                 </button>
               </div>
               <p className="font-body text-body-sm text-slate mb-6">
-                You have unsaved work{critiqueLayoutRef.current?.getProjectName() ? ` in "${critiqueLayoutRef.current.getProjectName()}"` : ""}. Would you like to save before leaving?
+                You have unsaved work{workbenchLayoutRef.current?.getProjectName() ? ` in "${workbenchLayoutRef.current.getProjectName()}"` : ""}. Would you like to save before leaving?
               </p>
               <div className="flex flex-col gap-3">
                 <button

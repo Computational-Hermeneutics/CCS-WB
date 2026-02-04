@@ -87,13 +87,13 @@ import {
 import ReactMarkdown from "react-markdown";
 import JSZip from "jszip";
 
-interface CritiqueLayoutProps {
+interface WorkbenchLayoutProps {
   onNavigateHome: () => void;
   triggerSave?: boolean;
   onSaveTriggered?: () => void;
 }
 
-export interface CritiqueLayoutRef {
+export interface WorkbenchLayoutRef {
   save: () => void;
   hasUnsavedChanges: () => boolean;
   getProjectName: () => string;
@@ -150,7 +150,7 @@ const CRITIQUE_LANGUAGES = [
   "Other",
 ] as const;
 
-export const CritiqueLayout = forwardRef<CritiqueLayoutRef, CritiqueLayoutProps>(function CritiqueLayout({
+export const WorkbenchLayout = forwardRef<WorkbenchLayoutRef, WorkbenchLayoutProps>(function WorkbenchLayout({
   onNavigateHome,
   triggerSave = false,
   onSaveTriggered,
@@ -227,10 +227,10 @@ export const CritiqueLayout = forwardRef<CritiqueLayoutRef, CritiqueLayoutProps>
   const autoSave = useAutoSave({
     enabled: true,
     onSaveSuccess: (timestamp) => {
-      console.log("[CritiqueLayout] Auto-save successful:", timestamp);
+      console.log("[WorkbenchLayout] Auto-save successful:", timestamp);
     },
     onSaveError: (error) => {
-      console.error("[CritiqueLayout] Auto-save failed:", error);
+      console.error("[WorkbenchLayout] Auto-save failed:", error);
       // Could show a toast notification here
     },
   });
