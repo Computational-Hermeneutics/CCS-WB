@@ -24,17 +24,29 @@ export function extractCodeBlocks(markdown: string): CodeBlock[] {
   let currentBlock: { language: string; code: string[]; startLine: number } | null = null;
 
   lines.forEach((line, index) => {
-    // More flexible regex: allow leading whitespace and any language name
-    const fenceMatch = line.trim().match(/^```([a-zA-Z0-9+#-]*)?$/);
+    const trimmedLine = line.trim();
 
-    if (fenceMatch && !inCodeBlock) {
+    // Match opening fence: ```language (with optional text after)
+    // Examples: ```python, ```python # comment, ```python - description
+    const openingMatch = trimmedLine.match(/^```([a-zA-Z0-9+#-]*)/);
+
+    // Match closing fence: ``` (nothing after the backticks, or just closing)
+    const closingMatch = trimmedLine.match(/^```\s*$/);
+
+    if (openingMatch && !inCodeBlock) {
       // Start of code block
       inCodeBlock = true;
-      const language = fenceMatch[1] || 'plaintext';
+      const language = openingMatch[1] || 'plaintext';
       currentBlock = { language, code: [], startLine: index };
-    } else if (line.trim().match(/^```$/) && inCodeBlock && currentBlock) {
+      console.log('[Code extraction] Opening code block:', { line: index, language, rawLine: line });
+    } else if (closingMatch && inCodeBlock && currentBlock) {
       // End of code block
       inCodeBlock = false;
+      console.log('[Code extraction] Closing code block:', {
+        line: index,
+        language: currentBlock.language,
+        codeLines: currentBlock.code.length
+      });
       codeBlocks.push({
         language: currentBlock.language,
         code: currentBlock.code.join('\n'),
@@ -43,11 +55,30 @@ export function extractCodeBlocks(markdown: string): CodeBlock[] {
       });
       currentBlock = null;
     } else if (inCodeBlock && currentBlock) {
-      // Inside code block
+      // Inside code block - don't trim, preserve exact formatting
       currentBlock.code.push(line);
     }
   });
 
+  // Handle unclosed code blocks (AI might not close them properly)
+  // Type assertion needed due to forEach control flow complexity
+  type BlockType = { language: string; code: string[]; startLine: number };
+  const finalBlock = currentBlock as BlockType | null;
+  if (finalBlock !== null && inCodeBlock && finalBlock.code.length > 0) {
+    console.warn('[Code extraction] Unclosed code block detected, adding anyway:', {
+      language: finalBlock.language,
+      startLine: finalBlock.startLine,
+      codeLines: finalBlock.code.length
+    });
+    codeBlocks.push({
+      language: finalBlock.language,
+      code: finalBlock.code.join('\n'),
+      startLine: finalBlock.startLine,
+      endLine: lines.length - 1
+    });
+  }
+
+  console.log('[Code extraction] Total blocks extracted:', codeBlocks.length);
   return codeBlocks;
 }
 
