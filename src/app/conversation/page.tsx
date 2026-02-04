@@ -150,6 +150,7 @@ export default function ConversationPage() {
   const [saveModalName, setSaveModalName] = useState("");
   const [showUnsavedWarning, setShowUnsavedWarning] = useState(false);
   const [triggerCritiqueSave, setTriggerCritiqueSave] = useState(false);
+  const [navigateHomeAfterSave, setNavigateHomeAfterSave] = useState(false);
   const [isAlphaVersion, setIsAlphaVersion] = useState(false);
   const [selectedCodeDetails, setSelectedCodeDetails] = useState<CodeReference | null>(null);
   const [selectedRefDetails, setSelectedRefDetails] = useState<ReferenceResult | null>(null);
@@ -260,6 +261,15 @@ export default function ConversationPage() {
       return () => clearTimeout(timer);
     }
   }, [successMessage]);
+
+  // Navigate home after save completes (when user clicked "Save First")
+  useEffect(() => {
+    if (navigateHomeAfterSave && !triggerCritiqueSave) {
+      // Save has completed (triggerCritiqueSave was reset to false)
+      setNavigateHomeAfterSave(false);
+      router.push('/');
+    }
+  }, [navigateHomeAfterSave, triggerCritiqueSave, router]);
 
   // Track message count to only scroll on new messages, not updates
   const prevMessageCount = useRef(session.messages.length);
@@ -1406,6 +1416,7 @@ export default function ConversationPage() {
                 <button
                   onClick={() => {
                     setShowUnsavedWarning(false);
+                    setNavigateHomeAfterSave(true);
                     // Trigger save via prop (more reliable than ref)
                     setTriggerCritiqueSave(true);
                   }}
