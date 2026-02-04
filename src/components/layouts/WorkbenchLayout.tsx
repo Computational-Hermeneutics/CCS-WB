@@ -1274,7 +1274,7 @@ CRITICAL: You MUST respond with valid JSON in the exact format specified below. 
 For each annotation, provide exactly these three fields:
 1. "lineNumber" (required): A positive integer indicating which line to annotate (lines are numbered starting from 1)
 2. "type" (required): Must be one of these exact strings: "observation", "question", "metaphor", "pattern", "context", or "critique"
-3. "content" (required): Your annotation text (2-3 sentences explaining the interpretive entry point)
+3. "content" (required): Your annotation text (1-2 concise sentences explaining the interpretive entry point)
 
 Respond ONLY with this JSON structure (no other fields, no other text):
 {
