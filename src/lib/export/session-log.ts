@@ -10,7 +10,7 @@ import type { Session, LineAnnotation } from "@/types";
 import type { UserProfile } from "@/types/app-settings";
 
 // CCS Skill document version
-export const CCS_SKILL_VERSION = "2.5";
+export const CCS_SKILL_VERSION = "2.7";
 
 // Mode codes for file naming
 export const MODE_CODES: Record<string, string> = {

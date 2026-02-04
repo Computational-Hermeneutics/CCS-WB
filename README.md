@@ -1,6 +1,6 @@
 # Critical Code Studies Workbench
 
-**Version 2.22.5** | CCS Methodology v2.6
+**Version 2.22.5** | CCS Methodology v2.7
 
 A web application for close reading and hermeneutic analysis of software as cultural artefact.
 
