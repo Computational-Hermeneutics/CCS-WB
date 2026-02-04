@@ -29,7 +29,7 @@ export function FloatingCCSPanel({
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   const panelRef = useRef<HTMLDivElement>(null);
-  const dragStateRef = useRef({ isDragging: false, startX: 0, startY: 0 });
+  const dragStateRef = useRef({ isDragging: false, startX: 0, startY: 0, hasMoved: false });
 
   // Drag handlers using refs and direct DOM manipulation (no React re-renders during drag)
   useEffect(() => {
@@ -38,6 +38,9 @@ export function FloatingCCSPanel({
 
     const handleMouseMove = (e: MouseEvent) => {
       if (!dragStateRef.current.isDragging) return;
+
+      // Mark that actual dragging has occurred
+      dragStateRef.current.hasMoved = true;
 
       const newX = e.clientX - dragStateRef.current.startX;
       const newY = e.clientY - dragStateRef.current.startY;
@@ -55,16 +58,20 @@ export function FloatingCCSPanel({
     const handleMouseUp = () => {
       if (!dragStateRef.current.isDragging) return;
 
+      const hasMoved = dragStateRef.current.hasMoved;
       dragStateRef.current.isDragging = false;
+      dragStateRef.current.hasMoved = false;
       panel.style.cursor = 'default';
 
       // Re-enable transitions after drag
       panel.style.transition = '';
 
-      // Update React state with final position
-      const left = parseFloat(panel.style.left);
-      const top = parseFloat(panel.style.top);
-      setPosition({ x: left, y: top });
+      // Only update React state with final position if actual dragging occurred
+      if (hasMoved) {
+        const left = parseFloat(panel.style.left);
+        const top = parseFloat(panel.style.top);
+        setPosition({ x: left, y: top });
+      }
     };
 
     document.addEventListener('mousemove', handleMouseMove);
@@ -89,7 +96,8 @@ export function FloatingCCSPanel({
       dragStateRef.current = {
         isDragging: true,
         startX: e.clientX - rect.left,
-        startY: e.clientY - rect.top
+        startY: e.clientY - rect.top,
+        hasMoved: false
       };
 
       panel.style.cursor = 'grabbing';
