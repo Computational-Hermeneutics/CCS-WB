@@ -266,12 +266,15 @@ export const WorkbenchLayout = forwardRef<WorkbenchLayoutRef, WorkbenchLayoutPro
   const [selectedReferences, setSelectedReferences] = useState<Set<number>>(new Set());
   const [selectedFileId, setSelectedFileId] = useState<string | null>(null);
   const [showAnnotationSuggestionsModal, setShowAnnotationSuggestionsModal] = useState(false);
+  const [annotationModalMode, setAnnotationModalMode] = useState<'type-selection' | 'review'>('type-selection');
+  const [selectedAnnotationTypes, setSelectedAnnotationTypes] = useState<Set<LineAnnotationType>>(new Set(['observation', 'question', 'metaphor', 'pattern', 'context', 'critique']));
   const [annotationSuggestions, setAnnotationSuggestions] = useState<Array<{
     lineNumber: number;
     type: LineAnnotationType;
     content: string;
     lineContent: string;
   }>>([]);
+  const [currentSuggestionIndex, setCurrentSuggestionIndex] = useState(0);
   const [selectedAnnotations, setSelectedAnnotations] = useState<Set<number>>(new Set());
   const [isRequestingAnnotations, setIsRequestingAnnotations] = useState(false);
   const [settingsTab, setSettingsTab] = useState<"profile" | "code" | "appearance" | "ai" | "about">("appearance");
@@ -1236,7 +1239,7 @@ export const WorkbenchLayout = forwardRef<WorkbenchLayoutRef, WorkbenchLayoutPro
   }, [selectedReferences, searchResults, session.codeFiles, addCode, setCodeContent]);
 
   // Annotation suggestion handlers
-  const handleRequestAnnotationSuggestions = useCallback(async () => {
+  const handleRequestAnnotationSuggestions = useCallback(async (requestedTypes: Set<LineAnnotationType>) => {
     // Check if we have a selected file and it has content
     if (!selectedFileId) {
       setSuccessMessage("Please open a code file first");
@@ -1248,6 +1251,12 @@ export const WorkbenchLayout = forwardRef<WorkbenchLayoutRef, WorkbenchLayoutPro
 
     if (!selectedFile || !fileContent) {
       setSuccessMessage("Please open a code file first");
+      return;
+    }
+
+    // Check if any types are selected
+    if (requestedTypes.size === 0) {
+      setSuccessMessage("Please select at least one annotation type");
       return;
     }
 
@@ -1269,6 +1278,10 @@ export const WorkbenchLayout = forwardRef<WorkbenchLayoutRef, WorkbenchLayoutPro
       // Calculate actual line count for this file
       const lineCount = fileContent.split('\n').length;
 
+      // Format requested annotation types
+      const requestedTypesArray = Array.from(requestedTypes);
+      const typesDescription = requestedTypesArray.map(t => `"${t}"`).join(', ');
+
       // Build the prompt for annotation suggestions
       const systemPrompt = `You are an expert in Critical Code Studies. Analyze the provided code and suggest 3-5 annotations that would be valuable for close reading and critical analysis.
 
@@ -1279,9 +1292,11 @@ All lineNumber values MUST be between 1 and ${lineCount} inclusive.
 Do NOT use line numbers from any original source code if this is an excerpt or sample.
 Only use line numbers that actually exist in the provided file (1-${lineCount}).
 
+ANNOTATION TYPES REQUESTED: Only generate annotations of these types: ${typesDescription}.
+
 For each annotation, provide exactly these three fields:
 1. "lineNumber" (required): A positive integer between 1 and ${lineCount} indicating which line to annotate
-2. "type" (required): Must be one of these exact strings: "observation", "question", "metaphor", "pattern", "context", or "critique"
+2. "type" (required): Must be one of these exact strings: ${typesDescription}
 3. "content" (required): Your annotation text (1-2 concise sentences explaining the interpretive entry point)
 
 Respond ONLY with this JSON structure (no other fields, no other text):
@@ -1445,9 +1460,10 @@ Remember: Respond ONLY with valid JSON. All lineNumber values must be between 1 
         return;
       }
 
-      // Show selection modal
+      // Show review modal with first suggestion
       setAnnotationSuggestions(validSuggestions);
-      setSelectedAnnotations(new Set(validSuggestions.map((_: any, i: number) => i))); // Select all by default
+      setCurrentSuggestionIndex(0);
+      setAnnotationModalMode('review');
       setShowAnnotationSuggestionsModal(true);
 
     } catch (error) {
@@ -1490,6 +1506,51 @@ Remember: Respond ONLY with valid JSON. All lineNumber values must be between 1 
     setAnnotationSuggestions([]);
     setSelectedAnnotations(new Set());
   }, [selectedAnnotations, annotationSuggestions, selectedFileId, aiSettings, addLineAnnotation]);
+
+  // Add current suggestion and move to next (or close if last)
+  const handleAddCurrentSuggestion = useCallback(() => {
+    if (!selectedFileId) return;
+
+    const suggestion = annotationSuggestions[currentSuggestionIndex];
+    if (!suggestion) return;
+
+    // Get LLM name for attribution
+    const llmName = aiSettings.customModelId || aiSettings.model || aiSettings.provider || 'AI';
+
+    // Add the annotation
+    addLineAnnotation({
+      codeFileId: selectedFileId,
+      lineNumber: suggestion.lineNumber,
+      lineContent: suggestion.lineContent,
+      type: suggestion.type,
+      content: suggestion.content,
+      addedBy: llmName,
+    });
+
+    // Move to next suggestion or close modal
+    if (currentSuggestionIndex < annotationSuggestions.length - 1) {
+      setCurrentSuggestionIndex(currentSuggestionIndex + 1);
+    } else {
+      // Last suggestion - close modal
+      setShowAnnotationSuggestionsModal(false);
+      setAnnotationSuggestions([]);
+      setCurrentSuggestionIndex(0);
+      setSuccessMessage(`✓ Annotation added by ${llmName}`);
+    }
+  }, [currentSuggestionIndex, annotationSuggestions, selectedFileId, aiSettings, addLineAnnotation]);
+
+  // Discard current suggestion and move to next (or close if last)
+  const handleDiscardCurrentSuggestion = useCallback(() => {
+    // Move to next suggestion or close modal
+    if (currentSuggestionIndex < annotationSuggestions.length - 1) {
+      setCurrentSuggestionIndex(currentSuggestionIndex + 1);
+    } else {
+      // Last suggestion - close modal
+      setShowAnnotationSuggestionsModal(false);
+      setAnnotationSuggestions([]);
+      setCurrentSuggestionIndex(0);
+    }
+  }, [currentSuggestionIndex, annotationSuggestions]);
 
   // Save to cloud (for cloud projects)
   const [isSavingToCloud, setIsSavingToCloud] = useState(false);
@@ -3522,7 +3583,10 @@ Remember: Respond ONLY with valid JSON. All lineNumber values must be between 1 
                   {session.codeFiles.length > 0 && (
                     <>
                       <button
-                        onClick={handleRequestAnnotationSuggestions}
+                        onClick={() => {
+                          setAnnotationModalMode('type-selection');
+                          setShowAnnotationSuggestionsModal(true);
+                        }}
                         disabled={isRequestingAnnotations}
                         className={cn(
                           "p-1.5 rounded-md transition-colors",
@@ -3782,119 +3846,202 @@ Remember: Respond ONLY with valid JSON. All lineNumber values must be between 1 
         </div>
       )}
 
-      {/* Annotation Suggestions Selection Modal */}
+      {/* Annotation Suggestions Modal - Two modes: type-selection and review */}
       {showAnnotationSuggestionsModal && (
         <div
           className="fixed inset-0 bg-ink/40 flex items-center justify-center z-50 p-4"
-          onClick={() => setShowAnnotationSuggestionsModal(false)}
+          onClick={() => {
+            setShowAnnotationSuggestionsModal(false);
+            setAnnotationSuggestions([]);
+            setCurrentSuggestionIndex(0);
+          }}
         >
           <div
             className="bg-popover rounded-sm shadow-editorial-lg p-4 w-full max-w-2xl max-h-[80vh] overflow-hidden flex flex-col border border-parchment modal-content"
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 className="font-display text-sm text-ink mb-2">Select Annotations to Add</h3>
-            <p className="font-body text-[11px] text-slate mb-3">
-              AI suggested {annotationSuggestions.length} annotations. Select which ones to add to your code.
-            </p>
+            {annotationModalMode === 'type-selection' ? (
+              <>
+                {/* Type Selection Mode */}
+                <h3 className="font-display text-sm text-ink mb-2">Select Annotation Types</h3>
+                <p className="font-body text-[11px] text-slate mb-3">
+                  Choose which types of annotations you'd like the AI to suggest for your code.
+                </p>
 
-            {/* Suggestions list with checkboxes */}
-            <div className="flex-1 overflow-y-auto space-y-2 mb-4">
-              {annotationSuggestions.map((suggestion, index) => (
-                <label
-                  key={index}
-                  className={cn(
-                    "flex items-start gap-3 p-3 rounded-sm border cursor-pointer transition-colors",
-                    selectedAnnotations.has(index)
-                      ? "bg-burgundy/5 border-burgundy/30"
-                      : "bg-card border-parchment hover:border-gold/50"
-                  )}
-                >
-                  <input
-                    type="checkbox"
-                    checked={selectedAnnotations.has(index)}
-                    onChange={(e) => {
-                      const newSelected = new Set(selectedAnnotations);
-                      if (e.target.checked) {
-                        newSelected.add(index);
+                {/* Annotation type checkboxes */}
+                <div className="flex-1 overflow-y-auto space-y-2 mb-4">
+                  {(['observation', 'question', 'metaphor', 'pattern', 'context', 'critique'] as LineAnnotationType[]).map((type) => (
+                    <label
+                      key={type}
+                      className={cn(
+                        "flex items-center gap-3 p-3 rounded-sm border cursor-pointer transition-colors",
+                        selectedAnnotationTypes.has(type)
+                          ? "bg-burgundy/5 border-burgundy/30"
+                          : "bg-card border-parchment hover:border-gold/50"
+                      )}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selectedAnnotationTypes.has(type)}
+                        onChange={(e) => {
+                          const newSelected = new Set(selectedAnnotationTypes);
+                          if (e.target.checked) {
+                            newSelected.add(type);
+                          } else {
+                            newSelected.delete(type);
+                          }
+                          setSelectedAnnotationTypes(newSelected);
+                        }}
+                        className="h-4 w-4 rounded border-parchment-dark text-burgundy focus:ring-burgundy focus:ring-offset-0"
+                      />
+                      <div className="flex items-center gap-2">
+                        <span className={cn(
+                          "px-1.5 py-0.5 rounded-sm text-[9px] font-medium uppercase tracking-wide",
+                          type === 'observation' && "bg-blue-100 text-blue-700",
+                          type === 'question' && "bg-purple-100 text-purple-700",
+                          type === 'metaphor' && "bg-pink-100 text-pink-700",
+                          type === 'pattern' && "bg-amber-100 text-amber-700",
+                          type === 'context' && "bg-emerald-100 text-emerald-700",
+                          type === 'critique' && "bg-red-100 text-red-700"
+                        )}>
+                          {type === 'observation' && 'Observation'}
+                          {type === 'question' && 'Question'}
+                          {type === 'metaphor' && 'Metaphor'}
+                          {type === 'pattern' && 'Pattern'}
+                          {type === 'context' && 'Context'}
+                          {type === 'critique' && 'Critique'}
+                        </span>
+                        <span className="font-body text-[11px] text-slate">
+                          {type === 'observation' && 'Descriptive observations about the code'}
+                          {type === 'question' && 'Questions to prompt deeper analysis'}
+                          {type === 'metaphor' && 'Metaphors and symbolic interpretations'}
+                          {type === 'pattern' && 'Recurring patterns and structures'}
+                          {type === 'context' && 'Historical and cultural context'}
+                          {type === 'critique' && 'Critical analysis and evaluation'}
+                        </span>
+                      </div>
+                    </label>
+                  ))}
+                </div>
+
+                {/* Action buttons */}
+                <div className="flex items-center justify-between border-t border-parchment pt-3">
+                  <button
+                    onClick={() => {
+                      const allTypes: LineAnnotationType[] = ['observation', 'question', 'metaphor', 'pattern', 'context', 'critique'];
+                      if (selectedAnnotationTypes.size === 6) {
+                        setSelectedAnnotationTypes(new Set());
                       } else {
-                        newSelected.delete(index);
+                        setSelectedAnnotationTypes(new Set(allTypes));
                       }
-                      setSelectedAnnotations(newSelected);
                     }}
-                    className="mt-0.5 h-4 w-4 rounded border-parchment-dark text-burgundy focus:ring-burgundy focus:ring-offset-0"
-                  />
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <p className="font-mono text-[11px] text-slate-muted">
-                        Line {suggestion.lineNumber}
-                      </p>
-                      <span className={cn(
-                        "px-1.5 py-0.5 rounded-sm text-[9px] font-medium uppercase tracking-wide",
-                        suggestion.type === 'observation' && "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300",
-                        suggestion.type === 'question' && "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300",
-                        suggestion.type === 'metaphor' && "bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-300",
-                        suggestion.type === 'pattern' && "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300",
-                        suggestion.type === 'context' && "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300",
-                        suggestion.type === 'critique' && "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300"
-                      )}>
-                        {suggestion.type === 'observation' && 'Obs'}
-                        {suggestion.type === 'question' && 'Q'}
-                        {suggestion.type === 'metaphor' && 'Met'}
-                        {suggestion.type === 'pattern' && 'Pat'}
-                        {suggestion.type === 'context' && 'Ctx'}
-                        {suggestion.type === 'critique' && 'Crit'}
-                      </span>
-                    </div>
-                    <p className="font-mono text-[10px] text-slate-muted mb-2 bg-slate-50 dark:bg-slate-900/30 px-2 py-1 rounded">
-                      {suggestion.lineContent}
-                    </p>
-                    <p className="font-body text-[11px] text-ink">
-                      {suggestion.content}
-                    </p>
+                    className="text-[11px] text-slate hover:text-ink transition-colors"
+                  >
+                    {selectedAnnotationTypes.size === 6 ? "Deselect all" : "Select all"}
+                  </button>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => {
+                        setShowAnnotationSuggestionsModal(false);
+                        setAnnotationSuggestions([]);
+                        setCurrentSuggestionIndex(0);
+                      }}
+                      className="btn-editorial-ghost text-[11px] px-3 py-1.5"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={() => handleRequestAnnotationSuggestions(selectedAnnotationTypes)}
+                      disabled={selectedAnnotationTypes.size === 0 || isRequestingAnnotations}
+                      className={cn(
+                        "text-[11px] px-3 py-1.5 rounded-sm",
+                        selectedAnnotationTypes.size > 0 && !isRequestingAnnotations
+                          ? "btn-editorial-primary"
+                          : "bg-parchment text-slate-muted cursor-not-allowed"
+                      )}
+                    >
+                      {isRequestingAnnotations ? "Generating..." : `Generate (${selectedAnnotationTypes.size})`}
+                    </button>
                   </div>
-                </label>
-              ))}
-            </div>
+                </div>
+              </>
+            ) : (
+              <>
+                {/* Review Mode - One suggestion at a time */}
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="font-display text-sm text-ink">Review Annotation Suggestions</h3>
+                  <p className="font-mono text-[10px] text-slate-muted">
+                    {currentSuggestionIndex + 1} of {annotationSuggestions.length}
+                  </p>
+                </div>
+                <p className="font-body text-[11px] text-slate mb-3">
+                  Review each suggestion and choose to add or discard it.
+                </p>
 
-            {/* Action buttons */}
-            <div className="flex items-center justify-between border-t border-parchment pt-3">
-              <button
-                onClick={() => {
-                  if (selectedAnnotations.size === annotationSuggestions.length) {
-                    setSelectedAnnotations(new Set());
-                  } else {
-                    setSelectedAnnotations(new Set(annotationSuggestions.map((_, i) => i)));
-                  }
-                }}
-                className="text-[11px] text-slate hover:text-ink transition-colors"
-              >
-                {selectedAnnotations.size === annotationSuggestions.length ? "Deselect all" : "Select all"}
-              </button>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => {
-                    setShowAnnotationSuggestionsModal(false);
-                    setAnnotationSuggestions([]);
-                    setSelectedAnnotations(new Set());
-                  }}
-                  className="btn-editorial-ghost text-[11px] px-3 py-1.5"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleAddSelectedAnnotations}
-                  disabled={selectedAnnotations.size === 0}
-                  className={cn(
-                    "text-[11px] px-3 py-1.5 rounded-sm",
-                    selectedAnnotations.size > 0
-                      ? "btn-editorial-primary"
-                      : "bg-parchment text-slate-muted cursor-not-allowed"
-                  )}
-                >
-                  Add {selectedAnnotations.size > 0 ? `(${selectedAnnotations.size})` : ""}
-                </button>
-              </div>
-            </div>
+                {/* Current suggestion display */}
+                {annotationSuggestions[currentSuggestionIndex] && (
+                  <div className="flex-1 overflow-y-auto mb-4">
+                    <div className="p-4 rounded-sm border border-parchment bg-card">
+                      <div className="flex items-center gap-2 mb-2">
+                        <p className="font-mono text-[11px] text-slate-muted">
+                          Line {annotationSuggestions[currentSuggestionIndex].lineNumber}
+                        </p>
+                        <span className={cn(
+                          "px-1.5 py-0.5 rounded-sm text-[9px] font-medium uppercase tracking-wide",
+                          annotationSuggestions[currentSuggestionIndex].type === 'observation' && "bg-blue-100 text-blue-700",
+                          annotationSuggestions[currentSuggestionIndex].type === 'question' && "bg-purple-100 text-purple-700",
+                          annotationSuggestions[currentSuggestionIndex].type === 'metaphor' && "bg-pink-100 text-pink-700",
+                          annotationSuggestions[currentSuggestionIndex].type === 'pattern' && "bg-amber-100 text-amber-700",
+                          annotationSuggestions[currentSuggestionIndex].type === 'context' && "bg-emerald-100 text-emerald-700",
+                          annotationSuggestions[currentSuggestionIndex].type === 'critique' && "bg-red-100 text-red-700"
+                        )}>
+                          {annotationSuggestions[currentSuggestionIndex].type === 'observation' && 'Observation'}
+                          {annotationSuggestions[currentSuggestionIndex].type === 'question' && 'Question'}
+                          {annotationSuggestions[currentSuggestionIndex].type === 'metaphor' && 'Metaphor'}
+                          {annotationSuggestions[currentSuggestionIndex].type === 'pattern' && 'Pattern'}
+                          {annotationSuggestions[currentSuggestionIndex].type === 'context' && 'Context'}
+                          {annotationSuggestions[currentSuggestionIndex].type === 'critique' && 'Critique'}
+                        </span>
+                      </div>
+
+                      <div className="mb-3 p-3 bg-slate-50 dark:bg-slate-900/30 rounded border border-slate/20">
+                        <p className="font-sans text-[9px] uppercase tracking-widest text-slate-muted mb-1">
+                          Line of code
+                        </p>
+                        <p className="font-mono text-[11px] text-ink">
+                          {annotationSuggestions[currentSuggestionIndex].lineContent}
+                        </p>
+                      </div>
+
+                      <div>
+                        <p className="font-sans text-[9px] uppercase tracking-widest text-slate-muted mb-1">
+                          Annotation
+                        </p>
+                        <p className="font-body text-[11px] text-ink">
+                          {annotationSuggestions[currentSuggestionIndex].content}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Action buttons */}
+                <div className="flex items-center justify-end gap-2 border-t border-parchment pt-3">
+                  <button
+                    onClick={handleDiscardCurrentSuggestion}
+                    className="btn-editorial-ghost text-[11px] px-3 py-1.5"
+                  >
+                    Discard
+                  </button>
+                  <button
+                    onClick={handleAddCurrentSuggestion}
+                    className="btn-editorial-primary text-[11px] px-3 py-1.5"
+                  >
+                    Add
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}
