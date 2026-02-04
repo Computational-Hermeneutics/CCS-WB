@@ -17,6 +17,8 @@ export interface SaveStatusIndicatorProps {
   lastSaved: string | null;
   isDirty: boolean;
   className?: string;
+  /** Inline mode: shows only text without icons, for integration with project name */
+  inline?: boolean;
 }
 
 /**
@@ -53,8 +55,60 @@ export function SaveStatusIndicator({
   lastSaved,
   isDirty,
   className = "",
+  inline = false,
 }: SaveStatusIndicatorProps): React.ReactElement {
-  // Determine icon and text based on status
+  // Inline mode: return text-only status for integration with project name
+  if (inline) {
+    let text: string | null = null;
+    let colorClass = "";
+
+    switch (status) {
+      case "saving":
+        text = "Saving...";
+        colorClass = "text-slate-600";
+        break;
+
+      case "saved":
+        text = lastSaved ? `Saved ${formatRelativeTime(lastSaved)}` : "Saved";
+        colorClass = "text-green-600";
+        break;
+
+      case "error":
+        text = "Save failed";
+        colorClass = "text-red-600";
+        break;
+
+      case "dirty":
+        text = "Unsaved";
+        colorClass = "text-red-600";
+        break;
+
+      case "idle":
+      default:
+        if (lastSaved) {
+          text = `Saved ${formatRelativeTime(lastSaved)}`;
+          colorClass = "text-slate-500";
+        } else if (isDirty) {
+          text = "Unsaved";
+          colorClass = "text-red-600";
+        }
+        break;
+    }
+
+    if (!text) return <></>;
+
+    return (
+      <span
+        className={`font-sans text-[10px] ${colorClass} ${className}`}
+        role="status"
+        aria-live="polite"
+      >
+        {text}
+      </span>
+    );
+  }
+
+  // Standard mode: icon + text
   let icon: React.ReactNode;
   let text: string;
   let colorClass: string;

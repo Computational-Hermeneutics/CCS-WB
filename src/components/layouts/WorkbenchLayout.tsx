@@ -1850,9 +1850,19 @@ export const WorkbenchLayout = forwardRef<WorkbenchLayoutRef, WorkbenchLayoutPro
             >
               <Cloud className="h-2.5 w-2.5 text-slate-muted flex-shrink-0" strokeWidth={1.5} />
               <div className="flex flex-col items-start min-w-0">
-                <span className="font-mono text-[10px] text-ink font-medium truncate max-w-[160px]">
-                  {currentProject?.name || "Cloud Project"}
-                </span>
+                <div className="flex items-center gap-1 min-w-0">
+                  <span className="font-mono text-[10px] text-ink font-medium truncate max-w-[120px]">
+                    {currentProject?.name || "Cloud Project"}
+                  </span>
+                  {autoSave.isSupported && (
+                    <SaveStatusIndicator
+                      status={autoSave.saveStatus}
+                      lastSaved={autoSave.lastSaved}
+                      isDirty={autoSave.isDirty}
+                      inline={true}
+                    />
+                  )}
+                </div>
                 {/* Owner initials or Public indicator */}
                 {viewingLibraryProjectId ? (
                   <span className="font-sans text-[8px] text-emerald-600 font-medium">Public</span>
@@ -2052,15 +2062,25 @@ export const WorkbenchLayout = forwardRef<WorkbenchLayoutRef, WorkbenchLayoutPro
             title="Local session (click to rename)"
           >
             <HardDrive className="h-3 w-3 text-slate-muted flex-shrink-0" strokeWidth={1.5} />
-            {projectName ? (
-              <span className="font-mono text-[10px] text-ink truncate">
-                {projectName.replace(/[^a-z0-9-_ ]/gi, "").replace(/\s+/g, "-").toLowerCase()}-{MODE_CODES[session.mode] || "XX"}.ccs
-              </span>
-            ) : (
-              <span className="font-mono text-[10px] text-slate-muted italic whitespace-nowrap">
-                untitled-{MODE_CODES[session.mode] || "XX"}.ccs
-              </span>
-            )}
+            <div className="flex items-center gap-1 min-w-0">
+              {projectName ? (
+                <span className="font-mono text-[10px] text-ink truncate">
+                  {projectName.replace(/[^a-z0-9-_ ]/gi, "").replace(/\s+/g, "-").toLowerCase()}-{MODE_CODES[session.mode] || "XX"}.ccs
+                </span>
+              ) : (
+                <span className="font-mono text-[10px] text-slate-muted italic whitespace-nowrap">
+                  untitled-{MODE_CODES[session.mode] || "XX"}.ccs
+                </span>
+              )}
+              {autoSave.isSupported && (
+                <SaveStatusIndicator
+                  status={autoSave.saveStatus}
+                  lastSaved={autoSave.lastSaved}
+                  isDirty={autoSave.isDirty}
+                  inline={true}
+                />
+              )}
+            </div>
           </button>
         )}
         <div className="flex items-center gap-0.5 sm:gap-1 flex-shrink-0">
@@ -2127,15 +2147,6 @@ export const WorkbenchLayout = forwardRef<WorkbenchLayoutRef, WorkbenchLayoutPro
           <button onClick={() => setShowExportModal(true)} className="p-2 md:p-1.5 text-slate hover:text-ink" title="Export session log">
             <Download className="h-4 w-4" strokeWidth={1.5} />
           </button>
-          {/* Save Status Indicator */}
-          {autoSave.isSupported && (
-            <SaveStatusIndicator
-              status={autoSave.saveStatus}
-              lastSaved={autoSave.lastSaved}
-              isDirty={autoSave.isDirty}
-              className="hidden md:flex"
-            />
-          )}
           {/* AI Status Button */}
           <button
             onClick={() => setShowAIPanel(true)}
