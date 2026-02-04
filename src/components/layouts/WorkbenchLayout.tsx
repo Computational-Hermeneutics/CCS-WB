@@ -106,11 +106,11 @@ export interface WorkbenchLayoutRef {
 // Opening prompt for critique mode
 const CRITIQUE_OPENING = "What code would you like to explore? You can paste it directly, upload a file, or describe what you're looking at. I'm curious what drew your attention to this particular piece of software.";
 
-// Mode colors for badges
+// Mode colors for badges - subtle to match toolbar aesthetic
 const MODE_COLORS: Record<string, string> = {
-  critique: "bg-burgundy/10 text-burgundy",
-  interpret: "bg-emerald-100 text-emerald-700",
-  create: "bg-blue-100 text-blue-700",
+  critique: "bg-slate-100 text-slate-700",
+  interpret: "bg-slate-100 text-slate-700",
+  create: "bg-slate-100 text-slate-700",
 };
 
 // Mode display names
