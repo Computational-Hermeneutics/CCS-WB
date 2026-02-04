@@ -510,16 +510,10 @@ export const WorkbenchLayout = forwardRef<WorkbenchLayoutRef, WorkbenchLayoutPro
     }
   }, [session.messages.length, addMessage]);
 
-  // Auto-create files from AI code responses in Create mode
+  // Auto-create files from AI code responses in all modes
   const processedMessageIds = useRef(new Set<string>());
   useEffect(() => {
     console.log('[Auto-file-creation] useEffect fired, messages:', session.messages.length);
-
-    // Only process in Create mode
-    if (session.mode !== 'create') {
-      console.log('[Auto-file-creation] Not in Create mode, skipping. Mode:', session.mode);
-      return;
-    }
 
     // Get the latest assistant message
     const lastMessage = session.messages[session.messages.length - 1];
@@ -724,7 +718,7 @@ export const WorkbenchLayout = forwardRef<WorkbenchLayoutRef, WorkbenchLayoutPro
     }
   }, []);
 
-  // Handle manual code extraction to files (Create mode backup)
+  // Handle manual code extraction to files (all modes)
   const handleExtractCodeToFiles = useCallback((messageId: string, content: string) => {
     console.log('[Manual code extraction] Extracting from message:', messageId);
 
@@ -770,6 +764,35 @@ export const WorkbenchLayout = forwardRef<WorkbenchLayoutRef, WorkbenchLayoutPro
         ? "Created 1 file from message"
         : `Created ${filesCreated} files from message`
     );
+  }, [session.codeFiles, addCode, setCodeContent]);
+
+  // Handle saving AI response as markdown file
+  const handleSaveResponseAsMarkdown = useCallback((messageId: string, content: string) => {
+    console.log('[Save response] Saving message as markdown:', messageId);
+
+    // Get existing file names for uniqueness check
+    const existingFileNames = session.codeFiles.map(f => f.name);
+
+    // Generate unique filename
+    const timestamp = Date.now();
+    const baseName = `ai-response-${timestamp}.md`;
+    const uniqueName = getUniqueFileName(baseName, existingFileNames);
+
+    console.log('[Save response] Creating file:', uniqueName);
+
+    // Create the markdown file
+    const fileId = addCode({
+      name: uniqueName,
+      language: "markdown",
+      source: "created",
+      size: content.length,
+    });
+
+    // Set file content
+    setCodeContent(fileId, content);
+
+    // Show success notification
+    setSuccessMessage(`Saved response as ${uniqueName}`);
   }, [session.codeFiles, addCode, setCodeContent]);
 
   // Handle toggle favourite message - persists to session for export
@@ -3522,14 +3545,24 @@ Follow the ${modeContext} guidance provided above.`;
                         <Copy className="h-3 w-3" strokeWidth={1.5} />
                       )}
                     </button>
-                    {/* Extract code to files button - only in Create mode for assistant messages */}
-                    {session.mode === 'create' && message.role === 'assistant' && (
+                    {/* Extract code to files button - all modes for assistant messages */}
+                    {message.role === 'assistant' && (
                       <button
                         onClick={() => handleExtractCodeToFiles(message.id, message.content)}
                         className="p-0.5 text-slate-muted hover:text-ink rounded-sm transition-colors opacity-0 group-hover/message:opacity-100"
                         title="Extract code to files"
                       >
                         <FileCode className="h-3 w-3" strokeWidth={1.5} />
+                      </button>
+                    )}
+                    {/* Save response as markdown file */}
+                    {message.role === 'assistant' && (
+                      <button
+                        onClick={() => handleSaveResponseAsMarkdown(message.id, message.content)}
+                        className="p-0.5 text-slate-muted hover:text-ink rounded-sm transition-colors opacity-0 group-hover/message:opacity-100"
+                        title="Save response as markdown"
+                      >
+                        <FileDown className="h-3 w-3" strokeWidth={1.5} />
                       </button>
                     )}
                     <button
