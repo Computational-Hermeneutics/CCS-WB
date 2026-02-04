@@ -1368,19 +1368,33 @@ Use only: "lineNumber" (integer 1-${lineCount}), "type" (string from the list), 
         : session.mode === 'interpret' ? 'Learn Methods'
         : 'Create Code';
 
+      // Prepend line numbers to make it completely unambiguous for the AI
+      const numberedContent = fileContent
+        .split('\n')
+        .map((line, index) => `${index + 1}: ${line}`)
+        .join('\n');
+
       const userPrompt = `Analyze this code file and suggest 3-5 annotations for ${modeContext} mode:
 
 File: ${selectedFile.name}
 Language: ${selectedFile.language || 'unknown'}
-Lines: ${lineCount} (valid line numbers: 1-${lineCount})
+Total Lines: ${lineCount}
 
-CRITICAL: This file has ${lineCount} lines total. The code below may contain embedded line numbers (like 000010, 001400, etc.) at the end of each line - these are PART OF THE SOURCE CODE, not the actual line positions. IGNORE those embedded numbers completely. Use only the sequential line positions: line 1 is the first line, line 2 is the second line, etc., up to line ${lineCount}.
+The code below is shown with line numbers prepended (e.g., "1: ", "2: ", etc.).
+Use these prepended numbers for your lineNumber field in the JSON response.
+Valid line numbers: 1 to ${lineCount}
 
 \`\`\`
-${fileContent}
+${numberedContent}
 \`\`\`
 
-Remember: Respond ONLY with valid JSON. All lineNumber values must be between 1 and ${lineCount} (the actual file line count). IGNORE any embedded line numbers in the code itself. Follow the ${modeContext} guidance provided above.`;
+Respond with valid JSON array containing 3-5 annotation suggestions. Each suggestion must have:
+- lineNumber: integer from 1 to ${lineCount} (use the prepended line numbers above)
+- type: one of (observation, question, metaphor, pattern, context, critique)
+- content: 1-2 sentence annotation following the ${modeContext} guidance
+- line: the actual code line text (without the prepended line number)
+
+Follow the ${modeContext} guidance provided above.`;
 
       const response = await fetch("/api/chat", {
         method: "POST",
