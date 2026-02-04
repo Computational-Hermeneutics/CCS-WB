@@ -108,9 +108,9 @@ const CRITIQUE_OPENING = "What code would you like to explore? You can paste it 
 
 // Mode colors for badges - subtle to match toolbar aesthetic
 const MODE_COLORS: Record<string, string> = {
-  critique: "bg-slate-100 text-slate-700",
-  interpret: "bg-slate-100 text-slate-700",
-  create: "bg-slate-100 text-slate-700",
+  critique: "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300",
+  interpret: "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300",
+  create: "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300",
 };
 
 // Mode display names
@@ -776,9 +776,61 @@ export const WorkbenchLayout = forwardRef<WorkbenchLayoutRef, WorkbenchLayoutPro
     }
   }, [session.messages, updateMessage]);
 
+  // Auto-test connection if disconnected
+  const autoTestConnection = useCallback(async (): Promise<boolean> => {
+    if (connectionStatus === "success") return true;
+    if (connectionStatus === "testing") return false;
+
+    console.log('[Auto-test] Testing connection...');
+    setConnectionStatus("testing");
+
+    try {
+      const response = await fetch("/api/test-connection", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-AI-Provider": settings.provider,
+          "X-AI-Model": settings.model,
+          "X-AI-API-Key": settings.apiKey || "",
+          "X-AI-Base-URL": settings.baseUrl || "",
+          "X-AI-Custom-Model": settings.customModelId || "",
+        },
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        console.log('[Auto-test] Connection successful');
+        setConnectionStatus("success");
+        return true;
+      } else {
+        console.log('[Auto-test] Connection failed:', data.error);
+        setConnectionStatus("error", data.error || "Connection test failed");
+        return false;
+      }
+    } catch (error) {
+      console.error('[Auto-test] Connection error:', error);
+      setConnectionStatus(
+        "error",
+        error instanceof Error ? error.message : "Connection test failed"
+      );
+      return false;
+    }
+  }, [connectionStatus, settings, setConnectionStatus]);
+
   // Handle send message
   const handleSend = useCallback(async () => {
-    if (!input.trim() || isLoading || !isAiReady) return;
+    if (!input.trim() || isLoading) return;
+
+    // Auto-test connection if not ready
+    if (!isAiReady) {
+      const connected = await autoTestConnection();
+      if (!connected) {
+        // Show settings panel if connection failed
+        setShowAISettings(true);
+        return;
+      }
+    }
 
     const userMessage = input.trim();
     setInput("");
@@ -863,7 +915,7 @@ export const WorkbenchLayout = forwardRef<WorkbenchLayoutRef, WorkbenchLayoutPro
     } finally {
       setIsLoading(false);
     }
-  }, [input, isLoading, isAiReady, session, addMessage, getRequestHeaders, codeContents]);
+  }, [input, isLoading, isAiReady, session, addMessage, getRequestHeaders, codeContents, autoTestConnection]);
 
   // Handle key down
   const handleKeyDown = useCallback(
@@ -3311,10 +3363,10 @@ export const WorkbenchLayout = forwardRef<WorkbenchLayoutRef, WorkbenchLayoutPro
                         : !input.trim()
                           ? "Type a message"
                           : !isAiReady
-                            ? "AI not ready"
+                            ? "Click to test connection and send"
                             : connectionStatus === "success"
                               ? "Send message"
-                              : "Disconnected - trying to reconnect..."
+                              : "Click to test connection and send"
                     }
                   >
                     {isLoading ? (
