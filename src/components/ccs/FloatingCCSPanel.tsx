@@ -91,9 +91,12 @@ export function FloatingCCSPanel({
         startY: e.clientY - rect.top
       };
 
-      // Disable transitions during drag for smooth performance
-      panel.style.transition = 'none';
       panel.style.cursor = 'grabbing';
+
+      // Disable transitions on next frame to avoid blocking drag start
+      requestAnimationFrame(() => {
+        if (panel) panel.style.transition = 'none';
+      });
     }
   };
 
