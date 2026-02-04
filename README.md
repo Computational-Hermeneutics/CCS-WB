@@ -1,6 +1,6 @@
 # Critical Code Studies Workbench
 
-**Version 2.10.0** | CCS Methodology v2.5
+**Version 2.22.4** | CCS Methodology v2.6
 
 A web application for close reading and hermeneutic analysis of software as cultural artefact.
 
@@ -43,6 +43,7 @@ The critique mode features a three-panel layout for focused code analysis:
    - Toggle between Edit and Annotate modes
    - Click any line (or select a range) to add an annotation
    - Six annotation types: Observation, Question, Metaphor, Pattern, Context, Critique
+   - **AI auto-annotation**: Click ✨ Sparkles button to request AI-suggested annotations, review and add/discard suggestions
    - Annotations display inline with colour-coded type badges (pills)
    - Annotations fade into background for distraction-free reading, brighten on hover
    - **Line highlighting**: Adjustable intensity (off/low/medium/high/full) with type-coloured right-side bars
@@ -57,6 +58,9 @@ The critique mode features a three-panel layout for focused code analysis:
    - Context preview shows what the LLM sees
    - Phase-appropriate questions guide analysis
    - "Help Annotate" asks the LLM to suggest annotations
+   - **Code extraction**: Extract code snippets from AI responses to files (all modes)
+   - **Save responses**: Save entire AI responses as markdown files (FileDown button)
+   - Clean interface (internal system messages hidden)
    - Customisable chat font size
 
 ### Project Management
@@ -325,6 +329,7 @@ When analysing code, use these annotation types:
 
 | Version | Changes |
 |---------|---------|
+| 2.22.4 | **Interface refinements**: Cleaner chat interface (internal system messages hidden), code extraction available in all modes (not just Create), save AI responses as markdown files (FileDown button), CCS Methods Guide button improvements (Library icon, toggle behavior, stroke-weight state indication), experience level UI removed from WorkbenchLayout (now auto-derived from mode selection), updated help dropdowns with AI auto-annotation documentation. |
 | 2.10.0 | **Architecture refactoring**: Split 2,381-line ProjectsContext into focused, maintainable modules - 7 domain hooks (useProjectCRUD, useProjectSave, useProjectSharing, useProjectTrash, useProjectMembers, useProjectLibrary, useProjectAdmin) + utilities + modals across 10 files. Improved maintainability, testability, and reusability while maintaining backward compatibility. Same API surface, zero breaking changes. |
 | 2.9.5 | **Sync fix**: Fixed 406 errors when adding annotations - changed edit history check from `.single()` to `.maybeSingle()` to handle new annotations gracefully. Eliminates console errors during normal annotation workflow. |
 | 2.9.4 | **Shared project indicator**: Clickable toolbar badge showing member count (icon + number), opens dropdown with member list (avatars, names, roles). **Permission handling**: Annotation/reply deletion now checks RLS permissions and prevents "phantom deletions" - items remain visible if user lacks permission, shows error alert. Badge positioned in right toolbar before help button with subtle styling matching other toolbar icons. |
