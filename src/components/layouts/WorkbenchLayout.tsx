@@ -240,6 +240,59 @@ export const WorkbenchLayout = forwardRef<WorkbenchLayoutRef, WorkbenchLayoutPro
   // Warn before closing with unsaved changes
   useUnsavedWarning(autoSave.isDirty, true);
 
+  // Auto-save for cloud projects when session becomes dirty
+  useEffect(() => {
+    if (!currentProjectId || !session.isDirty) {
+      return;
+    }
+
+    console.log('[WorkbenchLayout] Cloud project dirty, scheduling auto-save');
+
+    // Debounce auto-save by 2 seconds
+    const timer = setTimeout(async () => {
+      console.log('[WorkbenchLayout] Auto-saving cloud project:', currentProjectId);
+      try {
+        const { error } = await saveProject(currentProjectId, session);
+        if (error) {
+          console.error('[WorkbenchLayout] Cloud auto-save failed:', error);
+        } else {
+          console.log('[WorkbenchLayout] Cloud auto-save successful');
+        }
+      } catch (err) {
+        console.error('[WorkbenchLayout] Cloud auto-save error:', err);
+      }
+    }, 2000);
+
+    return () => clearTimeout(timer);
+  }, [currentProjectId, session.isDirty, session.lastModified, saveProject, session]);
+
+  // Refresh cloud connection when tab becomes visible after being hidden
+  useEffect(() => {
+    const handleVisibilityChange = async () => {
+      if (document.visibilityState === 'visible' && currentProjectId && isAuthenticated) {
+        console.log('[WorkbenchLayout] Tab became visible, refreshing cloud connection');
+        try {
+          // Refresh projects list to get latest data
+          await refreshProjects();
+          // Refresh current session from cloud
+          if (refreshFromCloud) {
+            const result = await refreshFromCloud();
+            if (result.success) {
+              console.log('[WorkbenchLayout] Cloud refresh successful');
+            } else {
+              console.warn('[WorkbenchLayout] Cloud refresh failed:', result.error);
+            }
+          }
+        } catch (err) {
+          console.error('[WorkbenchLayout] Error refreshing on visibility:', err);
+        }
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [currentProjectId, isAuthenticated, refreshProjects, refreshFromCloud]);
+
   // Get current project info for shared project indicator
   const currentProject = useMemo(() =>
     currentProjectId ? projects.find(p => p.id === currentProjectId) : null,
