@@ -990,11 +990,15 @@ export const WorkbenchLayout = forwardRef<WorkbenchLayoutRef, WorkbenchLayoutPro
           const fileName = getUniqueFileName(baseFileName, existingFiles);
           const content = formatReferenceAsMarkdown(reference);
 
-          addCode({
+          const fileId = addCode({
             name: fileName,
             language: "markdown",
-            content: content,
+            source: "created",
+            size: content.length,
           });
+
+          // Store the reference content
+          setCodeContent(fileId, content);
 
           existingFiles.push(fileName);
         });
