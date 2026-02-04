@@ -318,6 +318,25 @@ export const EXPERIENCE_LEVEL_DESCRIPTIONS: Record<ExperienceLevel, string> = {
 export const CODE_DOMAINS = CCS_EXPERIENCE_LEVELS;
 export type CodeDomain = ExperienceLevel;
 
+/**
+ * Map mode to appropriate experience level
+ * - Critique (Analyze): Expert practitioners → 'research'
+ * - Interpret (Learn Methods): Beginners learning CCS → 'learning'
+ * - Create: Anyone, creative engagement → 'practitioner'
+ */
+export function getModeExperienceLevel(mode: EntryMode): ExperienceLevel {
+  switch (mode) {
+    case 'critique':
+      return 'research'; // Expert practitioners doing rigorous CCS work
+    case 'interpret':
+      return 'learning'; // Beginners learning CCS methodology
+    case 'create':
+      return 'practitioner'; // Anyone, intermediate level for creative work
+    default:
+      return 'practitioner';
+  }
+}
+
 // Guided prompts for each phase - helps users know what questions to ask
 // Prompts starting with "Analyse" or "Explain" etc are LLM-actionable
 // Others are reflective questions for the user to consider before engaging

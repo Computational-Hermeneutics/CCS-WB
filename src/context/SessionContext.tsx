@@ -20,7 +20,7 @@ import type {
   AnnotationDisplaySettings,
   PanelLayoutSettings,
 } from "@/types";
-import { DEFAULT_DISPLAY_SETTINGS } from "@/types/session";
+import { DEFAULT_DISPLAY_SETTINGS, getModeExperienceLevel } from "@/types/session";
 import { generateId, getCurrentTimestamp } from "@/lib/utils";
 import {
   saveSessionForMode,
@@ -109,7 +109,8 @@ function sessionReducer(state: Session, action: SessionAction): Session {
       return {
         ...createInitialSession(),
         mode: action.payload.mode,
-        experienceLevel: action.payload.experienceLevel,
+        // Auto-derive experience level from mode if not explicitly provided
+        experienceLevel: action.payload.experienceLevel ?? getModeExperienceLevel(action.payload.mode),
       };
 
     case "ADD_MESSAGE":

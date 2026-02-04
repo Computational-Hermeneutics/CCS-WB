@@ -1,6 +1,6 @@
 # Critical Code Studies: Methodology Framework
 
-**Version**: 2.5 - Four-Mode Progressive Architecture
+**Version**: 2.6 - Three-Mode Architecture
 **Authors**: Based on methods by David M. Berry, Mark C. Marino, and collaborative CCS community
 
 ---
@@ -58,9 +58,11 @@ Levels operate dialectically, not hierarchically - technical shapes but doesn't 
 
 ---
 
-## MODE 1: CRITIQUE
+## MODE 1: CRITIQUE (Analyze)
 
-**Use when**: Analysing existing code for cultural, political, or ideological dimensions (Berry).
+**Use when**: Analysing existing code for cultural, political, or ideological dimensions through close reading and annotation (Berry).
+
+**Experience Level**: Expert practitioners engaged in rigorous CCS research
 
 **Example**: Facebook News Feed (2009 chronological vs 2018 engagement-weighted) demonstrates shift from user-centric to profit-driven ranking through code comparison. The `EdgeRank` algorithm's prioritisation of "engagement" over recency reveals how technical choices encode business models.
 
@@ -101,15 +103,19 @@ Levels operate dialectically, not hierarchically - technical shapes but doesn't 
 
 ---
 
-## MODE 2: ARCHAEOLOGY
+## MODE 2: INTERPRET (Learn Methods)
 
-**Use when**: Recovering, reconstructing, or historically analysing code artifacts.
+**Use when**: Exploring hermeneutic frameworks, recovering historical code artifacts, developing interpretive approaches, or building theoretical vocabulary for code analysis. This mode integrates archaeological methods with interpretive framework development.
 
-**Example**: ELIZA recovery (2021) - found 1965 version on MIT fanfold paper in MAD-SLIP, discovered undocumented `CHANGE` function enabling live script editing during conversation. Archival work revealed Weizenbaum's therapeutic intentions predated the famous "Doctor" script.
+**Experience Level**: Beginners learning CCS methodology and how to apply critical reading methods to code
 
-### Phase 1: Foundational Archaeology
+**Example - Framework Development**: Developing a Foucauldian reading of API documentation. How do REST API conventions (`GET`, `POST`, `DELETE`) encode assumptions about data as resource to be retrieved, created, destroyed? The imperative verb structure positions the caller as sovereign subject acting upon passive objects, naturalising extractive relations with information.
 
-**Code Archaeology (Jerz 2007)** - multi-source triangulation:
+**Example - Archaeological Practice**: ELIZA recovery (2021) - found 1965 version on MIT fanfold paper in MAD-SLIP, discovered undocumented `CHANGE` function enabling live script editing during conversation. Archival work revealed Weizenbaum's therapeutic intentions predated the famous "Doctor" script.
+
+### Phase 1: Foundational Interpret - Framework & Archaeological Basics
+
+**A. Code Archaeology (Jerz 2007)** - multi-source triangulation:
 1. Recover source code (archival work)
 2. Read code closely (technical function)
 3. Contextualise historically (when, why, how)
@@ -120,33 +126,7 @@ Levels operate dialectically, not hierarchically - technical shapes but doesn't 
 
 **Finding Lost Code**: University archives, personal papers, corporate archives, backup tapes, published listings, oral histories. Ask whose code gets preserved and whose gets lost—archival practices reproduce existing hierarchies of whose contributions count as historically significant.
 
-### Phase 2: Intermediate Archaeology
-
-**Versioning and Genealogy**: Compare implementations across time, trace features, analyse priorities, document branching. Use variorum approach - collect versions, document differences, create comparison matrices.
-
-**Paratextual Engagement**: Examine manuals, transcripts, correspondence, proposals, institutional context, contemporary reviews.
-
-**Porting as Method**: Port to different platforms/languages to reveal constraints, idioms, essential vs contingent aspects.
-
-### Phase 3: Advanced Archaeology
-
-**Collaborative Historical Reconstruction**: Team with historian, programmer (historical languages), critical theorist, archivist. Move line by line, hermeneutic spiral, expect 6+ years for major studies.
-
-**Code as Cultural Geography**: Map code structures to physical/cultural spaces, visit locations encoded in programs, compare representation to reality.
-
-**Oral History**: Interview original programmers about design decisions, constraints, abandoned alternatives. When unavailable, interview colleagues, users, institutional memory holders.
-
----
-
-## MODE 3: INTERPRET
-
-**Use when**: Exploring hermeneutic frameworks without a fixed code object, developing interpretive approaches, or building theoretical vocabulary for code analysis.
-
-**Example**: Developing a Foucauldian reading of API documentation. How do REST API conventions (`GET`, `POST`, `DELETE`) encode assumptions about data as resource to be retrieved, created, destroyed? The imperative verb structure positions the caller as sovereign subject acting upon passive objects, naturalising extractive relations with information.
-
-### Phase 1: Framework Exploration
-
-**Hermeneutic Traditions**: Explore interpretive frameworks applicable to code (Marino):
+**B. Hermeneutic Traditions**: Explore interpretive frameworks applicable to code (Marino):
 - Classical hermeneutics (Schleiermacher, Dilthey): author's intention, historical reconstruction
 - Philosophical hermeneutics (Gadamer): fusion of horizons, prejudice as enabling
 - Critical hermeneutics (Habermas, Ricoeur): ideology critique, suspicion and recovery
@@ -155,9 +135,15 @@ Levels operate dialectically, not hierarchically - technical shapes but doesn't 
 
 **Code's Interpretive Peculiarity**: Unlike literary texts, code has an execution dimension. Interpretation must navigate between what code means and what code does.
 
-### Phase 2: Conceptual Development
+### Phase 2: Intermediate Interpret - Historical Methods & Conceptual Development
 
-**Building Vocabulary**: Develop concepts for code interpretation:
+**A. Versioning and Genealogy**: Compare implementations across time, trace features, analyse priorities, document branching. Use variorum approach - collect versions, document differences, create comparison matrices.
+
+**Paratextual Engagement**: Examine manuals, transcripts, correspondence, proposals, institutional context, contemporary reviews.
+
+**Porting as Method**: Port to different platforms/languages to reveal constraints, idioms, essential vs contingent aspects.
+
+**B. Building Vocabulary**: Develop concepts for code interpretation:
 - Extrafunctional significance (Marino): meaning exceeding function
 - Tests of strength (Berry): systematic interrogation across dimensions
 - Triadic structure: human intention, computational generation, executable behaviour
@@ -169,9 +155,15 @@ Levels operate dialectically, not hierarchically - technical shapes but doesn't 
 - Running code as empirical supplement
 - Porting as comparative method
 
-### Phase 3: Theoretical Synthesis
+### Phase 3: Advanced Interpret - Historical Reconstruction & Theoretical Synthesis
 
-**Critical Theory Connections**: Link code studies to broader critical traditions:
+**A. Collaborative Historical Reconstruction**: Team with historian, programmer (historical languages), critical theorist, archivist. Move line by line, hermeneutic spiral, expect 6+ years for major studies.
+
+**Code as Cultural Geography**: Map code structures to physical/cultural spaces, visit locations encoded in programs, compare representation to reality.
+
+**Oral History**: Interview original programmers about design decisions, constraints, abandoned alternatives. When unavailable, interview colleagues, users, institutional memory holders.
+
+**B. Critical Theory Connections**: Link code studies to broader critical traditions:
 - Frankfurt School: instrumental reason, administered society, culture industry
 - Foucault: discourse, power/knowledge, governmentality
 - Science and Technology Studies: actor-network theory, social construction
@@ -184,9 +176,11 @@ Levels operate dialectically, not hierarchically - technical shapes but doesn't 
 
 ---
 
-## MODE 4: CREATE
+## MODE 3: CREATE (Create Code)
 
 **Use when**: Writing new code, developing systems, or using LLMs for code generation.
+
+**Experience Level**: Anyone - supports creative and experimental engagement with code generation
 
 **Example**: Mastodon's `visibility_policy` function prioritises user control through explicit privacy levels (`public`, `unlisted`, `private`, `direct`) rather than algorithmic opacity. Design choice embeds values of transparency and consent absent from corporate social media.
 
@@ -300,11 +294,15 @@ McPherson, T. (2012) 'Why Are the Digital Humanities So White?', *Debates in DH*
 ## IMPLEMENTATION GUIDANCE
 
 **Mode Detection**:
-- **CRITIQUE**: User has code to analyse - they've pasted, uploaded, or described specific code
-- **ARCHAEOLOGY**: User seeks historical/lost code - mentions dates, platforms, recovery, or "old" software
-- **INTERPRET**: User developing theoretical framework - asks about methods, concepts, or approaches without specific code
-- **CREATE**: User writing/generating code - wants to build, implement, or develop something new
+- **CRITIQUE (Analyze)**: User has code to analyse through close reading and annotation - they've pasted, uploaded, or described specific code for rigorous CCS practice
+- **INTERPRET (Learn Methods)**: User developing theoretical framework, recovering historical code, or learning CCS methodology - asks about methods, concepts, approaches, or seeks historical/lost code
+- **CREATE (Create Code)**: User writing/generating code - wants to build, implement, or develop something new with critical awareness
+
+**Experience Level Mapping**:
+- **Critique mode** → Expert practitioners (rigorous CCS research and analysis)
+- **Interpret mode** → Beginners (learning CCS methodology and critical reading)
+- **Create mode** → Anyone (creative and experimental engagement)
 
 **Phase Progression**: Start at Phase 1, advance when foundational methods are mastered. Users can work at different phases across modes.
 
-**Cross-Mode Navigation**: Modes interconnect - archaeology informs critique (historical context enriches reading), interpretation frames both (theory guides analysis), creation requires all three (building embeds values revealed through critique).
+**Cross-Mode Navigation**: Modes interconnect - archaeological methods within Interpret mode inform Critique (historical context enriches reading), interpretive frameworks guide both analysis and creation, creation requires all approaches (building embeds values revealed through critique and interpretation).

@@ -4,9 +4,9 @@ import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "@/context/SessionContext";
 import { useAISettings } from "@/context/AISettingsContext";
-import { CCS_EXPERIENCE_LEVELS, EXPERIENCE_LEVEL_LABELS, EXPERIENCE_LEVEL_DESCRIPTIONS, type EntryMode, type ExperienceLevel } from "@/types";
+import type { EntryMode } from "@/types";
 import { cn } from "@/lib/utils";
-import { Code, Archive, BookOpen, Sparkles, ChevronDown, FolderOpen, Settings, HelpCircle, X, ExternalLink, Info } from "lucide-react";
+import { Code, Archive, BookOpen, Sparkles, FolderOpen, Settings, HelpCircle, X, ExternalLink } from "lucide-react";
 import { UserMenu } from "@/components/auth/UserMenu";
 import { SettingsModal } from "@/components/settings/SettingsModal";
 import { AISettingsPanel } from "@/components/settings/AISettingsPanel";
@@ -48,9 +48,6 @@ export default function WelcomePage() {
   const router = useRouter();
   const { session, initSession, importSession } = useSession();
   const { settings: aiSettings, isConfigured: isAIConfigured, connectionStatus } = useAISettings();
-  const [selectedLevel, setSelectedLevel] = useState<ExperienceLevel>("practitioner");
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [showLevelHelp, setShowLevelHelp] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [settingsTab, setSettingsTab] = useState<"code" | "appearance" | "ai" | "about">("appearance");
   const [showAIPanel, setShowAIPanel] = useState(false);
@@ -101,7 +98,8 @@ export default function WelcomePage() {
   const hasExistingSession = session.messages.length > 0;
 
   const handleModeSelect = (mode: EntryMode) => {
-    initSession(mode, selectedLevel);
+    // Experience level is now automatically derived from mode
+    initSession(mode);
     router.push("/conversation");
   };
 
@@ -449,92 +447,6 @@ export default function WelcomePage() {
           </p>
         </div>
 
-        {/* Experience level selector - compact */}
-        <div className="flex justify-center mb-6">
-          <div className="relative flex items-center gap-2">
-            <button
-              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-              className={cn(
-                "flex items-center gap-2 px-3 py-1.5",
-                "bg-card border border-parchment-dark rounded-sm",
-                "hover:border-slate-muted transition-all duration-300",
-                "font-sans text-xs text-ink",
-                "shadow-editorial",
-                isDropdownOpen && "ring-1 ring-burgundy border-burgundy"
-              )}
-            >
-              <span className="text-slate-muted">Experience:</span>
-              <span className="font-medium">
-                {EXPERIENCE_LEVEL_LABELS[selectedLevel]}
-              </span>
-              <ChevronDown
-                className={cn(
-                  "h-3 w-3 text-slate-muted transition-transform duration-300",
-                  isDropdownOpen && "rotate-180"
-                )}
-              />
-            </button>
-
-            {/* Help icon for experience levels */}
-            <button
-              onClick={() => setShowLevelHelp(!showLevelHelp)}
-              className="p-2 md:p-1 rounded-sm text-slate-muted hover:text-ink hover:bg-cream transition-colors"
-              aria-label="What do experience levels do?"
-            >
-              <Info className="h-3.5 w-3.5" strokeWidth={1.5} />
-            </button>
-
-            {/* Experience level dropdown */}
-            {isDropdownOpen && (
-              <div className="absolute top-full left-0 mt-1 w-56 bg-popover rounded-sm shadow-editorial-lg border border-parchment py-1 z-20 animate-fade-in">
-                {CCS_EXPERIENCE_LEVELS.map((level) => (
-                  <button
-                    key={level}
-                    onClick={() => {
-                      setSelectedLevel(level);
-                      setIsDropdownOpen(false);
-                    }}
-                    className={cn(
-                      "w-full text-left px-3 py-1.5 font-sans text-xs",
-                      "hover:bg-cream transition-colors duration-200",
-                      selectedLevel === level &&
-                        "bg-burgundy/5 text-burgundy font-medium"
-                    )}
-                  >
-                    {EXPERIENCE_LEVEL_LABELS[level]}
-                  </button>
-                ))}
-              </div>
-            )}
-
-            {/* Experience level help popup */}
-            {showLevelHelp && (
-              <div className="absolute top-full left-0 mt-1 w-72 bg-popover rounded-sm shadow-editorial-lg border border-parchment p-4 z-20 animate-fade-in">
-                <div className="flex items-center justify-between mb-3">
-                  <h4 className="font-display text-sm text-ink">Choose your experience</h4>
-                  <button
-                    onClick={() => setShowLevelHelp(false)}
-                    className="p-0.5 text-slate hover:text-ink transition-colors"
-                  >
-                    <X className="h-3.5 w-3.5" strokeWidth={1.5} />
-                  </button>
-                </div>
-                <div className="space-y-3">
-                  {CCS_EXPERIENCE_LEVELS.map((level) => (
-                    <div key={level}>
-                      <p className="font-sans text-xs font-medium text-burgundy">
-                        {EXPERIENCE_LEVEL_LABELS[level]}
-                      </p>
-                      <p className="font-body text-xs text-slate leading-snug">
-                        {EXPERIENCE_LEVEL_DESCRIPTIONS[level]}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
 
         {/* Entry mode cards - responsive grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 max-w-4xl mx-auto">
