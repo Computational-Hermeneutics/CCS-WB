@@ -7,7 +7,8 @@ import { useAutoSave } from "@/hooks/useAutoSave";
 import { useUnsavedWarning } from "@/hooks/useUnsavedWarning";
 import { useAISettings } from "@/context/AISettingsContext";
 import { cn, formatTimestamp, fetchWithTimeout, retryWithBackoff, generateId, getCurrentTimestamp } from "@/lib/utils";
-import type { Message, CodeReference, ExperienceLevel, Session } from "@/types";
+import type { Message, CodeReference, ExperienceLevel, Session, ReferenceResult } from "@/types";
+import { formatReferenceAsMarkdown, generateReferenceFileName, getUniqueFileName } from "@/lib/code-extraction";
 import { EXPERIENCE_LEVEL_LABELS, EXPERIENCE_LEVEL_DESCRIPTIONS, GUIDED_PROMPTS } from "@/types";
 import {
   Send,
@@ -255,6 +256,9 @@ export const WorkbenchLayout = forwardRef<WorkbenchLayoutRef, WorkbenchLayoutPro
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [showSearchModal, setShowSearchModal] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [isSearchingLiterature, setIsSearchingLiterature] = useState(false);
   const [settingsTab, setSettingsTab] = useState<"profile" | "code" | "appearance" | "ai" | "about">("appearance");
   const [showAIPanel, setShowAIPanel] = useState(false);
   const [showModeDropdown, setShowModeDropdown] = useState(false);
@@ -899,6 +903,103 @@ export const WorkbenchLayout = forwardRef<WorkbenchLayoutRef, WorkbenchLayoutPro
     setSaveModalName(projectName || "Untitled");
     setShowSaveModal(true);
   }, [projectName]);
+
+  // Reference search handlers
+  const handleSearchLiterature = useCallback(() => {
+    setSearchQuery("");
+    setShowSearchModal(true);
+  }, []);
+
+  const getSuggestedSearchTerms = useCallback((): string[] => {
+    const suggestions: string[] = [];
+
+    // Add suggestions from code files
+    if (session.codeFiles.length > 0) {
+      const code = session.codeFiles[0];
+      if (code.name) suggestions.push(code.name.replace(/\.[^.]+$/, "")); // filename without extension
+      if (code.language) suggestions.push(`${code.language} programming history`);
+      if (code.author) suggestions.push(code.author);
+      if (code.platform) suggestions.push(code.platform);
+    }
+
+    // Add suggestions based on mode
+    if (session.mode === "interpret") {
+      suggestions.push("computing history");
+    }
+
+    // Extract key terms from recent messages
+    const recentContent = session.messages
+      .filter(m => m.role === "user")
+      .slice(-2)
+      .map(m => m.content)
+      .join(" ");
+
+    // Look for quoted terms or capitalized proper nouns
+    const quotedTerms = recentContent.match(/"([^"]+)"/g);
+    if (quotedTerms) {
+      suggestions.push(...quotedTerms.map(t => t.replace(/"/g, "")));
+    }
+
+    // Return unique, non-empty suggestions
+    return [...new Set(suggestions.filter(s => s && s.length > 2))].slice(0, 4);
+  }, [session.codeFiles, session.mode, session.messages]);
+
+  const executeSearchLiterature = useCallback(async (query: string) => {
+    if (!query.trim()) return;
+
+    setIsSearchingLiterature(true);
+    setShowSearchModal(false);
+
+    try {
+      const response = await fetch("/api/literature", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...getRequestHeaders() },
+        body: JSON.stringify({
+          query: query.trim(),
+          limit: 5,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        if (response.status === 429) {
+          // Rate limited - show user-friendly message
+          setSuccessMessage("Rate limited. Please wait a few seconds and try again.");
+          return;
+        }
+        throw new Error(data.message || "Failed to search literature");
+      }
+
+      if (data.references && data.references.length > 0) {
+        // Create a file for each reference
+        const existingFiles = session.codeFiles.map(f => f.name);
+
+        data.references.forEach((reference: ReferenceResult) => {
+          const baseFileName = generateReferenceFileName(reference);
+          const fileName = getUniqueFileName(baseFileName, existingFiles);
+          const content = formatReferenceAsMarkdown(reference);
+
+          addCode({
+            name: fileName,
+            language: "markdown",
+            content: content,
+          });
+
+          existingFiles.push(fileName);
+        });
+
+        setSuccessMessage(`✓ Created ${data.references.length} reference file(s) in project`);
+      } else {
+        setSuccessMessage("No references found for that search");
+      }
+    } catch (error) {
+      console.error("Reference search error:", error);
+      setSuccessMessage("Failed to search references");
+    } finally {
+      setIsSearchingLiterature(false);
+    }
+  }, [session.codeFiles, getRequestHeaders, addCode]);
 
   // Save to cloud (for cloud projects)
   const [isSavingToCloud, setIsSavingToCloud] = useState(false);
@@ -2982,6 +3083,24 @@ export const WorkbenchLayout = forwardRef<WorkbenchLayoutRef, WorkbenchLayoutPro
                       <Lightbulb className="h-4 w-4" strokeWidth={1.5} />
                     </button>
                   )}
+                  {/* Reference search button */}
+                  <button
+                    onClick={handleSearchLiterature}
+                    disabled={isSearchingLiterature}
+                    className={cn(
+                      "p-1.5 rounded-md transition-colors",
+                      isSearchingLiterature
+                        ? "text-slate-muted cursor-not-allowed"
+                        : "text-slate hover:text-ink"
+                    )}
+                    title={isSearchingLiterature ? "Searching..." : "Search references"}
+                  >
+                    {isSearchingLiterature ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <BookOpen className="h-4 w-4" strokeWidth={1.5} />
+                    )}
+                  </button>
                 </div>
 
                 {/* Right side: font size + send button */}
@@ -3072,6 +3191,83 @@ export const WorkbenchLayout = forwardRef<WorkbenchLayoutRef, WorkbenchLayoutPro
         onClose={() => setShowAIPanel(false)}
       />
 
+      {/* Reference Search Modal */}
+      {showSearchModal && (
+        <div
+          className="fixed inset-0 bg-ink/40 flex items-center justify-center z-50"
+          onClick={() => setShowSearchModal(false)}
+        >
+          <div
+            className="bg-popover rounded-sm shadow-editorial-lg p-4 w-full max-w-sm mx-4 border border-parchment modal-content"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="font-display text-sm text-ink mb-2">Find References</h3>
+            <p className="font-body text-[11px] text-slate mb-3">
+              Search for related scholarship, code repositories, or historical software archives.
+            </p>
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && searchQuery.trim()) {
+                  executeSearchLiterature(searchQuery);
+                }
+              }}
+              placeholder="e.g., critical code studies, ELIZA, game programming"
+              className="w-full px-3 py-2 font-body text-[12px] bg-card border border-parchment rounded-sm focus:outline-none focus:border-gold/50 text-foreground placeholder:text-slate-muted mb-3"
+              autoFocus
+            />
+
+            {/* Suggested search terms based on context */}
+            {(() => {
+              const suggestions = getSuggestedSearchTerms();
+              if (suggestions.length > 0) {
+                return (
+                  <div className="mb-3">
+                    <p className="font-sans text-[9px] uppercase tracking-widest text-slate-muted mb-1.5">
+                      Suggested searches
+                    </p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {suggestions.map((term, i) => (
+                        <button
+                          key={i}
+                          onClick={() => setSearchQuery(term)}
+                          className="px-2 py-0.5 text-[10px] font-sans bg-parchment border border-slate/20 rounded-sm hover:border-gold hover:text-ink transition-colors"
+                        >
+                          {term}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                );
+              }
+              return null;
+            })()}
+
+            <div className="flex gap-2 justify-end">
+              <button
+                onClick={() => setShowSearchModal(false)}
+                className="btn-editorial-ghost text-[11px] px-3 py-1.5"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => executeSearchLiterature(searchQuery)}
+                disabled={!searchQuery.trim()}
+                className={cn(
+                  "text-[11px] px-3 py-1.5 rounded-sm",
+                  searchQuery.trim()
+                    ? "btn-editorial-primary"
+                    : "bg-parchment text-slate-muted cursor-not-allowed"
+                )}
+              >
+                Search
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Export Session Log Modal */}
       {showExportModal && (
