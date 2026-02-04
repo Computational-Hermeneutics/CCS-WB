@@ -840,7 +840,7 @@ export const WorkbenchLayout = forwardRef<WorkbenchLayoutRef, WorkbenchLayoutPro
       const connected = await autoTestConnection();
       if (!connected) {
         // Show settings panel if connection failed
-        setShowAISettings(true);
+        setShowAIPanel(true);
         return;
       }
     }
@@ -1255,7 +1255,7 @@ export const WorkbenchLayout = forwardRef<WorkbenchLayoutRef, WorkbenchLayoutPro
     if (!isAiReady) {
       const connected = await autoTestConnection();
       if (!connected) {
-        setShowAISettings(true);
+        setShowAIPanel(true);
         return;
       }
     }
