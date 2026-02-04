@@ -1,6 +1,6 @@
 # Critical Code Studies Workbench
 
-**Version 2.22.5** | CCS Methodology v2.7
+**Version 3.0.0** | CCS Methodology v2.7
 
 A web application for close reading and hermeneutic analysis of software as cultural artefact.
 
@@ -323,6 +323,7 @@ When analysing code, use these annotation types:
 
 | Version | Changes |
 |---------|---------|
+| 3.0.0 | **Critical fixes**: Code extraction in Create mode now handles AI responses with extra text after language fence (e.g., ` ```python # comment`), fixed CCS panel jump on click by deferring transition disable until actual drag starts, improved regex flexibility for markdown code blocks, handles unclosed code blocks gracefully. |
 | 2.22.5 | **Save status fixes**: SaveStatusIndicator text now matches parent color (no separate colors in inline mode), save status only shown for local sessions when using File System Access API, prevents confusing "Unsaved" status for manual download saves. |
 | 2.22.4 | **Interface refinements**: Cleaner chat interface (internal system messages hidden), code extraction available in all modes (not just Create), save AI responses as markdown files (FileDown button), CCS Methods Guide button improvements (Library icon, toggle behavior, stroke-weight state indication), experience level UI removed from WorkbenchLayout (now auto-derived from mode selection), updated help dropdowns with AI auto-annotation documentation. |
 | 2.10.0 | **Architecture refactoring**: Split 2,381-line ProjectsContext into focused, maintainable modules - 7 domain hooks (useProjectCRUD, useProjectSave, useProjectSharing, useProjectTrash, useProjectMembers, useProjectLibrary, useProjectAdmin) + utilities + modals across 10 files. Improved maintainability, testability, and reusability while maintaining backward compatibility. Same API surface, zero breaking changes. |
