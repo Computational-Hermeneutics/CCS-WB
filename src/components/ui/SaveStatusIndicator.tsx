@@ -85,12 +85,13 @@ export function SaveStatusIndicator({
 
       case "idle":
       default:
-        if (lastSaved) {
-          text = `Saved ${formatRelativeTime(lastSaved)}`;
-          colorClass = "text-slate-500";
-        } else if (isDirty) {
+        // Check isDirty first - if there are unsaved changes, show that
+        if (isDirty) {
           text = "Unsaved";
           colorClass = "text-red-600";
+        } else if (lastSaved) {
+          text = `Saved ${formatRelativeTime(lastSaved)}`;
+          colorClass = "text-slate-500";
         }
         break;
     }
@@ -148,12 +149,8 @@ export function SaveStatusIndicator({
 
     case "idle":
     default:
-      // Show last saved time if available, otherwise nothing
-      if (lastSaved) {
-        icon = <Check className="h-3 w-3" />;
-        text = `Saved ${formatRelativeTime(lastSaved)}`;
-        colorClass = "text-slate-500";
-      } else if (isDirty) {
+      // Check isDirty first - if there are unsaved changes, show that
+      if (isDirty) {
         // Show save icon with red dot on right
         return (
           <div
@@ -166,6 +163,10 @@ export function SaveStatusIndicator({
             <Circle className="h-2 w-2 fill-red-500" />
           </div>
         );
+      } else if (lastSaved) {
+        icon = <Check className="h-3 w-3" />;
+        text = `Saved ${formatRelativeTime(lastSaved)}`;
+        colorClass = "text-slate-500";
       } else {
         return <></>;
       }
