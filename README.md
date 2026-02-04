@@ -1,6 +1,6 @@
 # Critical Code Studies Workbench
 
-**Version 2.22.4** | CCS Methodology v2.6
+**Version 2.22.5** | CCS Methodology v2.6
 
 A web application for close reading and hermeneutic analysis of software as cultural artefact.
 
@@ -16,19 +16,13 @@ Software deserves the same close reading we give literature. The Workbench helps
 
 ## Features
 
-### Entry Modes
-- **I have code to critique**: IDE-style three-panel layout for close reading with inline annotations
-- **I want to interpret code**: Exploring hermeneutic frameworks, historical software, and contextual analysis
-- **I want to create code**: Explore algorithms by building them (vibe coding)
+### Three Analysis Modes
+- **Analyze Code (Critique)**: Close reading and annotation of existing code through IDE-style interface with inline annotations. AI engagement style: expert practitioner (peer dialogue, challenges interpretations, technical depth)
+- **Learn Methods (Interpret)**: Exploring CCS methodology, hermeneutic frameworks, and archaeological recovery of historical software. AI engagement style: beginner-friendly (scaffolding, explains concepts, suggests readings)
+- **Create Code**: Generative coding to understand algorithms by building them. AI engagement style: intermediate practitioner (uses CCS vocabulary, encourages experimentation)
 
-### Experience Levels
-The assistant adapts its engagement style based on your experience:
-- **Learning**: Explains CCS concepts, offers scaffolding, suggests readings
-- **Practitioner**: Uses vocabulary freely, focuses on analysis
-- **Research**: Engages as peer, challenges interpretations, technical depth
-
-### IDE-Style Critique Layout
-The critique mode features a three-panel layout for focused code analysis:
+### IDE-Style Workbench Layout
+Both Analyze and Learn modes use a unified three-panel IDE interface for focused code analysis:
 
 1. **Left panel**: File tree with colour-coded filenames by type
    - Collapsible and resizable (drag divider)
@@ -329,6 +323,7 @@ When analysing code, use these annotation types:
 
 | Version | Changes |
 |---------|---------|
+| 2.22.5 | **Save status fixes**: SaveStatusIndicator text now matches parent color (no separate colors in inline mode), save status only shown for local sessions when using File System Access API, prevents confusing "Unsaved" status for manual download saves. |
 | 2.22.4 | **Interface refinements**: Cleaner chat interface (internal system messages hidden), code extraction available in all modes (not just Create), save AI responses as markdown files (FileDown button), CCS Methods Guide button improvements (Library icon, toggle behavior, stroke-weight state indication), experience level UI removed from WorkbenchLayout (now auto-derived from mode selection), updated help dropdowns with AI auto-annotation documentation. |
 | 2.10.0 | **Architecture refactoring**: Split 2,381-line ProjectsContext into focused, maintainable modules - 7 domain hooks (useProjectCRUD, useProjectSave, useProjectSharing, useProjectTrash, useProjectMembers, useProjectLibrary, useProjectAdmin) + utilities + modals across 10 files. Improved maintainability, testability, and reusability while maintaining backward compatibility. Same API surface, zero breaking changes. |
 | 2.9.5 | **Sync fix**: Fixed 406 errors when adding annotations - changed edit history check from `.single()` to `.maybeSingle()` to handle new annotations gracefully. Eliminates console errors during normal annotation workflow. |
