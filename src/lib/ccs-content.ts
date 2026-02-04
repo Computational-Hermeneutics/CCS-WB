@@ -55,7 +55,7 @@ export const CCS_METHODS: CCSMethod[] = [
       { title: 'Gramophone, Film, Typewriter', author: 'Friedrich Kittler', year: 1999 },
       { title: 'Digital Memory and the Archive', author: 'Wolfgang Ernst', year: 2013 },
       { title: 'The Philosophy of Software: Code and Mediation in the Digital Age', author: 'David M. Berry', year: 2011 },
-      { title: 'Software Studies: A Lexicon', author: 'Matthew Fuller (ed.)', year: 2008 }
+      { title: 'The Digital Sublime: Myth, Power, and Cyberspace', author: 'Vincent Mosco', year: 2004 }
     ],
     exampleSample: '1977 - XMODEM Protocol'
   },
@@ -106,7 +106,7 @@ export const CCS_METHODS: CCSMethod[] = [
       'How does this code exercise or resist computational power?'
     ],
     suggestedReadings: [
-      { title: 'Software Studies: A Lexicon', author: 'Matthew Fuller (ed.)', year: 2008 },
+      { title: 'Programmed Visions: Software and Memory', author: 'Wendy Hui Kyong Chun', year: 2011 },
       { title: 'Protocol: How Control Exists after Decentralization', author: 'Alexander Galloway', year: 2004 },
       { title: 'Critical Theory and the Digital', author: 'David M. Berry', year: 2014 }
     ],
