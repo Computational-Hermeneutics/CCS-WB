@@ -1336,17 +1336,17 @@ Remember: Respond ONLY with valid JSON. Focus on interesting interpretive entry 
       // Try to extract JSON from the response (handle markdown code fences)
       let jsonText = aiResponse;
 
-      // Remove markdown code fences if present
-      const codeBlockMatch = aiResponse.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+      // Remove markdown code fences if present (use greedy match to handle backticks in content)
+      const codeBlockMatch = aiResponse.match(/```(?:json)?\s*([\s\S]*)\s*```\s*$/);
       if (codeBlockMatch) {
         jsonText = codeBlockMatch[1];
       }
 
-      // Try to find JSON object with annotations array
-      let jsonMatch = jsonText.match(/\{[\s\S]*?"annotations"[\s\S]*?\}/);
+      // Try to find JSON object with annotations array (use greedy match)
+      let jsonMatch = jsonText.match(/\{[\s\S]*"annotations"[\s\S]*\}/);
       if (!jsonMatch) {
-        // Try to find just the array
-        const arrayMatch = jsonText.match(/\[[\s\S]*?\]/);
+        // Try to find just the array (greedy match)
+        const arrayMatch = jsonText.match(/\[[\s\S]*\]/);
         if (arrayMatch) {
           jsonText = `{"annotations": ${arrayMatch[0]}}`;
           jsonMatch = [jsonText];
