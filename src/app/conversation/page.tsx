@@ -1363,25 +1363,22 @@ export default function ConversationPage() {
   // Export handlers using shared utilities
   const handleExportSessionLogJSON = useCallback(() => {
     const log = generateSessionLog(session, projectName, undefined, undefined, profile);
-    const modeCode = MODE_CODES[session.mode] || "XX";
-    exportSessionLogJSON(log, projectName, modeCode);
+    exportSessionLogJSON(log, projectName);
     setShowExportModal(false);
     setSuccessMessage("Session log exported as JSON!");
   }, [session, projectName, profile]);
 
   const handleExportSessionLogText = useCallback(() => {
     const log = generateSessionLog(session, projectName, undefined, undefined, profile);
-    const modeCode = MODE_CODES[session.mode] || "XX";
-    exportSessionLogText(log, projectName, modeCode);
+    exportSessionLogText(log, projectName);
     setShowExportModal(false);
     setSuccessMessage("Session log exported as text!");
   }, [session, projectName, profile]);
 
   const handleExportSessionLogPDF = useCallback(() => {
     const log = generateSessionLog(session, projectName, undefined, undefined, profile);
-    const modeCode = MODE_CODES[session.mode] || "XX";
     const annotationIndent = session.displaySettings?.annotations?.indent ?? 56;  // Use user's indent setting
-    exportSessionLogPDF(log, projectName, modeCode, annotationIndent);
+    exportSessionLogPDF(log, projectName, annotationIndent);
     setShowExportModal(false);
     setSuccessMessage("Session log exported as PDF!");
   }, [session, projectName, profile]);

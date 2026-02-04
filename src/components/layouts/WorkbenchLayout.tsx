@@ -1924,10 +1924,9 @@ Follow the ${modeContext} guidance provided above.`;
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    // Sanitize filename and add mode code with .ccs extension
+    // Sanitize filename with .ccs extension
     const safeFileName = name.replace(/[^a-z0-9-_ ]/gi, "").replace(/\s+/g, "-").toLowerCase();
-    const modeCode = MODE_CODES[session.mode] || "XX";
-    a.download = `${safeFileName}-${modeCode}.ccs`;
+    a.download = `${safeFileName}.ccs`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -2354,23 +2353,20 @@ Follow the ${modeContext} guidance provided above.`;
   // Export handlers using shared utilities
   const handleExportJSON = useCallback(() => {
     const log = generateSessionLog(session, projectName, codeContents, generateAnnotatedCode, profile);
-    const modeCode = MODE_CODES[session.mode] || "XX";
-    exportSessionLogJSON(log, projectName, modeCode);
+    exportSessionLogJSON(log, projectName);
     setShowExportModal(false);
   }, [session, projectName, codeContents, profile]);
 
   const handleExportText = useCallback(() => {
     const log = generateSessionLog(session, projectName, codeContents, generateAnnotatedCode, profile);
-    const modeCode = MODE_CODES[session.mode] || "XX";
-    exportSessionLogText(log, projectName, modeCode);
+    exportSessionLogText(log, projectName);
     setShowExportModal(false);
   }, [session, projectName, codeContents, profile]);
 
   const handleExportPDF = useCallback(() => {
     const log = generateSessionLog(session, projectName, codeContents, generateAnnotatedCode, profile);
-    const modeCode = MODE_CODES[session.mode] || "XX";
     const annotationIndent = session.displaySettings?.annotations?.indent ?? 56;  // Use user's indent setting
-    exportSessionLogPDF(log, projectName, modeCode, annotationIndent);
+    exportSessionLogPDF(log, projectName, annotationIndent);
     setShowExportModal(false);
   }, [session, projectName, codeContents, profile]);
 
@@ -2698,11 +2694,11 @@ Follow the ${modeContext} guidance provided above.`;
             <div className="flex items-center gap-1 min-w-0">
               {projectName ? (
                 <span className="font-mono text-[10px] text-ink truncate">
-                  {projectName.replace(/[^a-z0-9-_ ]/gi, "").replace(/\s+/g, "-").toLowerCase()}-{MODE_CODES[session.mode] || "XX"}.ccs
+                  {projectName.replace(/[^a-z0-9-_ ]/gi, "").replace(/\s+/g, "-").toLowerCase()}.ccs
                 </span>
               ) : (
                 <span className="font-mono text-[10px] text-slate-muted italic whitespace-nowrap">
-                  untitled-{MODE_CODES[session.mode] || "XX"}.ccs
+                  untitled.ccs
                 </span>
               )}
               {/* Only show save status if we have a file handle (using File System Access API) */}

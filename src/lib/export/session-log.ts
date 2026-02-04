@@ -21,9 +21,9 @@ export const MODE_CODES: Record<string, string> = {
 
 // Mode labels for display
 export const MODE_LABELS: Record<string, string> = {
-  CR: "Critique",
-  IN: "Interpret",
-  WR: "Create",
+  CR: "Analyze Code",
+  IN: "Learn Methods",
+  WR: "Create Code",
 };
 
 // Annotation types for statistics
@@ -279,8 +279,7 @@ export function generateSessionLog(
  */
 export function exportSessionLogJSON(
   log: SessionLogData,
-  projectName: string,
-  modeCode: string
+  projectName: string
 ): void {
   const blob = new Blob([JSON.stringify(log, null, 2)], {
     type: "application/json",
@@ -292,7 +291,7 @@ export function exportSessionLogJSON(
     .replace(/[^a-z0-9-_ ]/gi, "")
     .replace(/\s+/g, "-")
     .toLowerCase();
-  a.download = `${safeFileName}-${modeCode}-log.json`;
+  a.download = `${safeFileName}-log.json`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
@@ -304,8 +303,7 @@ export function exportSessionLogJSON(
  */
 export function exportSessionLogText(
   log: SessionLogData,
-  projectName: string,
-  modeCode: string
+  projectName: string
 ): void {
   const lines: string[] = [];
 
@@ -328,7 +326,7 @@ export function exportSessionLogText(
       lines.push(`Affiliation: ${log.metadata.author.affiliation}`);
     }
   }
-  lines.push(`Mode: ${log.metadata.modeLabel} (-${log.metadata.modeCode})`);
+  lines.push(`Mode: ${log.metadata.modeLabel}`);
   lines.push(`Experience Level: ${log.metadata.experienceLevel || "Not set"}`);
   lines.push(`Current Phase: ${log.metadata.currentPhase}`);
   lines.push(`Session ID: ${log.metadata.sessionId}`);
@@ -452,7 +450,7 @@ export function exportSessionLogText(
     .replace(/[^a-z0-9-_ ]/gi, "")
     .replace(/\s+/g, "-")
     .toLowerCase();
-  a.download = `${safeFileName}-${modeCode}-log.txt`;
+  a.download = `${safeFileName}-log.txt`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
@@ -482,7 +480,6 @@ function sanitiseForPDF(text: string): string {
 export function exportSessionLogPDF(
   log: SessionLogData,
   projectName: string,
-  modeCode: string,
   annotationIndent: number = 0  // Left indent for annotations in pixels (from display settings)
 ): void {
   const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
@@ -901,5 +898,5 @@ export function exportSessionLogPDF(
     .replace(/[^a-z0-9-_ ]/gi, "")
     .replace(/\s+/g, "-")
     .toLowerCase();
-  doc.save(`${safeFileName}-${modeCode}-log.pdf`);
+  doc.save(`${safeFileName}-log.pdf`);
 }
