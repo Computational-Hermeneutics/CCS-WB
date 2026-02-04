@@ -261,6 +261,9 @@ export const WorkbenchLayout = forwardRef<WorkbenchLayoutRef, WorkbenchLayoutPro
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchingLiterature, setIsSearchingLiterature] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [searchResults, setSearchResults] = useState<ReferenceResult[]>([]);
+  const [showResultsModal, setShowResultsModal] = useState(false);
+  const [selectedReferences, setSelectedReferences] = useState<Set<number>>(new Set());
   const [settingsTab, setSettingsTab] = useState<"profile" | "code" | "appearance" | "ai" | "about">("appearance");
   const [showAIPanel, setShowAIPanel] = useState(false);
   const [showModeDropdown, setShowModeDropdown] = useState(false);
@@ -1110,13 +1113,16 @@ export const WorkbenchLayout = forwardRef<WorkbenchLayoutRef, WorkbenchLayoutPro
   const getSuggestedSearchTerms = useCallback((): string[] => {
     const suggestions: string[] = [];
 
-    // Add suggestions from code files
+    // Add suggestions from code files (exclude auto-generated files)
     if (session.codeFiles.length > 0) {
-      const code = session.codeFiles[0];
-      if (code.name) suggestions.push(code.name.replace(/\.[^.]+$/, "")); // filename without extension
-      if (code.language) suggestions.push(`${code.language} programming history`);
-      if (code.author) suggestions.push(code.author);
-      if (code.platform) suggestions.push(code.platform);
+      // Find first non-auto-generated file
+      const code = session.codeFiles.find(f => !f.name.match(/^generated-\d+/));
+      if (code) {
+        if (code.name) suggestions.push(code.name.replace(/\.[^.]+$/, "")); // filename without extension
+        if (code.language) suggestions.push(`${code.language} programming history`);
+        if (code.author) suggestions.push(code.author);
+        if (code.platform) suggestions.push(code.platform);
+      }
     }
 
     // Add suggestions based on mode
@@ -1169,28 +1175,10 @@ export const WorkbenchLayout = forwardRef<WorkbenchLayoutRef, WorkbenchLayoutPro
       }
 
       if (data.references && data.references.length > 0) {
-        // Create a file for each reference
-        const existingFiles = session.codeFiles.map(f => f.name);
-
-        data.references.forEach((reference: ReferenceResult) => {
-          const baseFileName = generateReferenceFileName(reference);
-          const fileName = getUniqueFileName(baseFileName, existingFiles);
-          const content = formatReferenceAsMarkdown(reference);
-
-          const fileId = addCode({
-            name: fileName,
-            language: "markdown",
-            source: "created",
-            size: content.length,
-          });
-
-          // Store the reference content
-          setCodeContent(fileId, content);
-
-          existingFiles.push(fileName);
-        });
-
-        setSuccessMessage(`✓ Created ${data.references.length} reference file(s) in project`);
+        // Show selection modal instead of auto-creating files
+        setSearchResults(data.references);
+        setSelectedReferences(new Set(data.references.map((_: any, i: number) => i))); // Select all by default
+        setShowResultsModal(true);
       } else {
         setSuccessMessage("No references found for that search");
       }
@@ -1201,6 +1189,41 @@ export const WorkbenchLayout = forwardRef<WorkbenchLayoutRef, WorkbenchLayoutPro
       setIsSearchingLiterature(false);
     }
   }, [session.codeFiles, getRequestHeaders, addCode]);
+
+  const handleAddSelectedReferences = useCallback(() => {
+    if (selectedReferences.size === 0) {
+      setShowResultsModal(false);
+      return;
+    }
+
+    const existingFiles = session.codeFiles.map(f => f.name);
+    let filesCreated = 0;
+
+    selectedReferences.forEach((index) => {
+      const reference = searchResults[index];
+      if (!reference) return;
+
+      const baseFileName = generateReferenceFileName(reference);
+      const fileName = getUniqueFileName(baseFileName, existingFiles);
+      const content = formatReferenceAsMarkdown(reference);
+
+      const fileId = addCode({
+        name: fileName,
+        language: "markdown",
+        source: "created",
+        size: content.length,
+      });
+
+      setCodeContent(fileId, content);
+      existingFiles.push(fileName);
+      filesCreated++;
+    });
+
+    setSuccessMessage(`✓ Created ${filesCreated} reference file(s) in project`);
+    setShowResultsModal(false);
+    setSearchResults([]);
+    setSelectedReferences(new Set());
+  }, [selectedReferences, searchResults, session.codeFiles, addCode, setCodeContent]);
 
   // Save to cloud (for cloud projects)
   const [isSavingToCloud, setIsSavingToCloud] = useState(false);
@@ -3480,6 +3503,107 @@ export const WorkbenchLayout = forwardRef<WorkbenchLayoutRef, WorkbenchLayoutPro
               >
                 Search
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Reference Results Selection Modal */}
+      {showResultsModal && (
+        <div
+          className="fixed inset-0 bg-ink/40 flex items-center justify-center z-50 p-4"
+          onClick={() => setShowResultsModal(false)}
+        >
+          <div
+            className="bg-popover rounded-sm shadow-editorial-lg p-4 w-full max-w-2xl max-h-[80vh] overflow-hidden flex flex-col border border-parchment modal-content"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="font-display text-sm text-ink mb-2">Select References to Add</h3>
+            <p className="font-body text-[11px] text-slate mb-3">
+              Found {searchResults.length} references. Select which ones to add to your project.
+            </p>
+
+            {/* Results list with checkboxes */}
+            <div className="flex-1 overflow-y-auto space-y-2 mb-4">
+              {searchResults.map((reference, index) => (
+                <label
+                  key={index}
+                  className={cn(
+                    "flex items-start gap-3 p-3 rounded-sm border cursor-pointer transition-colors",
+                    selectedReferences.has(index)
+                      ? "bg-burgundy/5 border-burgundy/30"
+                      : "bg-card border-parchment hover:border-gold/50"
+                  )}
+                >
+                  <input
+                    type="checkbox"
+                    checked={selectedReferences.has(index)}
+                    onChange={(e) => {
+                      const newSelected = new Set(selectedReferences);
+                      if (e.target.checked) {
+                        newSelected.add(index);
+                      } else {
+                        newSelected.delete(index);
+                      }
+                      setSelectedReferences(newSelected);
+                    }}
+                    className="mt-0.5 h-4 w-4 rounded border-parchment-dark text-burgundy focus:ring-burgundy focus:ring-offset-0"
+                  />
+                  <div className="flex-1 min-w-0">
+                    <p className="font-display text-[12px] text-ink font-medium mb-1">
+                      {reference.title}
+                    </p>
+                    <p className="font-sans text-[10px] text-slate mb-1">
+                      {reference.authors.join(", ")} {reference.year && `(${reference.year})`}
+                    </p>
+                    {reference.description && (
+                      <p className="font-body text-[10px] text-slate-muted line-clamp-2">
+                        {reference.description}
+                      </p>
+                    )}
+                  </div>
+                </label>
+              ))}
+            </div>
+
+            {/* Action buttons */}
+            <div className="flex items-center justify-between border-t border-parchment pt-3">
+              <button
+                onClick={() => {
+                  if (selectedReferences.size === searchResults.length) {
+                    setSelectedReferences(new Set());
+                  } else {
+                    setSelectedReferences(new Set(searchResults.map((_, i) => i)));
+                  }
+                }}
+                className="text-[11px] text-slate hover:text-ink transition-colors"
+              >
+                {selectedReferences.size === searchResults.length ? "Deselect all" : "Select all"}
+              </button>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => {
+                    setShowResultsModal(false);
+                    setSearchResults([]);
+                    setSelectedReferences(new Set());
+                  }}
+                  className="btn-editorial-ghost text-[11px] px-3 py-1.5"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleAddSelectedReferences}
+                  disabled={selectedReferences.size === 0}
+                  className={cn(
+                    "text-[11px] px-3 py-1.5 rounded-sm",
+                    selectedReferences.size > 0
+                      ? "btn-editorial-primary"
+                      : "bg-parchment text-slate-muted cursor-not-allowed"
+                  )}
+                >
+                  Add {selectedReferences.size > 0 ? `(${selectedReferences.size})` : ""}
+                </button>
+              </div>
             </div>
           </div>
         </div>
