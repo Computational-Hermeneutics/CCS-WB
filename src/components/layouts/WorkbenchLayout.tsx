@@ -264,6 +264,16 @@ export const WorkbenchLayout = forwardRef<WorkbenchLayoutRef, WorkbenchLayoutPro
   const [searchResults, setSearchResults] = useState<ReferenceResult[]>([]);
   const [showResultsModal, setShowResultsModal] = useState(false);
   const [selectedReferences, setSelectedReferences] = useState<Set<number>>(new Set());
+  const [selectedFileId, setSelectedFileId] = useState<string | null>(null);
+  const [showAnnotationSuggestionsModal, setShowAnnotationSuggestionsModal] = useState(false);
+  const [annotationSuggestions, setAnnotationSuggestions] = useState<Array<{
+    lineNumber: number;
+    type: LineAnnotationType;
+    content: string;
+    lineContent: string;
+  }>>([]);
+  const [selectedAnnotations, setSelectedAnnotations] = useState<Set<number>>(new Set());
+  const [isRequestingAnnotations, setIsRequestingAnnotations] = useState(false);
   const [settingsTab, setSettingsTab] = useState<"profile" | "code" | "appearance" | "ai" | "about">("appearance");
   const [showAIPanel, setShowAIPanel] = useState(false);
   const [showModeDropdown, setShowModeDropdown] = useState(false);
@@ -1224,6 +1234,187 @@ export const WorkbenchLayout = forwardRef<WorkbenchLayoutRef, WorkbenchLayoutPro
     setSearchResults([]);
     setSelectedReferences(new Set());
   }, [selectedReferences, searchResults, session.codeFiles, addCode, setCodeContent]);
+
+  // Annotation suggestion handlers
+  const handleRequestAnnotationSuggestions = useCallback(async () => {
+    // Check if we have a selected file and it has content
+    if (!selectedFileId) {
+      setSuccessMessage("Please open a code file first");
+      return;
+    }
+
+    const selectedFile = session.codeFiles.find(f => f.id === selectedFileId);
+    const fileContent = codeContents.get(selectedFileId);
+
+    if (!selectedFile || !fileContent) {
+      setSuccessMessage("Please open a code file first");
+      return;
+    }
+
+    // Check if connection is ready
+    if (!isAiReady) {
+      const connected = await autoTestConnection();
+      if (!connected) {
+        setShowAISettings(true);
+        return;
+      }
+    }
+
+    setIsRequestingAnnotations(true);
+
+    try {
+      // Get LLM name for attribution
+      const llmName = settings.provider === 'custom' && settings.customModelId
+        ? settings.customModelId
+        : settings.model || settings.provider || 'AI';
+
+      // Build the prompt for annotation suggestions
+      const systemPrompt = `You are an expert in Critical Code Studies. Analyze the provided code and suggest 3-5 annotations that would be valuable for close reading and critical analysis.
+
+For each annotation, provide:
+1. lineNumber: The line number to annotate (1-indexed)
+2. type: One of 'observation', 'question', 'metaphor', 'pattern', 'context', or 'critique'
+3. content: The annotation text (2-3 sentences explaining the interpretive entry point)
+
+Respond ONLY with valid JSON in this exact format:
+{
+  "annotations": [
+    {
+      "lineNumber": 5,
+      "type": "observation",
+      "content": "Your annotation text here."
+    }
+  ]
+}`;
+
+      const userPrompt = `Analyze this code file and suggest 3-5 annotations:
+
+File: ${selectedFile.name}
+Language: ${selectedFile.language || 'unknown'}
+
+\`\`\`
+${fileContent}
+\`\`\`
+
+Remember: Respond ONLY with valid JSON. Focus on interesting interpretive entry points for close reading.`;
+
+      const response = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...getRequestHeaders() },
+        body: JSON.stringify({
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: userPrompt }
+          ],
+          settings: session.settings,
+          mode: "critique",
+        }),
+      });
+
+      if (!response.ok) {
+        if (response.status === 429) {
+          setSuccessMessage("Rate limited. Please wait and try again.");
+          return;
+        }
+        throw new Error("Failed to get annotation suggestions");
+      }
+
+      const data = await response.json();
+      const aiResponse = data.message.content;
+
+      // Try to extract JSON from the response
+      let jsonMatch = aiResponse.match(/\{[\s\S]*"annotations"[\s\S]*\}/);
+      if (!jsonMatch) {
+        // Try to find any JSON array
+        jsonMatch = aiResponse.match(/\[[\s\S]*\]/);
+        if (jsonMatch) {
+          jsonMatch[0] = `{"annotations": ${jsonMatch[0]}}`;
+        }
+      }
+
+      if (!jsonMatch) {
+        console.error("Could not extract JSON from AI response:", aiResponse);
+        setSuccessMessage("AI response was not in expected format");
+        return;
+      }
+
+      const parsed = JSON.parse(jsonMatch[0]);
+      const suggestions = parsed.annotations || [];
+
+      if (suggestions.length === 0) {
+        setSuccessMessage("AI did not suggest any annotations");
+        return;
+      }
+
+      // Validate and prepare annotations
+      const codeLines = fileContent.split('\n');
+      const validSuggestions = suggestions
+        .filter((s: any) => {
+          return s.lineNumber &&
+                 s.lineNumber > 0 &&
+                 s.lineNumber <= codeLines.length &&
+                 s.type &&
+                 s.content;
+        })
+        .map((s: any) => ({
+          lineNumber: s.lineNumber,
+          type: s.type as LineAnnotationType,
+          content: s.content,
+          lineContent: codeLines[s.lineNumber - 1] || '',
+        }));
+
+      if (validSuggestions.length === 0) {
+        setSuccessMessage("No valid annotation suggestions found");
+        return;
+      }
+
+      // Show selection modal
+      setAnnotationSuggestions(validSuggestions);
+      setSelectedAnnotations(new Set(validSuggestions.map((_: any, i: number) => i))); // Select all by default
+      setShowAnnotationSuggestionsModal(true);
+
+    } catch (error) {
+      console.error("Error requesting annotation suggestions:", error);
+      setSuccessMessage("Failed to get annotation suggestions");
+    } finally {
+      setIsRequestingAnnotations(false);
+    }
+  }, [selectedFileId, session.codeFiles, session.settings, codeContents, isAiReady, settings, getRequestHeaders, autoTestConnection]);
+
+  const handleAddSelectedAnnotations = useCallback(() => {
+    if (selectedAnnotations.size === 0 || !selectedFileId) {
+      setShowAnnotationSuggestionsModal(false);
+      return;
+    }
+
+    // Get LLM name for attribution
+    const llmName = settings.provider === 'custom' && settings.customModelId
+      ? settings.customModelId
+      : settings.model || settings.provider || 'AI';
+
+    let annotationsAdded = 0;
+
+    selectedAnnotations.forEach((index) => {
+      const suggestion = annotationSuggestions[index];
+      if (!suggestion) return;
+
+      addLineAnnotation({
+        codeFileId: selectedFileId,
+        lineNumber: suggestion.lineNumber,
+        lineContent: suggestion.lineContent,
+        type: suggestion.type,
+        content: suggestion.content,
+        addedBy: llmName,
+      });
+
+      annotationsAdded++;
+    });
+
+    setSuccessMessage(`✓ Added ${annotationsAdded} annotation(s) by ${llmName}`);
+    setShowAnnotationSuggestionsModal(false);
+    setAnnotationSuggestions([]);
+    setSelectedAnnotations(new Set());
+  }, [selectedAnnotations, annotationSuggestions, selectedFileId, settings, addLineAnnotation]);
 
   // Save to cloud (for cloud projects)
   const [isSavingToCloud, setIsSavingToCloud] = useState(false);
@@ -2982,6 +3173,7 @@ export const WorkbenchLayout = forwardRef<WorkbenchLayoutRef, WorkbenchLayoutPro
             }}
             onReorderFiles={reorderCodeFiles}
             onUpdateFileLanguage={(fileId, language) => updateCode(fileId, { language })}
+            onSelectedFileChange={setSelectedFileId}
             isFullScreen={annotationFullScreen}
             onToggleFullScreen={() => setAnnotationFullScreen(!annotationFullScreen)}
             onRequestMinPanelWidth={(minWidth) => {
@@ -3255,14 +3447,21 @@ export const WorkbenchLayout = forwardRef<WorkbenchLayoutRef, WorkbenchLayoutPro
                   {session.codeFiles.length > 0 && (
                     <>
                       <button
-                        onClick={() => {
-                          setInput("Suggest 3-5 annotations I could add to this code. For each suggestion, specify the line number, annotation type (Obs, Q, Met, Pat, Ctx, or Crit), and the annotation text. Focus on interesting interpretive entry points for close reading.");
-                          inputRef.current?.focus();
-                        }}
-                        className="p-1.5 text-slate hover:text-ink rounded-md transition-colors"
-                        title="Help annotate"
+                        onClick={handleRequestAnnotationSuggestions}
+                        disabled={isRequestingAnnotations}
+                        className={cn(
+                          "p-1.5 rounded-md transition-colors",
+                          isRequestingAnnotations
+                            ? "text-slate-muted cursor-not-allowed"
+                            : "text-slate hover:text-ink"
+                        )}
+                        title={isRequestingAnnotations ? "Getting suggestions..." : "AI annotation suggestions"}
                       >
-                        <Sparkles className="h-4 w-4" strokeWidth={1.5} />
+                        {isRequestingAnnotations ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Sparkles className="h-4 w-4" strokeWidth={1.5} />
+                        )}
                       </button>
                       <button
                         onClick={() => setShowSendContextModal(true)}
@@ -3503,6 +3702,123 @@ export const WorkbenchLayout = forwardRef<WorkbenchLayoutRef, WorkbenchLayoutPro
               >
                 Search
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Annotation Suggestions Selection Modal */}
+      {showAnnotationSuggestionsModal && (
+        <div
+          className="fixed inset-0 bg-ink/40 flex items-center justify-center z-50 p-4"
+          onClick={() => setShowAnnotationSuggestionsModal(false)}
+        >
+          <div
+            className="bg-popover rounded-sm shadow-editorial-lg p-4 w-full max-w-2xl max-h-[80vh] overflow-hidden flex flex-col border border-parchment modal-content"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="font-display text-sm text-ink mb-2">Select Annotations to Add</h3>
+            <p className="font-body text-[11px] text-slate mb-3">
+              AI suggested {annotationSuggestions.length} annotations. Select which ones to add to your code.
+            </p>
+
+            {/* Suggestions list with checkboxes */}
+            <div className="flex-1 overflow-y-auto space-y-2 mb-4">
+              {annotationSuggestions.map((suggestion, index) => (
+                <label
+                  key={index}
+                  className={cn(
+                    "flex items-start gap-3 p-3 rounded-sm border cursor-pointer transition-colors",
+                    selectedAnnotations.has(index)
+                      ? "bg-burgundy/5 border-burgundy/30"
+                      : "bg-card border-parchment hover:border-gold/50"
+                  )}
+                >
+                  <input
+                    type="checkbox"
+                    checked={selectedAnnotations.has(index)}
+                    onChange={(e) => {
+                      const newSelected = new Set(selectedAnnotations);
+                      if (e.target.checked) {
+                        newSelected.add(index);
+                      } else {
+                        newSelected.delete(index);
+                      }
+                      setSelectedAnnotations(newSelected);
+                    }}
+                    className="mt-0.5 h-4 w-4 rounded border-parchment-dark text-burgundy focus:ring-burgundy focus:ring-offset-0"
+                  />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <p className="font-mono text-[11px] text-slate-muted">
+                        Line {suggestion.lineNumber}
+                      </p>
+                      <span className={cn(
+                        "px-1.5 py-0.5 rounded-sm text-[9px] font-medium uppercase tracking-wide",
+                        suggestion.type === 'observation' && "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300",
+                        suggestion.type === 'question' && "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300",
+                        suggestion.type === 'metaphor' && "bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-300",
+                        suggestion.type === 'pattern' && "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300",
+                        suggestion.type === 'context' && "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300",
+                        suggestion.type === 'critique' && "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300"
+                      )}>
+                        {suggestion.type === 'observation' && 'Obs'}
+                        {suggestion.type === 'question' && 'Q'}
+                        {suggestion.type === 'metaphor' && 'Met'}
+                        {suggestion.type === 'pattern' && 'Pat'}
+                        {suggestion.type === 'context' && 'Ctx'}
+                        {suggestion.type === 'critique' && 'Crit'}
+                      </span>
+                    </div>
+                    <p className="font-mono text-[10px] text-slate-muted mb-2 bg-slate-50 dark:bg-slate-900/30 px-2 py-1 rounded">
+                      {suggestion.lineContent}
+                    </p>
+                    <p className="font-body text-[11px] text-ink">
+                      {suggestion.content}
+                    </p>
+                  </div>
+                </label>
+              ))}
+            </div>
+
+            {/* Action buttons */}
+            <div className="flex items-center justify-between border-t border-parchment pt-3">
+              <button
+                onClick={() => {
+                  if (selectedAnnotations.size === annotationSuggestions.length) {
+                    setSelectedAnnotations(new Set());
+                  } else {
+                    setSelectedAnnotations(new Set(annotationSuggestions.map((_, i) => i)));
+                  }
+                }}
+                className="text-[11px] text-slate hover:text-ink transition-colors"
+              >
+                {selectedAnnotations.size === annotationSuggestions.length ? "Deselect all" : "Select all"}
+              </button>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => {
+                    setShowAnnotationSuggestionsModal(false);
+                    setAnnotationSuggestions([]);
+                    setSelectedAnnotations(new Set());
+                  }}
+                  className="btn-editorial-ghost text-[11px] px-3 py-1.5"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleAddSelectedAnnotations}
+                  disabled={selectedAnnotations.size === 0}
+                  className={cn(
+                    "text-[11px] px-3 py-1.5 rounded-sm",
+                    selectedAnnotations.size > 0
+                      ? "btn-editorial-primary"
+                      : "bg-parchment text-slate-muted cursor-not-allowed"
+                  )}
+                >
+                  Add {selectedAnnotations.size > 0 ? `(${selectedAnnotations.size})` : ""}
+                </button>
+              </div>
             </div>
           </div>
         </div>

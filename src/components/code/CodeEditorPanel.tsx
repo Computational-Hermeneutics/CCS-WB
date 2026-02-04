@@ -76,6 +76,7 @@ interface CodeEditorPanelProps {
   onAddNewFile?: () => void; // Create a new blank file
   onReorderFiles?: (fileIds: string[]) => void; // Reorder files by new order
   onUpdateFileLanguage?: (fileId: string, language: string | undefined) => void; // Update file's language
+  onSelectedFileChange?: (fileId: string | null) => void; // Callback when selected file changes
   isFullScreen?: boolean; // Whether annotation pane is in full screen mode
   onToggleFullScreen?: () => void; // Callback to toggle full screen mode
   onRequestMinPanelWidth?: (minWidthPercent: number) => void; // Request minimum panel width (for auto-extend)
@@ -390,6 +391,7 @@ export function CodeEditorPanel({
   onAddNewFile,
   onReorderFiles,
   onUpdateFileLanguage,
+  onSelectedFileChange,
   isFullScreen = false,
   onToggleFullScreen,
   onRequestMinPanelWidth,
@@ -659,6 +661,13 @@ export function CodeEditorPanel({
   useEffect(() => {
     setCursorPosition(null);
   }, [selectedFileId]);
+
+  // Notify parent when selected file changes
+  useEffect(() => {
+    if (onSelectedFileChange) {
+      onSelectedFileChange(selectedFileId);
+    }
+  }, [selectedFileId, onSelectedFileChange]);
 
   // Apply annotation display settings as CSS variables (per-project settings)
   useEffect(() => {
