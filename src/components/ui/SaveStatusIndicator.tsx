@@ -79,9 +79,9 @@ export function SaveStatusIndicator({
       break;
 
     case "dirty":
-      icon = <Circle className="h-3 w-3 fill-amber-500" />;
-      text = "Unsaved changes";
-      colorClass = "text-amber-600";
+      icon = <Circle className="h-2 w-2 fill-red-500" />;
+      text = "Unsaved";
+      colorClass = "text-red-600";
       break;
 
     case "idle":
@@ -92,9 +92,9 @@ export function SaveStatusIndicator({
         text = `Saved ${formatRelativeTime(lastSaved)}`;
         colorClass = "text-slate-500";
       } else if (isDirty) {
-        icon = <Circle className="h-3 w-3 fill-amber-500" />;
-        text = "Unsaved changes";
-        colorClass = "text-amber-600";
+        icon = <Circle className="h-2 w-2 fill-red-500" />;
+        text = "Unsaved";
+        colorClass = "text-red-600";
       } else {
         return <></>;
       }
