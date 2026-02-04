@@ -281,7 +281,6 @@ export const WorkbenchLayout = forwardRef<WorkbenchLayoutRef, WorkbenchLayoutPro
   const [showAIPanel, setShowAIPanel] = useState(false);
   const [showModeDropdown, setShowModeDropdown] = useState(false);
   const [showGuidedPrompts, setShowGuidedPrompts] = useState(false);
-  const [showExperienceHelp, setShowExperienceHelp] = useState(false);
   const [showCloudMenu, setShowCloudMenu] = useState(false);
   const [isCreatingProject, setIsCreatingProject] = useState(false);
   const [newProjectName, setNewProjectName] = useState("");
@@ -1985,7 +1984,6 @@ Follow the ${modeContext} guidance provided above.`;
         setShowFontSizePopover(false);
         setShowGuidedPrompts(false);
         setShowSendContextModal(false);
-        setShowExperienceHelp(false);
         setShowCodeInput(false);
         setShowSettingsModal(false);
         setShowExportModal(false);
@@ -2006,7 +2004,6 @@ Follow the ${modeContext} guidance provided above.`;
       // Close dropdowns if clicking outside of them
       if (!target.closest('[data-dropdown]')) {
         setShowModeDropdown(false);
-        setShowExperienceHelp(false);
         setShowFontSizePopover(false);
         setShowCloudMenu(false);
         setShowProjectInfo(false);
@@ -2393,49 +2390,7 @@ Follow the ${modeContext} guidance provided above.`;
               </div>
             )}
           </div>
-          {/* Experience level indicator - clickable to change (hidden on narrow screens) */}
-          <div className="relative hidden md:block" data-dropdown>
-            <button
-              onClick={() => setShowExperienceHelp(!showExperienceHelp)}
-              className="font-sans text-[10px] text-slate hover:text-ink px-2 py-0.5 border border-parchment hover:border-slate-muted rounded-sm transition-colors flex items-center gap-1"
-            >
-              {session.experienceLevel
-                ? EXPERIENCE_LEVEL_LABELS[session.experienceLevel as ExperienceLevel]
-                : "No level"}
-              <ChevronDown className={cn("h-2.5 w-2.5 transition-transform", showExperienceHelp && "rotate-180")} strokeWidth={1.5} />
-            </button>
-
-            {/* Experience level dropdown */}
-            {showExperienceHelp && (
-              <div className="absolute top-full left-0 mt-1 w-56 bg-popover rounded-sm shadow-lg border border-parchment p-1 z-50">
-                {(["learning", "practitioner", "research"] as const).map((level) => (
-                  <button
-                    key={level}
-                    onClick={() => {
-                      setExperienceLevel(level);
-                      setShowExperienceHelp(false);
-                      // Add a system message to notify the conversation
-                      addMessage({
-                        role: "system",
-                        content: `[Experience level changed to ${EXPERIENCE_LEVEL_LABELS[level]}]`,
-                      });
-                    }}
-                    className={cn(
-                      "w-full text-left px-2 py-1.5 rounded-sm transition-colors",
-                      session.experienceLevel === level ? "bg-burgundy/10" : "hover:bg-cream"
-                    )}
-                  >
-                    <span className={cn("block text-[11px]", session.experienceLevel === level ? "text-burgundy" : "text-ink")}>
-                      {EXPERIENCE_LEVEL_LABELS[level]}
-                    </span>
-                    <span className="block text-[9px] text-slate-muted mt-0.5">
-                      {EXPERIENCE_LEVEL_DESCRIPTIONS[level]}
-                    </span>
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
+          {/* Experience level removed - now auto-derived from mode */}
         </div>
 
         {/* Center: Project/session name - shows cloud project name when connected, otherwise local session name */}
