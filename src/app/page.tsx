@@ -37,7 +37,7 @@ const entryModes: EntryModeCard[] = [
   },
   {
     mode: "create",
-    title: "Experiment",
+    title: "Create Code",
     description:
       "Explore algorithms by building them. Create simple versions of ELIZA, poetry generators, and more.",
     icon: Sparkles,
@@ -360,7 +360,7 @@ export default function WelcomePage() {
                     </p>
                   </div>
                   <div className="bg-cream border border-parchment rounded-sm p-3">
-                    <p className="font-sans text-xs font-medium text-burgundy mb-1">Experiment</p>
+                    <p className="font-sans text-xs font-medium text-burgundy mb-1">Create Code</p>
                     <p className="font-body text-xs text-slate">
                       Vibe coding: build simple versions of ELIZA, poetry generators,
                       and other algorithms to understand them from the inside.

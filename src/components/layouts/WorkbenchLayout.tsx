@@ -115,7 +115,7 @@ const MODE_COLORS: Record<string, string> = {
 const MODE_DISPLAY_NAMES: Record<string, string> = {
   critique: "Analyze Code",
   interpret: "Learn Methods",
-  create: "Experiment",
+  create: "Create Code",
 };
 
 // Strip $ namespace prefix from project names for display (library projects use $ prefix internally)
