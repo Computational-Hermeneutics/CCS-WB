@@ -26,10 +26,10 @@ const TOAST_ICONS: Record<ToastType, React.ReactNode> = {
 };
 
 const TOAST_STYLES: Record<ToastType, string> = {
-  success: "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800 text-green-800 dark:text-green-200",
-  error: "bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800 text-red-800 dark:text-red-200",
-  info: "bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800 text-blue-800 dark:text-blue-200",
-  reconnect: "bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800 text-blue-800 dark:text-blue-200",
+  success: "bg-green-100 dark:bg-green-900/90 border-green-300 dark:border-green-700 text-green-900 dark:text-green-100",
+  error: "bg-red-100 dark:bg-red-900/90 border-red-300 dark:border-red-700 text-red-900 dark:text-red-100",
+  info: "bg-blue-100 dark:bg-blue-900/90 border-blue-300 dark:border-blue-700 text-blue-900 dark:text-blue-100",
+  reconnect: "bg-blue-100 dark:bg-blue-900/90 border-blue-300 dark:border-blue-700 text-blue-900 dark:text-blue-100",
 };
 
 const TOAST_ICON_STYLES: Record<ToastType, string> = {

@@ -905,18 +905,10 @@ export function useCollaborativeSession() {
         lineAnnotations: repliesResult.merged,
       });
 
-      // Process operation queue to sync pending changes
-      const { processQueue } = await import("@/lib/sync/operation-queue");
-      const queueResult = await processQueue(currentProjectId, async (op) => {
-        // Operation processor is handled by individual sync hooks
-        // Here we just return true to remove from queue since we've merged them
-        console.log(`refreshFromCloud: Marking operation as processed: ${op.type}`);
-        return true;
-      });
-
-      console.log(
-        `refreshFromCloud: Queue processed: ${queueResult.succeeded} succeeded, ${queueResult.failed} failed`
-      );
+      // NOTE: We do NOT remove pending operations from the queue here.
+      // The individual sync hooks (useAnnotationsSync, useCodeFilesSync) will
+      // process and push them to Supabase during their normal polling cycle.
+      // The merge above just ensures pending operations are reflected in local state.
 
       console.log("refreshFromCloud: Smart refresh completed successfully");
       return { success: true, error: null, conflicts: filesResult.conflicts };
