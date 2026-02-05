@@ -3,27 +3,39 @@
   "name": "2004 - Markdown",
   "mode": "critique",
   "description": "John Gruber's plain text formatting syntax and the return to readability",
-  "era": "2000s",
+  "era": null,
   "codeFiles": [
     {
       "id": "file-1",
       "name": "README.md",
-      "language": "markdown"
+      "language": "markdown",
+      "source": "shared",
+      "size": 12816,
+      "uploadedAt": "2026-02-05T13:40:17.172Z"
     },
     {
       "id": "file-2",
       "name": "Markdown Readme.text",
-      "language": "text"
+      "language": "text",
+      "source": "shared",
+      "size": 11075,
+      "uploadedAt": "2026-02-05T13:40:17.172Z"
     },
     {
       "id": "file-3",
       "name": "Markdown.pl",
-      "language": "perl"
+      "language": "perl",
+      "source": "shared",
+      "size": 35622,
+      "uploadedAt": "2026-02-05T13:40:17.172Z"
     },
     {
       "id": "file-4",
       "name": "License.text",
-      "language": "text"
+      "language": "text",
+      "source": "shared",
+      "size": 1508,
+      "uploadedAt": "2026-02-05T13:40:17.172Z"
     }
   ],
   "codeContents": {
