@@ -421,12 +421,16 @@ export function useCollaborativeSession() {
     if (unsyncedAnnotations.length === 0) return;
 
     // Debounce syncing
-    const timeoutId = setTimeout(() => {
+    const timeoutId = setTimeout(async () => {
       console.log(`Syncing ${unsyncedAnnotations.length} new local annotations`);
 
       for (const annotation of unsyncedAnnotations) {
-        pushAnnotation(annotation);
-        syncedAnnotationIdsRef.current.add(annotation.id);
+        const success = await pushAnnotation(annotation);
+        // Only mark as synced if push succeeded
+        // Failed annotations will be retried on next render
+        if (success) {
+          syncedAnnotationIdsRef.current.add(annotation.id);
+        }
       }
     }, 300);
 

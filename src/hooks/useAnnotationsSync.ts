@@ -396,17 +396,18 @@ export function useAnnotationsSync({
   }, [supabase, currentProjectId]);
 
   // Push a new or updated annotation to Supabase
+  // Returns true if successful, false if failed (and queued for retry)
   const pushAnnotation = useCallback(
-    async (annotation: LineAnnotation) => {
+    async (annotation: LineAnnotation): Promise<boolean> => {
       if (!supabase || !enabled || !isAuthenticated || !currentProjectId) {
-        return;
+        return false;
       }
 
       const currentFileIdMap = fileIdMapRef.current;
       const fileId = currentFileIdMap[annotation.codeFileId];
       if (!fileId) {
         console.warn("No Supabase file_id for annotation:", annotation.codeFileId);
-        return;
+        return false;
       }
 
       // Mark that we're making an update (to skip processing our own changes)
@@ -485,6 +486,7 @@ export function useAnnotationsSync({
 
         // Record successful request
         recordSuccessfulRequest();
+        return true; // Success
       } catch (err) {
         console.error("pushAnnotation: All retry attempts failed:", err);
 
@@ -502,6 +504,7 @@ export function useAnnotationsSync({
             console.error("[useAnnotationsSync] Failed to queue annotation:", queueError);
           }
         }
+        return false; // Failed and queued
       }
     },
     [supabase, enabled, isAuthenticated, currentProjectId, user?.id, profile, fetchAndUpdate]
