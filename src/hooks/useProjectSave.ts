@@ -72,8 +72,7 @@ export function useProjectSave({
             .eq("id", projectId);
 
           console.log("saveProject: Sample project metadata updated");
-          markLocalUpdate(projectId);
-          updateProjectTimestamp(projectId);
+          updateProjectTimestamp(projectId, now);
           return { error: null };
         }
 
