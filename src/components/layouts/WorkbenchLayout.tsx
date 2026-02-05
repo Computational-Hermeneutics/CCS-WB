@@ -193,6 +193,8 @@ export const WorkbenchLayout = forwardRef<WorkbenchLayoutRef, WorkbenchLayoutPro
     saveAllToCloud,
     resetSession,
     newRemoteAnnotationIds,
+    // Auto-save
+    markClean,
     // File trash
     trashedFiles,
     isLoadingFileTrash,
@@ -293,6 +295,8 @@ export const WorkbenchLayout = forwardRef<WorkbenchLayoutRef, WorkbenchLayoutPro
           console.error('[WorkbenchLayout] Cloud auto-save failed:', error);
         } else {
           console.log('[WorkbenchLayout] Cloud auto-save successful');
+          // Mark session as clean to prevent immediate re-save
+          markClean();
         }
       } catch (err) {
         console.error('[WorkbenchLayout] Cloud auto-save error:', err);
@@ -300,7 +304,7 @@ export const WorkbenchLayout = forwardRef<WorkbenchLayoutRef, WorkbenchLayoutPro
     }, 2000);
 
     return () => clearTimeout(timer);
-  }, [currentProjectId, session.isDirty, session.lastModified, saveProject]);
+  }, [currentProjectId, session.isDirty, session.lastModified, saveProject, markClean]);
 
   // Refresh cloud connection when tab becomes visible after being hidden
   useEffect(() => {
