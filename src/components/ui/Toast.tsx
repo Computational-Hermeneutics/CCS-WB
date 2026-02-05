@@ -4,7 +4,7 @@
  * Simple toast notification that auto-dismisses after a few seconds
  */
 
-import React, { useEffect } from "react";
+import React, { useEffect, useRef } from "react";
 import { X, CheckCircle, AlertCircle, Info, CloudCog } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -53,13 +53,17 @@ export function Toast({
   onClose,
   className = "",
 }: ToastProps): React.ReactElement {
+  // Store onClose in a ref to avoid resetting timer when parent re-renders
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
+
   useEffect(() => {
     const timer = setTimeout(() => {
-      onClose();
+      onCloseRef.current();
     }, duration);
 
     return () => clearTimeout(timer);
-  }, [duration, onClose]);
+  }, [duration]); // Only depend on duration, not onClose
 
   return (
     <div
