@@ -235,9 +235,19 @@ export const WorkbenchLayout = forwardRef<WorkbenchLayoutRef, WorkbenchLayoutPro
     enabled: !!currentProjectId && isAuthenticated,
     onConnectionLost: () => {
       console.log("[WorkbenchLayout] Connection lost");
+      setConnectionToast({
+        show: true,
+        type: "error",
+        message: "Connection to cloud project lost. Changes saved locally.",
+      });
     },
     onConnectionRestored: () => {
       console.log("[WorkbenchLayout] Connection restored, triggering refresh");
+      setConnectionToast({
+        show: true,
+        type: "success",
+        message: "Connection to cloud project restored.",
+      });
       refreshFromCloud();
     },
   });
@@ -381,7 +391,11 @@ export const WorkbenchLayout = forwardRef<WorkbenchLayoutRef, WorkbenchLayoutPro
   const [showNewProjectModal, setShowNewProjectModal] = useState(false);
   const [projectMemberCount, setProjectMemberCount] = useState<number>(0);
   const [projectMembers, setProjectMembers] = useState<Array<{ user_id: string; initials?: string; avatar_url?: string; display_name?: string; role: string }>>([]);
-  const [showReconnectToast, setShowReconnectToast] = useState(false);
+  const [connectionToast, setConnectionToast] = useState<{
+    show: boolean;
+    type: "success" | "error" | "reconnect";
+    message: React.ReactNode;
+  } | null>(null);
   const [isCCSPanelMinimized, setIsCCSPanelMinimized] = useState(false);
 
   // Check if cloud project was restored on page load
@@ -390,7 +404,15 @@ export const WorkbenchLayout = forwardRef<WorkbenchLayoutRef, WorkbenchLayoutPro
       // Check if this was a page reload by seeing if there's no session data yet
       const wasRestored = localStorage.getItem("ccs-project-just-restored") === "true";
       if (wasRestored) {
-        setShowReconnectToast(true);
+        setConnectionToast({
+          show: true,
+          type: "reconnect",
+          message: (
+            <>
+              Reconnected to cloud project: <strong>{currentProject.name}</strong>
+            </>
+          ),
+        });
         localStorage.removeItem("ccs-project-just-restored");
       }
     }
@@ -3472,17 +3494,13 @@ Follow the ${modeContext} guidance provided above.`;
         </div>
       </header>
 
-      {/* Cloud project restored toast notification */}
-      {showReconnectToast && currentProject && (
+      {/* Connection status toast notifications */}
+      {connectionToast?.show && (
         <Toast
-          type="reconnect"
-          message={
-            <>
-              Reconnected to cloud project: <strong>{currentProject.name}</strong>
-            </>
-          }
-          duration={4000}
-          onClose={() => setShowReconnectToast(false)}
+          type={connectionToast.type}
+          message={connectionToast.message}
+          duration={5000}
+          onClose={() => setConnectionToast(null)}
         />
       )}
 
