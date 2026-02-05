@@ -2738,38 +2738,84 @@ Follow the ${modeContext} guidance provided above.`;
         ) : (
           // Local session: editable name with .ccs extension and local indicator
           <div className="hidden sm:flex justify-center min-w-0">
-            <button
-              onClick={() => {
-                const newName = prompt("Rename project:", projectName || "Untitled");
-                if (newName !== null && newName.trim()) {
-                  setProjectName(newName.trim());
-                }
-              }}
-              className="flex hover:bg-cream px-2 py-0.5 rounded-sm transition-colors items-center gap-1.5 min-w-0 max-w-[280px]"
-              title="Local session (click to rename)"
-            >
-              <HardDrive className="h-3 w-3 text-slate-muted flex-shrink-0" strokeWidth={1.5} />
-              <div className="flex items-center gap-1 min-w-0">
-                {projectName ? (
-                  <span className="font-mono text-[10px] text-ink truncate">
-                    {projectName.replace(/[^a-z0-9-_ ]/gi, "").replace(/\s+/g, "-").toLowerCase()}.ccs
-                  </span>
-                ) : (
-                  <span className="font-mono text-[10px] text-slate-muted italic whitespace-nowrap">
-                    untitled.ccs
-                  </span>
-                )}
-                {/* Only show save status if we have a file handle (using File System Access API) */}
-                {autoSave.isSupported && session.fileHandles?.[session.id] && (
-                  <SaveStatusIndicator
-                    status={autoSave.saveStatus}
-                    lastSaved={autoSave.lastSaved}
-                    isDirty={autoSave.isDirty}
-                    inline={true}
-                  />
-                )}
-              </div>
-            </button>
+            <div className="relative" data-dropdown>
+              <button
+                onClick={() => {
+                  // Toggle dropdown if file is saved, otherwise rename
+                  if (autoSave.isSupported && session.fileHandles?.[session.id]) {
+                    setShowProjectInfo(!showProjectInfo);
+                  } else {
+                    const newName = prompt("Rename project:", projectName || "Untitled");
+                    if (newName !== null && newName.trim()) {
+                      setProjectName(newName.trim());
+                    }
+                  }
+                }}
+                className="flex hover:bg-cream px-2 py-0.5 rounded-sm transition-colors items-center gap-1.5 min-w-0 max-w-[280px]"
+                title={autoSave.isSupported && session.fileHandles?.[session.id] ? "Click for file info" : "Local session (click to rename)"}
+              >
+                <HardDrive className="h-3 w-3 text-slate-muted flex-shrink-0" strokeWidth={1.5} />
+                <div className="flex items-center gap-1 min-w-0">
+                  {projectName ? (
+                    <>
+                      <span className="font-mono text-[10px] text-ink truncate">
+                        {projectName.replace(/[^a-z0-9-_ ]/gi, "").replace(/\s+/g, "-").toLowerCase()}.ccs
+                      </span>
+                      {autoSave.isSupported && session.fileHandles?.[session.id] && (
+                        <span className="text-[9px] text-slate-muted whitespace-nowrap">
+                          – saved to my computer
+                        </span>
+                      )}
+                    </>
+                  ) : (
+                    <span className="font-mono text-[10px] text-slate-muted italic whitespace-nowrap">
+                      untitled.ccs
+                    </span>
+                  )}
+                  {/* Only show save status if we have a file handle (using File System Access API) */}
+                  {autoSave.isSupported && session.fileHandles?.[session.id] && (
+                    <SaveStatusIndicator
+                      status={autoSave.saveStatus}
+                      lastSaved={autoSave.lastSaved}
+                      isDirty={autoSave.isDirty}
+                      inline={true}
+                    />
+                  )}
+                </div>
+              </button>
+              {/* File info dropdown (only shown when file is saved) */}
+              {showProjectInfo && autoSave.isSupported && session.fileHandles?.[session.id] && (
+                <div className="absolute top-full left-1/2 -translate-x-1/2 mt-1 z-50 w-[280px] py-2 px-3 bg-card rounded-lg shadow-lg border border-parchment">
+                  {/* Filename */}
+                  <div className="mb-2">
+                    <div className="text-[10px] text-slate-muted mb-0.5">Name:</div>
+                    <div className="font-mono text-[11px] text-ink">
+                      {projectName ? `${projectName.replace(/[^a-z0-9-_ ]/gi, "").replace(/\s+/g, "-").toLowerCase()}.ccs` : "untitled.ccs"}
+                    </div>
+                  </div>
+                  {/* Location (generic - API doesn't expose full path) */}
+                  <div className="mb-2">
+                    <div className="text-[10px] text-slate-muted mb-0.5">Place:</div>
+                    <div className="text-[11px] text-slate flex items-center gap-1">
+                      <HardDrive className="h-3 w-3" strokeWidth={1.5} />
+                      <span>Saved to my computer</span>
+                    </div>
+                    <div className="text-[9px] text-slate-muted mt-0.5">
+                      (Browser security prevents showing full path)
+                    </div>
+                  </div>
+                  {/* Last saved */}
+                  {autoSave.lastSaved && (
+                    <div>
+                      <div className="text-[10px] text-slate-muted mb-0.5">Last saved:</div>
+                      <div className="text-[11px] text-slate">
+                        {new Date(autoSave.lastSaved).toLocaleString()}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         )}
         <div className="flex items-center gap-0.5 sm:gap-1 flex-shrink-0">
@@ -2841,7 +2887,8 @@ Follow the ${modeContext} guidance provided above.`;
                   onClick={handleSaveAsMarkdown}
                   className="w-full text-left px-2 py-1.5 text-[11px] rounded-sm transition-colors text-ink hover:bg-cream"
                 >
-                  Save as Markdown...
+                  <div>Save as Markdown...</div>
+                  <div className="text-[9px] text-slate-muted">– saved to my computer</div>
                 </button>
               </div>
             )}
