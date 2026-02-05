@@ -2772,15 +2772,6 @@ Follow the ${modeContext} guidance provided above.`;
                       untitled.ccs
                     </span>
                   )}
-                  {/* Only show save status if we have a file handle (using File System Access API) */}
-                  {autoSave.isSupported && session.fileHandles?.[session.id] && (
-                    <SaveStatusIndicator
-                      status={autoSave.saveStatus}
-                      lastSaved={autoSave.lastSaved}
-                      isDirty={autoSave.isDirty}
-                      inline={true}
-                    />
-                  )}
                 </div>
               </button>
               {/* File info dropdown (only shown when file is saved) */}
@@ -2804,7 +2795,19 @@ Follow the ${modeContext} guidance provided above.`;
                       (Browser security prevents showing full path)
                     </div>
                   </div>
-                  {/* Last saved */}
+                  {/* Save status */}
+                  <div className="mb-2">
+                    <div className="text-[10px] text-slate-muted mb-0.5">Status:</div>
+                    <div className="text-[11px]">
+                      <SaveStatusIndicator
+                        status={autoSave.saveStatus}
+                        lastSaved={autoSave.lastSaved}
+                        isDirty={autoSave.isDirty}
+                        inline={false}
+                      />
+                    </div>
+                  </div>
+                  {/* Last saved timestamp */}
                   {autoSave.lastSaved && (
                     <div>
                       <div className="text-[10px] text-slate-muted mb-0.5">Last saved:</div>
