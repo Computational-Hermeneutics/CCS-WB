@@ -149,6 +149,15 @@ export function useAnnotationsSync({
   const localAnnotationsRef = useRef(localAnnotations);
   localAnnotationsRef.current = localAnnotations;
 
+  // Track recently pushed annotation IDs to preserve during replication lag
+  // Maps annotation ID -> timestamp of successful push
+  const recentlyPushedRef = useRef<Map<string, number>>(new Map());
+
+  // Track annotation IDs we've seen in remote to distinguish "not replicated yet" from "deleted"
+  // If an annotation was in remote before and is now gone, it was deleted
+  // If an annotation was never in remote, it's just not replicated yet
+  const seenInRemoteRef = useRef<Set<string>>(new Set());
+
   const supabase = isSupabaseConfigured() ? getSupabaseClient() : null;
 
   // Fetch all annotations for the current project's files
@@ -377,32 +386,47 @@ export function useAnnotationsSync({
         repliesLastUpdated: repliesMaxUpdated,
       };
 
-      // CRITICAL: Merge remote annotations with local annotations to preserve
-      // local annotations that haven't been pushed to Supabase yet.
-      // This prevents data loss when multiple users add annotations simultaneously.
+      // CRITICAL: Additive merge for annotations
+      // Annotations are additive - combine remote and local annotations
       const currentLocal = localAnnotationsRef.current || [];
       const remoteIds = new Set(remoteAnnotations.map((a: LineAnnotation) => a.id));
 
-      // Get pending operations to identify which local annotations are actually pending sync
-      const pendingOps = currentProjectId ? await getPendingOperations(currentProjectId) : [];
-      const pendingAnnotationIds = new Set(
-        pendingOps
-          .filter(op => op.type === "annotation_create" || op.type === "annotation_update")
-          .map(op => {
-            const payload = op.payload as { id: string };
-            return payload.id;
-          })
-      );
+      // Track which annotation IDs we've seen in remote
+      remoteAnnotations.forEach((a: LineAnnotation) => seenInRemoteRef.current.add(a.id));
 
-      // Only preserve local annotations that:
-      // 1. Aren't in remote yet (not synced), AND
-      // 2. Have a pending operation in the queue (actually being synced)
-      // This prevents preserving annotations that were deleted from remote.
-      const localOnly = currentLocal.filter(
-        (local: LineAnnotation) => !remoteIds.has(local.id) && pendingAnnotationIds.has(local.id)
-      );
+      // Preserve local annotations that either:
+      // 1. Haven't been replicated to remote yet (not in remoteIds, never seen in remote)
+      // 2. Were recently pushed (within last 15 seconds) but not in remote yet (replication lag)
+      const now = Date.now();
+      const REPLICATION_LAG_GRACE_PERIOD = 15000; // 15 seconds
 
-      // Merge: remote annotations + pending local-only annotations
+      const localOnly = currentLocal.filter((local: LineAnnotation) => {
+        // Already in remote - don't duplicate
+        if (remoteIds.has(local.id)) return false;
+
+        // Was seen in remote before but now gone - it was deleted, remove it
+        if (seenInRemoteRef.current.has(local.id)) return false;
+
+        // Never seen in remote - either:
+        // - Just created locally (not replicated yet)
+        // - Recently pushed (within grace period)
+        const recentlyPushedTime = recentlyPushedRef.current.get(local.id);
+        if (recentlyPushedTime && now - recentlyPushedTime < REPLICATION_LAG_GRACE_PERIOD) {
+          return true; // Within grace period
+        }
+
+        // Not in remote, never seen in remote, not recently pushed - probably new local annotation
+        return true;
+      });
+
+      // Clean up old entries from recentlyPushedRef
+      for (const [id, timestamp] of recentlyPushedRef.current.entries()) {
+        if (now - timestamp > REPLICATION_LAG_GRACE_PERIOD) {
+          recentlyPushedRef.current.delete(id);
+        }
+      }
+
+      // Merge: remote annotations + local-only annotations
       const merged = [...remoteAnnotations, ...localOnly];
 
       onRemoteChangeRef.current(merged);
@@ -502,6 +526,10 @@ export function useAnnotationsSync({
 
         // Record successful request
         recordSuccessfulRequest();
+
+        // Track this annotation as recently pushed to preserve during replication lag
+        recentlyPushedRef.current.set(annotationToSave.id, Date.now());
+
         return true; // Success
       } catch (err) {
         console.error("pushAnnotation: All retry attempts failed:", err);
