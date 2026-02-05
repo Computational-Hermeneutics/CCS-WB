@@ -145,6 +145,10 @@ export function useAnnotationsSync({
   const fileIdMapRef = useRef(fileIdMap);
   fileIdMapRef.current = fileIdMap;
 
+  // Store localAnnotations in ref to access during merge
+  const localAnnotationsRef = useRef(localAnnotations);
+  localAnnotationsRef.current = localAnnotations;
+
   const supabase = isSupabaseConfigured() ? getSupabaseClient() : null;
 
   // Fetch all annotations for the current project's files
@@ -373,7 +377,19 @@ export function useAnnotationsSync({
         repliesLastUpdated: repliesMaxUpdated,
       };
 
-      onRemoteChangeRef.current(remoteAnnotations);
+      // CRITICAL: Merge remote annotations with local annotations to preserve
+      // local annotations that haven't been pushed to Supabase yet.
+      // This prevents data loss when multiple users add annotations simultaneously.
+      const currentLocal = localAnnotationsRef.current || [];
+      const remoteIds = new Set(remoteAnnotations.map((a: LineAnnotation) => a.id));
+
+      // Preserve local annotations that aren't in remote (not yet synced)
+      const localOnly = currentLocal.filter((local: LineAnnotation) => !remoteIds.has(local.id));
+
+      // Merge: remote annotations + local-only annotations
+      const merged = [...remoteAnnotations, ...localOnly];
+
+      onRemoteChangeRef.current(merged);
     } catch (err) {
       console.error("Error in fetchAndUpdate:", err);
     }
