@@ -1186,11 +1186,32 @@ export const WorkbenchLayout = forwardRef<WorkbenchLayoutRef, WorkbenchLayoutPro
     setShowGuidedPrompts(false);
   }, []);
 
-  // Save session with code contents (downloads local file)
-  const handleSaveSession = useCallback(() => {
-    setSaveModalName(projectName || "Untitled");
-    setShowSaveModal(true);
-  }, [projectName]);
+  // Save session with code contents
+  const handleSaveSession = useCallback(async () => {
+    // If File System Access API is supported, use it for silent saves
+    if (autoSave.isSupported) {
+      const sessionFileId = session.id;
+      const hasFileHandle = session.fileHandles?.[sessionFileId];
+
+      if (hasFileHandle) {
+        // We have a file handle - save directly
+        await autoSave.save();
+      } else {
+        // No file handle - request new file location
+        const suggestedName = `${(projectName || "untitled").replace(/[^a-z0-9-_ ]/gi, "").replace(/\s+/g, "-").toLowerCase()}.ccs`;
+        const success = await autoSave.requestNewFile(suggestedName);
+
+        if (success && projectName) {
+          // Update project name if save was successful
+          setProjectName(projectName);
+        }
+      }
+    } else {
+      // Fallback to download for browsers that don't support File System Access API
+      setSaveModalName(projectName || "Untitled");
+      setShowSaveModal(true);
+    }
+  }, [projectName, session.id, session.fileHandles, autoSave]);
 
   // Reference search handlers
   const handleSearchLiterature = useCallback(() => {
