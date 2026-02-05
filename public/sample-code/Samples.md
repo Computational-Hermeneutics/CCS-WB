@@ -31,6 +31,7 @@ Each sample project is defined on a single line with the following format:
 - gnu-emacs-1985/gnu-emacs-1985.ccs: 1985 - GNU Emacs | critique | Richard Stallman's free software manifesto - GPL, hacker culture, and software freedom | 1980s | 0
 - agrippa-1992/agrippa-1992.ccs: 1992 - Agrippa (A Book of the Dead) | critique | William Gibson's self-encrypting poem - electronic literature and digital preservation | 1990s | 0
 - my-boyfriend-1996/my-boyfriend-1996.ccs: 1996 - My Boyfriend Came Back from the War | critique | Olia Lialina's frame-splitting narrative - net.art and vernacular web aesthetics | 1990s | 0
+- markdown_1.01/markdown-1.01.ccs: 2004 - Markdown 1.0.1 | critique | John Gruber's plain text formatting - readability over parseability, gift economy, and the plain text ideology | 2000s | 13
 - git-stash-2007/git-stash-2007.ccs: 2007 - Git Stash | critique | Nanako Shiraishi's original script - feminist computing history and workplace interruption | 2000s | 0
 - 10print-2013/10print-2013.ccs: 2013 - 10 PRINT CHR$(205.5+RND(1)); GOTO 10 | critique | Montfort et al.'s book-length analysis of one line of C64 BASIC (1982) | 2010s | 11
 - transformer-2017/transformer-2017.ccs: 2017 - Transformer Architecture | critique | Attention Is All You Need - multi-head attention and the foundation of modern LLMs | 2010s | 0
