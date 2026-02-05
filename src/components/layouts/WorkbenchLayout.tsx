@@ -229,20 +229,29 @@ export const WorkbenchLayout = forwardRef<WorkbenchLayoutRef, WorkbenchLayoutPro
   const { markLocalUpdate } = useProjectSync();
   const aiEnabled = aiSettings.aiEnabled;
 
+  // Track whether we've shown the connection lost toast to prevent loop
+  const connectionLostToastShownRef = useRef(false);
+
   // Connection health monitoring for cloud projects
   const connectionHealth = useConnectionHealth({
     projectId: currentProjectId,
     enabled: !!currentProjectId && isAuthenticated,
     onConnectionLost: () => {
       console.log("[WorkbenchLayout] Connection lost");
-      setConnectionToast({
-        show: true,
-        type: "error",
-        message: "Connection to cloud project lost. Changes saved locally.",
-      });
+      // Only show toast once until connection is restored
+      if (!connectionLostToastShownRef.current) {
+        connectionLostToastShownRef.current = true;
+        setConnectionToast({
+          show: true,
+          type: "error",
+          message: "Connection to cloud project lost. Changes saved locally.",
+        });
+      }
     },
     onConnectionRestored: () => {
       console.log("[WorkbenchLayout] Connection restored, triggering refresh");
+      // Reset the flag so we can show error toast again if connection is lost in future
+      connectionLostToastShownRef.current = false;
       setConnectionToast({
         show: true,
         type: "success",
