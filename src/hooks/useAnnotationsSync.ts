@@ -16,7 +16,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useProjects } from "@/context/ProjectsContext";
 import type { LineAnnotation } from "@/types/session";
 import type { RealtimeChannel } from "@supabase/supabase-js";
-import { queueOperation, processQueue, type OperationProcessor } from "@/lib/sync/operation-queue";
+import { queueOperation, processQueue, getPendingOperations, type OperationProcessor } from "@/lib/sync/operation-queue";
 
 interface AnnotationRow {
   id: string;
@@ -383,10 +383,26 @@ export function useAnnotationsSync({
       const currentLocal = localAnnotationsRef.current || [];
       const remoteIds = new Set(remoteAnnotations.map((a: LineAnnotation) => a.id));
 
-      // Preserve local annotations that aren't in remote (not yet synced)
-      const localOnly = currentLocal.filter((local: LineAnnotation) => !remoteIds.has(local.id));
+      // Get pending operations to identify which local annotations are actually pending sync
+      const pendingOps = currentProjectId ? await getPendingOperations(currentProjectId) : [];
+      const pendingAnnotationIds = new Set(
+        pendingOps
+          .filter(op => op.type === "annotation_create" || op.type === "annotation_update")
+          .map(op => {
+            const payload = op.payload as { id: string };
+            return payload.id;
+          })
+      );
 
-      // Merge: remote annotations + local-only annotations
+      // Only preserve local annotations that:
+      // 1. Aren't in remote yet (not synced), AND
+      // 2. Have a pending operation in the queue (actually being synced)
+      // This prevents preserving annotations that were deleted from remote.
+      const localOnly = currentLocal.filter(
+        (local: LineAnnotation) => !remoteIds.has(local.id) && pendingAnnotationIds.has(local.id)
+      );
+
+      // Merge: remote annotations + pending local-only annotations
       const merged = [...remoteAnnotations, ...localOnly];
 
       onRemoteChangeRef.current(merged);
