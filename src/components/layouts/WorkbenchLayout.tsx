@@ -71,6 +71,7 @@ import { FloatingCCSPanel } from "@/components/ccs";
 import { SettingsModal } from "@/components/settings/SettingsModal";
 import { SaveStatusIndicator } from "@/components/ui/SaveStatusIndicator";
 import { ConnectionStatus } from "@/components/ui/ConnectionStatus";
+import { Toast } from "@/components/ui/Toast";
 import { useConnectionHealth } from "@/hooks/useConnectionHealth";
 import { UserMenu } from "@/components/auth/UserMenu";
 import { AISettingsPanel } from "@/components/settings/AISettingsPanel";
@@ -380,7 +381,7 @@ export const WorkbenchLayout = forwardRef<WorkbenchLayoutRef, WorkbenchLayoutPro
   const [showNewProjectModal, setShowNewProjectModal] = useState(false);
   const [projectMemberCount, setProjectMemberCount] = useState<number>(0);
   const [projectMembers, setProjectMembers] = useState<Array<{ user_id: string; initials?: string; avatar_url?: string; display_name?: string; role: string }>>([]);
-  const [showProjectRestoredBanner, setShowProjectRestoredBanner] = useState(false);
+  const [showReconnectToast, setShowReconnectToast] = useState(false);
   const [isCCSPanelMinimized, setIsCCSPanelMinimized] = useState(false);
 
   // Check if cloud project was restored on page load
@@ -389,11 +390,8 @@ export const WorkbenchLayout = forwardRef<WorkbenchLayoutRef, WorkbenchLayoutPro
       // Check if this was a page reload by seeing if there's no session data yet
       const wasRestored = localStorage.getItem("ccs-project-just-restored") === "true";
       if (wasRestored) {
-        setShowProjectRestoredBanner(true);
+        setShowReconnectToast(true);
         localStorage.removeItem("ccs-project-just-restored");
-        // Auto-hide banner after 10 seconds
-        const timer = setTimeout(() => setShowProjectRestoredBanner(false), 10000);
-        return () => clearTimeout(timer);
       }
     }
   }, [currentProjectId, currentProject]);
@@ -2576,12 +2574,33 @@ Follow the ${modeContext} guidance provided above.`;
                     {currentProject?.name || "Cloud Project"}
                   </span>
                 </div>
-                {/* Owner initials or Public indicator */}
-                {viewingLibraryProjectId ? (
-                  <span className="font-sans text-[8px] text-emerald-600 font-medium">Public</span>
-                ) : currentProject?.owner?.initials ? (
-                  <span className="font-sans text-[8px] text-slate/60">{currentProject.owner.initials}</span>
-                ) : null}
+                {/* Owner initials or Public indicator and sync status */}
+                <div className="flex items-center gap-1.5">
+                  {viewingLibraryProjectId ? (
+                    <span className="font-sans text-[8px] text-emerald-600 font-medium">Public</span>
+                  ) : currentProject?.owner?.initials ? (
+                    <span className="font-sans text-[8px] text-slate/60">{currentProject.owner.initials}</span>
+                  ) : null}
+                  {/* Inline sync status */}
+                  {isAuthenticated && (
+                    <div className="flex items-center gap-0.5">
+                      <div className={cn(
+                        "h-1.5 w-1.5 rounded-full flex-shrink-0",
+                        connectionHealth.health.status === "connected" && "bg-green-500",
+                        connectionHealth.health.status === "reconnecting" && "bg-orange-500",
+                        connectionHealth.health.status === "degraded" && "bg-yellow-500",
+                        connectionHealth.health.status === "disconnected" && "bg-red-500"
+                      )} />
+                      <span className="font-sans text-[7px] text-slate/60 whitespace-nowrap">
+                        {connectionHealth.health.status === "connected" && connectionHealth.health.pendingOperations > 0 ? "syncing" :
+                         connectionHealth.health.status === "connected" ? "synced" :
+                         connectionHealth.health.status === "reconnecting" ? "reconnecting" :
+                         connectionHealth.health.status === "degraded" ? "slow" :
+                         "offline"}
+                      </span>
+                    </div>
+                  )}
+                </div>
               </div>
               <ChevronDown className={cn("h-2.5 w-2.5 text-slate transition-transform flex-shrink-0", showProjectInfo && "rotate-180")} strokeWidth={1.5} />
             </button>
@@ -2865,17 +2884,6 @@ Follow the ${modeContext} guidance provided above.`;
               )}
             </div>
           </div>
-        )}
-
-        {/* Connection Status - only for cloud projects */}
-        {currentProjectId && isAuthenticated && (
-          <ConnectionStatus
-            health={connectionHealth.health}
-            onForceSync={() => {
-              connectionHealth.forceCheck();
-              refreshFromCloud();
-            }}
-          />
         )}
 
         <div className="flex items-center gap-0.5 sm:gap-1 flex-shrink-0">
@@ -3464,22 +3472,18 @@ Follow the ${modeContext} guidance provided above.`;
         </div>
       </header>
 
-      {/* Cloud project restored banner */}
-      {showProjectRestoredBanner && currentProject && (
-        <div className="bg-blue-50 dark:bg-blue-900/20 border-b border-blue-200 dark:border-blue-800 px-4 py-2 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <CloudCog className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-            <span className="font-sans text-[11px] text-blue-800 dark:text-blue-200">
+      {/* Cloud project restored toast notification */}
+      {showReconnectToast && currentProject && (
+        <Toast
+          type="reconnect"
+          message={
+            <>
               Reconnected to cloud project: <strong>{currentProject.name}</strong>
-            </span>
-          </div>
-          <button
-            onClick={() => setShowProjectRestoredBanner(false)}
-            className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-200"
-          >
-            <X className="h-4 w-4" />
-          </button>
-        </div>
+            </>
+          }
+          duration={4000}
+          onClose={() => setShowReconnectToast(false)}
+        />
       )}
 
       {/* Read-only library project banner */}
