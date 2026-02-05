@@ -811,7 +811,6 @@ export function useCollaborativeSession() {
     console.log("refreshFromCloud: Starting smart refresh with merge...");
 
     try {
-      const { currentProjectId } = projectsContext;
       if (!currentProjectId) {
         return { success: false, error: "No current project ID" };
       }
@@ -925,7 +924,7 @@ export function useCollaborativeSession() {
       console.error("refreshFromCloud: Error", err);
       return { success: false, error: String(err) };
     }
-  }, [isInProject, fetchRemoteAnnotations, fetchCodeFiles, sessionContext, projectsContext]);
+  }, [isInProject, fetchRemoteAnnotations, fetchCodeFiles, sessionContext, currentProjectId]);
 
   return {
     // All original session context values

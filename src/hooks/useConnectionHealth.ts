@@ -81,6 +81,10 @@ export function useConnectionHealth(options: UseConnectionHealthOptions) {
     try {
       const supabase = getSupabaseClient();
 
+      if (!supabase) {
+        return false;
+      }
+
       // Lightweight query - just get current timestamp
       const { error } = await supabase
         .from("projects")
