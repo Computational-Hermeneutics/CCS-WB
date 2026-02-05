@@ -62,19 +62,53 @@ export function useProjectSave({
           })
           .filter(Boolean);
 
-        // Build bulk data for annotations
-        const annotationsData = session.lineAnnotations.map((annotation) => ({
-          id: annotation.id,
-          file_id: annotation.codeFileId,
-          project_id: projectId,
-          user_id: user.id,
-          line_number: annotation.lineNumber,
-          end_line_number: annotation.endLineNumber || null,
-          line_content: annotation.lineContent || null,
-          type: annotation.type,
-          content: annotation.content,
-          updated_at: now,
-        }));
+        // Fetch existing annotations to determine which belong to current user vs others
+        // IMPORTANT: Only save annotations created by the current user to avoid RLS violations
+        // Members cannot update annotations they didn't create (403 error)
+        const [userAnnotationsResult, allAnnotationsResult] = await Promise.all([
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          (supabase as any)
+            .from("annotations")
+            .select("id")
+            .eq("project_id", projectId)
+            .eq("user_id", user.id),
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          (supabase as any)
+            .from("annotations")
+            .select("id")
+            .eq("project_id", projectId),
+        ]);
+
+        const userOwnedAnnotationIds = new Set<string>(
+          (userAnnotationsResult.data || []).map((a: { id: string }) => a.id)
+        );
+        const allAnnotationIds = new Set<string>(
+          (allAnnotationsResult.data || []).map((a: { id: string }) => a.id)
+        );
+
+        // Filter to only include annotations that are either:
+        // 1. New annotations (not in database yet)
+        // 2. Existing annotations owned by current user
+        const annotationsData = session.lineAnnotations
+          .filter((annotation) => {
+            const existsInDatabase = allAnnotationIds.has(annotation.id);
+            const ownedByUser = userOwnedAnnotationIds.has(annotation.id);
+
+            // Include if: new annotation OR user's existing annotation
+            return !existsInDatabase || ownedByUser;
+          })
+          .map((annotation) => ({
+            id: annotation.id,
+            file_id: annotation.codeFileId,
+            project_id: projectId,
+            user_id: user.id,
+            line_number: annotation.lineNumber,
+            end_line_number: annotation.endLineNumber || null,
+            line_content: annotation.lineContent || null,
+            type: annotation.type,
+            content: annotation.content,
+            updated_at: now,
+          }));
 
         // Session data without files/annotations (stored separately)
         const sessionDataWithoutFiles = {
@@ -95,39 +129,32 @@ export function useProjectSave({
           `saveProject: Bulk saving ${filesData.length} files, ${annotationsData.length} annotations`
         );
 
-        const [
-          filesUpsertResult,
-          annotationsUpsertResult,
-          projectUpdateResult,
-          existingFilesResult,
-          existingAnnotationsResult,
-        ] = await Promise.all([
-          // Bulk upsert files
-          filesData.length > 0
-            ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              (supabase as any).from("code_files").upsert(filesData, { onConflict: "id" })
-            : Promise.resolve({ error: null }),
-          // Bulk upsert annotations
-          annotationsData.length > 0
-            ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              (supabase as any)
-                .from("annotations")
-                .upsert(annotationsData, { onConflict: "id" })
-            : Promise.resolve({ error: null }),
-          // Update project metadata
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          (supabase as any)
-            .from("projects")
-            .update(projectUpdateData)
-            .eq("id", projectId)
-            .select(),
-          // Get existing file IDs for deletion check
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          (supabase as any).from("code_files").select("id").eq("project_id", projectId),
-          // Get existing annotation IDs for deletion check
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          (supabase as any).from("annotations").select("id").eq("project_id", projectId),
-        ]);
+        const [filesUpsertResult, annotationsUpsertResult, projectUpdateResult, existingFilesResult] =
+          await Promise.all([
+            // Bulk upsert files
+            filesData.length > 0
+              ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                (supabase as any).from("code_files").upsert(filesData, { onConflict: "id" })
+              : Promise.resolve({ error: null }),
+            // Bulk upsert annotations
+            annotationsData.length > 0
+              ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                (supabase as any)
+                  .from("annotations")
+                  .upsert(annotationsData, { onConflict: "id" })
+              : Promise.resolve({ error: null }),
+            // Update project metadata
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            (supabase as any)
+              .from("projects")
+              .update(projectUpdateData)
+              .eq("id", projectId)
+              .select(),
+            // Get existing file IDs for deletion check
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            (supabase as any).from("code_files").select("id").eq("project_id", projectId),
+            // Note: existingAnnotationsResult already fetched above as allAnnotationsResult
+          ]);
 
         if (filesUpsertResult.error) {
           console.error("saveProject: Error bulk saving files", filesUpsertResult.error);
@@ -149,10 +176,14 @@ export function useProjectSave({
           .filter((f: { id: string }) => !sessionFileIds.has(f.id))
           .map((f: { id: string }) => f.id);
 
+        // Only delete annotations created by the current user (already fetched above)
+        // Cannot delete other users' annotations (RLS will block it)
         const sessionAnnotationIds = new Set(session.lineAnnotations.map((a) => a.id));
-        const annotationsToDelete = (existingAnnotationsResult.data || [])
-          .filter((a: { id: string }) => !sessionAnnotationIds.has(a.id))
-          .map((a: { id: string }) => a.id);
+
+        // Delete only user's own annotations that are no longer in session
+        const annotationsToDelete = Array.from(userOwnedAnnotationIds).filter(
+          (id: string) => !sessionAnnotationIds.has(id)
+        );
 
         // Delete orphans in parallel (if any)
         if (filesToDelete.length > 0 || annotationsToDelete.length > 0) {

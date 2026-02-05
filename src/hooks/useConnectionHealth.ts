@@ -226,7 +226,10 @@ export function useConnectionHealth(options: UseConnectionHealthOptions) {
       await updateHealth();
     }, heartbeatInterval);
 
-    console.log(`[ConnectionHealth] Heartbeat started for project ${projectId}`);
+    // Reduced logging to avoid console spam
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`[ConnectionHealth] Heartbeat started for project ${projectId}`);
+    }
   }, [enabled, projectId, heartbeatInterval, performHeartbeat, updateHealth, health.isVisible]);
 
   /**
@@ -236,7 +239,7 @@ export function useConnectionHealth(options: UseConnectionHealthOptions) {
     if (heartbeatIntervalRef.current) {
       clearInterval(heartbeatIntervalRef.current);
       heartbeatIntervalRef.current = null;
-      console.log("[ConnectionHealth] Heartbeat stopped");
+      // Reduced logging to avoid console spam
     }
   }, []);
 
