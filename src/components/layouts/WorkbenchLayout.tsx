@@ -1198,7 +1198,25 @@ export const WorkbenchLayout = forwardRef<WorkbenchLayoutRef, WorkbenchLayoutPro
 
   // Save session with code contents
   const handleSaveSession = useCallback(async () => {
-    // If File System Access API is supported, use it for silent saves
+    // Cloud project: save to Supabase
+    if (currentProjectId) {
+      setIsSavingToCloud(true);
+      try {
+        console.log("[handleSaveSession] Saving to cloud:", currentProjectId);
+        markLocalUpdate();
+        const { error } = await saveProject(currentProjectId, session);
+        if (error) {
+          console.error("Failed to save to cloud:", error);
+        } else {
+          console.log("[handleSaveSession] Saved to cloud successfully");
+        }
+      } finally {
+        setIsSavingToCloud(false);
+      }
+      return;
+    }
+
+    // Local project: use File System Access API if supported
     if (autoSave.isSupported) {
       const sessionFileId = session.id;
       const hasFileHandle = session.fileHandles?.[sessionFileId];
@@ -1221,26 +1239,28 @@ export const WorkbenchLayout = forwardRef<WorkbenchLayoutRef, WorkbenchLayoutPro
       setSaveModalName(projectName || "Untitled");
       setShowSaveModal(true);
     }
-  }, [projectName, session.id, session.fileHandles, autoSave]);
+  }, [projectName, session.id, session.fileHandles, autoSave, currentProjectId, saveProject, markLocalUpdate]);
 
-  // Save As - always prompt for new file location
+  // Save As - always prompt for new file location (local file, even from cloud project)
   const handleSaveAs = useCallback(async () => {
-    if (autoSave.isSupported) {
-      // Always request new file location
-      const suggestedName = `${(projectName || "untitled").replace(/[^a-z0-9-_ ]/gi, "").replace(/\s+/g, "-").toLowerCase()}.ccs`;
-      const savedFileName = await autoSave.requestNewFile(suggestedName);
-
-      if (savedFileName) {
-        // Update project name with the actual saved filename (without .ccs extension)
-        setProjectName(savedFileName);
-      }
-    } else {
-      // Fallback to download for browsers that don't support File System Access API
-      setSaveModalName(projectName || "Untitled");
+    // For cloud projects or when File System Access API is not supported, use download
+    if (currentProjectId || !autoSave.isSupported) {
+      setSaveModalName(projectName || currentProject?.name || "Untitled");
       setShowSaveModal(true);
+      setShowSaveDropdown(false);
+      return;
+    }
+
+    // For local projects with File System Access API, request new file location
+    const suggestedName = `${(projectName || "untitled").replace(/[^a-z0-9-_ ]/gi, "").replace(/\s+/g, "-").toLowerCase()}.ccs`;
+    const savedFileName = await autoSave.requestNewFile(suggestedName);
+
+    if (savedFileName) {
+      // Update project name with the actual saved filename (without .ccs extension)
+      setProjectName(savedFileName);
     }
     setShowSaveDropdown(false);
-  }, [projectName, autoSave]);
+  }, [projectName, autoSave, currentProjectId, currentProject]);
 
   // Save as Markdown - export session log as markdown
   const handleSaveAsMarkdown = useCallback(() => {
@@ -2540,14 +2560,6 @@ Follow the ${modeContext} guidance provided above.`;
                   <span className="font-mono text-[10px] text-ink font-medium truncate max-w-[120px]">
                     {currentProject?.name || "Cloud Project"}
                   </span>
-                  {autoSave.isSupported && (
-                    <SaveStatusIndicator
-                      status={autoSave.saveStatus}
-                      lastSaved={autoSave.lastSaved}
-                      isDirty={false}
-                      inline={true}
-                    />
-                  )}
                 </div>
                 {/* Owner initials or Public indicator */}
                 {viewingLibraryProjectId ? (
@@ -2612,7 +2624,7 @@ Follow the ${modeContext} guidance provided above.`;
                 </div>
 
                 {/* Dates */}
-                <div className="flex flex-col gap-1 text-[10px] text-slate/70 mb-3">
+                <div className="flex flex-col gap-1 text-[10px] text-slate/70 mb-2">
                   <span className="flex items-center gap-1">
                     <Calendar className="h-3 w-3" />
                     Created: {new Date(currentProject.created_at).toLocaleDateString()}
@@ -2621,6 +2633,24 @@ Follow the ${modeContext} guidance provided above.`;
                     <Calendar className="h-3 w-3" />
                     Modified: {new Date(currentProject.updated_at).toLocaleDateString()}
                   </span>
+                </div>
+
+                {/* Save status */}
+                <div className="mb-3 pb-2 border-b border-parchment">
+                  <div className="text-[10px] text-slate-muted mb-0.5">Status:</div>
+                  <div className="text-[11px]">
+                    {isSavingToCloud ? (
+                      <div className="flex items-center gap-1.5 text-slate-600">
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                        <span>Saving to cloud...</span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-1.5 text-green-600">
+                        <Check className="h-3 w-3" />
+                        <span>Saved to cloud</span>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 {/* Actions */}
@@ -3236,32 +3266,11 @@ Follow the ${modeContext} guidance provided above.`;
                   )}
                 </div>
 
-                {/* Save/Refresh icons (only when in a project) */}
+                {/* Refresh icon (only when in a project) */}
                 {currentProjectId && (
                   <>
                     <div className="border-t border-parchment mt-1" />
-                    <div className="flex items-center justify-center gap-3 px-2 py-1.5">
-                      <button
-                        onClick={() => {
-                          handleSaveToCloud();
-                          setShowCloudMenu(false);
-                        }}
-                        disabled={isSavingToCloud}
-                        title="Save to cloud"
-                        className={cn(
-                          "flex items-center gap-1 px-1.5 py-1 rounded-sm",
-                          "text-[10px] text-slate-muted hover:text-ink",
-                          "hover:bg-cream transition-colors",
-                          "disabled:opacity-50"
-                        )}
-                      >
-                        {isSavingToCloud ? (
-                          <Loader2 className="h-2.5 w-2.5 animate-spin" />
-                        ) : (
-                          <Save className="h-2.5 w-2.5" />
-                        )}
-                        Save
-                      </button>
+                    <div className="flex items-center justify-center px-2 py-1.5">
                       <button
                         onClick={() => {
                           handleRefreshFromCloud();
