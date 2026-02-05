@@ -335,6 +335,7 @@ export const WorkbenchLayout = forwardRef<WorkbenchLayoutRef, WorkbenchLayoutPro
   const [showModeDropdown, setShowModeDropdown] = useState(false);
   const [showGuidedPrompts, setShowGuidedPrompts] = useState(false);
   const [showCloudMenu, setShowCloudMenu] = useState(false);
+  const [showSaveDropdown, setShowSaveDropdown] = useState(false);
   const [isCreatingProject, setIsCreatingProject] = useState(false);
   const [newProjectName, setNewProjectName] = useState("");
   const [populateWithSession, setPopulateWithSession] = useState(false);
@@ -1220,6 +1221,25 @@ export const WorkbenchLayout = forwardRef<WorkbenchLayoutRef, WorkbenchLayoutPro
       setShowSaveModal(true);
     }
   }, [projectName, session.id, session.fileHandles, autoSave]);
+
+  // Save As - always prompt for new file location
+  const handleSaveAs = useCallback(async () => {
+    if (autoSave.isSupported) {
+      // Always request new file location
+      const suggestedName = `${(projectName || "untitled").replace(/[^a-z0-9-_ ]/gi, "").replace(/\s+/g, "-").toLowerCase()}.ccs`;
+      const savedFileName = await autoSave.requestNewFile(suggestedName);
+
+      if (savedFileName) {
+        // Update project name with the actual saved filename (without .ccs extension)
+        setProjectName(savedFileName);
+      }
+    } else {
+      // Fallback to download for browsers that don't support File System Access API
+      setSaveModalName(projectName || "Untitled");
+      setShowSaveModal(true);
+    }
+    setShowSaveDropdown(false);
+  }, [projectName, autoSave]);
 
   // Reference search handlers
   const handleSearchLiterature = useCallback(() => {
@@ -2782,13 +2802,35 @@ Follow the ${modeContext} guidance provided above.`;
           >
             <FilePlus2 className="h-4 w-4" strokeWidth={1.5} />
           </button>
-          <button
-            onClick={handleSaveSession}
-            className="p-2 md:p-1.5 text-slate hover:text-ink"
-            title="Save session"
-          >
-            <Save className="h-4 w-4" strokeWidth={1.5} />
-          </button>
+          {/* Save button with dropdown for Save/Save As */}
+          <div className="relative" data-dropdown>
+            <button
+              onClick={() => setShowSaveDropdown(!showSaveDropdown)}
+              className="p-2 md:p-1.5 text-slate hover:text-ink"
+              title="Save session"
+            >
+              <Save className="h-4 w-4" strokeWidth={1.5} />
+            </button>
+            {showSaveDropdown && (
+              <div className="absolute top-full left-0 mt-1 w-36 bg-popover rounded-sm shadow-lg border border-parchment p-1 z-50">
+                <button
+                  onClick={() => {
+                    handleSaveSession();
+                    setShowSaveDropdown(false);
+                  }}
+                  className="w-full text-left px-2 py-1.5 text-[11px] rounded-sm transition-colors text-ink hover:bg-cream"
+                >
+                  Save
+                </button>
+                <button
+                  onClick={handleSaveAs}
+                  className="w-full text-left px-2 py-1.5 text-[11px] rounded-sm transition-colors text-ink hover:bg-cream"
+                >
+                  Save As...
+                </button>
+              </div>
+            )}
+          </div>
           <button
             onClick={() => sessionLoadInputRef.current?.click()}
             disabled={!!currentProjectId}
