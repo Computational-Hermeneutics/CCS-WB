@@ -36,8 +36,9 @@ export interface UseAutoSaveReturn {
   lastSaved: string | null;
   isDirty: boolean;
   save: () => Promise<void>;
-  requestNewFile: (suggestedName: string) => Promise<boolean>;
+  requestNewFile: (suggestedName: string) => Promise<string | null>;
   isSupported: boolean;
+  savedFileName: string | null;
 }
 
 /**
@@ -64,6 +65,7 @@ export function useAutoSave(options: UseAutoSaveOptions = {}): UseAutoSaveReturn
   const [lastSaved, setLastSaved] = useState<string | null>(
     session.lastSaved || null
   );
+  const [savedFileName, setSavedFileName] = useState<string | null>(null);
 
   // Track if adapter is supported
   const [isSupported] = useState(() => adapter.isSupported());
@@ -171,12 +173,13 @@ export function useAutoSave(options: UseAutoSaveOptions = {}): UseAutoSaveReturn
   /**
    * Request a new file from the user
    * Shows native file picker
+   * Returns the saved filename (without .ccs extension) or null if cancelled/failed
    */
   const requestNewFile = useCallback(
-    async (suggestedName: string): Promise<boolean> => {
+    async (suggestedName: string): Promise<string | null> => {
       if (!isSupported) {
         console.error("[useAutoSave] File system adapter not supported");
-        return false;
+        return null;
       }
 
       try {
@@ -185,7 +188,7 @@ export function useAutoSave(options: UseAutoSaveOptions = {}): UseAutoSaveReturn
 
         if (!handle) {
           // User cancelled
-          return false;
+          return null;
         }
 
         // Save session immediately to the new file
@@ -195,11 +198,15 @@ export function useAutoSave(options: UseAutoSaveOptions = {}): UseAutoSaveReturn
         // Store handle in IndexedDB
         const handleId = await adapter.storeHandle(session.id, handle);
 
+        // Extract filename from handle
+        const fileName = typeof handle === "string" ? handle : handle.name;
+        const fileNameWithoutExt = fileName.replace(/\.ccs$/, "");
+
         // Create metadata
         const now = new Date().toISOString();
         const metadata: StoredFileMetadata = {
           id: session.id,
-          name: typeof handle === "string" ? handle : handle.name,
+          name: fileName,
           handleId,
           lastSaved: now,
           isDirty: false,
@@ -213,6 +220,7 @@ export function useAutoSave(options: UseAutoSaveOptions = {}): UseAutoSaveReturn
         markClean(now);
 
         setLastSaved(now);
+        setSavedFileName(fileNameWithoutExt);
         setSaveStatus("saved");
 
         console.log("[useAutoSave] New file created and saved:", handleId);
@@ -222,7 +230,7 @@ export function useAutoSave(options: UseAutoSaveOptions = {}): UseAutoSaveReturn
           setSaveStatus("idle");
         }, 2000);
 
-        return true;
+        return fileNameWithoutExt;
       } catch (error) {
         console.error("[useAutoSave] Failed to create new file:", error);
 
@@ -230,7 +238,7 @@ export function useAutoSave(options: UseAutoSaveOptions = {}): UseAutoSaveReturn
           onSaveError(error);
         }
 
-        return false;
+        return null;
       }
     },
     [isSupported, adapter, session, setFileHandle, markClean, onSaveError]
@@ -277,5 +285,6 @@ export function useAutoSave(options: UseAutoSaveOptions = {}): UseAutoSaveReturn
     save,
     requestNewFile,
     isSupported,
+    savedFileName,
   };
 }

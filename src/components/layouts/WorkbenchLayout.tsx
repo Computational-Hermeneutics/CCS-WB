@@ -344,6 +344,14 @@ export const WorkbenchLayout = forwardRef<WorkbenchLayoutRef, WorkbenchLayoutPro
   const [codeInputName, setCodeInputName] = useState("");
   const [codeInputLanguage, setCodeInputLanguage] = useState("");
   const [projectName, setProjectName] = useState<string>("");
+
+  // Sync project name with saved filename when available
+  useEffect(() => {
+    if (autoSave.savedFileName && !projectName) {
+      setProjectName(autoSave.savedFileName);
+    }
+  }, [autoSave.savedFileName, projectName]);
+
   const [showExportModal, setShowExportModal] = useState(false);
   const [showSendContextModal, setShowSendContextModal] = useState(false);
   const [expandedAnnotationId, setExpandedAnnotationId] = useState<string | null>(null);
@@ -1199,11 +1207,11 @@ export const WorkbenchLayout = forwardRef<WorkbenchLayoutRef, WorkbenchLayoutPro
       } else {
         // No file handle - request new file location
         const suggestedName = `${(projectName || "untitled").replace(/[^a-z0-9-_ ]/gi, "").replace(/\s+/g, "-").toLowerCase()}.ccs`;
-        const success = await autoSave.requestNewFile(suggestedName);
+        const savedFileName = await autoSave.requestNewFile(suggestedName);
 
-        if (success && projectName) {
-          // Update project name if save was successful
-          setProjectName(projectName);
+        if (savedFileName) {
+          // Update project name with the actual saved filename (without .ccs extension)
+          setProjectName(savedFileName);
         }
       }
     } else {
@@ -2701,38 +2709,40 @@ Follow the ${modeContext} guidance provided above.`;
           </div>
         ) : (
           // Local session: editable name with .ccs extension and local indicator
-          <button
-            onClick={() => {
-              const newName = prompt("Rename project:", projectName || "Untitled");
-              if (newName !== null && newName.trim()) {
-                setProjectName(newName.trim());
-              }
-            }}
-            className="hidden sm:flex justify-center hover:bg-cream px-2 py-0.5 rounded-sm transition-colors items-center gap-1.5 min-w-0 max-w-[280px]"
-            title="Local session (click to rename)"
-          >
-            <HardDrive className="h-3 w-3 text-slate-muted flex-shrink-0" strokeWidth={1.5} />
-            <div className="flex items-center gap-1 min-w-0">
-              {projectName ? (
-                <span className="font-mono text-[10px] text-ink truncate">
-                  {projectName.replace(/[^a-z0-9-_ ]/gi, "").replace(/\s+/g, "-").toLowerCase()}.ccs
-                </span>
-              ) : (
-                <span className="font-mono text-[10px] text-slate-muted italic whitespace-nowrap">
-                  untitled.ccs
-                </span>
-              )}
-              {/* Only show save status if we have a file handle (using File System Access API) */}
-              {autoSave.isSupported && session.fileHandles?.[session.id] && (
-                <SaveStatusIndicator
-                  status={autoSave.saveStatus}
-                  lastSaved={autoSave.lastSaved}
-                  isDirty={autoSave.isDirty}
-                  inline={true}
-                />
-              )}
-            </div>
-          </button>
+          <div className="hidden sm:flex justify-center min-w-0">
+            <button
+              onClick={() => {
+                const newName = prompt("Rename project:", projectName || "Untitled");
+                if (newName !== null && newName.trim()) {
+                  setProjectName(newName.trim());
+                }
+              }}
+              className="flex hover:bg-cream px-2 py-0.5 rounded-sm transition-colors items-center gap-1.5 min-w-0 max-w-[280px]"
+              title="Local session (click to rename)"
+            >
+              <HardDrive className="h-3 w-3 text-slate-muted flex-shrink-0" strokeWidth={1.5} />
+              <div className="flex items-center gap-1 min-w-0">
+                {projectName ? (
+                  <span className="font-mono text-[10px] text-ink truncate">
+                    {projectName.replace(/[^a-z0-9-_ ]/gi, "").replace(/\s+/g, "-").toLowerCase()}.ccs
+                  </span>
+                ) : (
+                  <span className="font-mono text-[10px] text-slate-muted italic whitespace-nowrap">
+                    untitled.ccs
+                  </span>
+                )}
+                {/* Only show save status if we have a file handle (using File System Access API) */}
+                {autoSave.isSupported && session.fileHandles?.[session.id] && (
+                  <SaveStatusIndicator
+                    status={autoSave.saveStatus}
+                    lastSaved={autoSave.lastSaved}
+                    isDirty={autoSave.isDirty}
+                    inline={true}
+                  />
+                )}
+              </div>
+            </button>
+          </div>
         )}
         <div className="flex items-center gap-0.5 sm:gap-1 flex-shrink-0">
           {/* CCS Methods Panel Toggle - only show in Learn Methods mode */}
