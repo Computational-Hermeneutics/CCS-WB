@@ -77,6 +77,7 @@ export const PROGRAMMING_LANGUAGES = [
   { id: "go", name: "Go", description: "Go" },
   { id: "rust", name: "Rust", description: "Rust" },
   { id: "ruby", name: "Ruby", description: "Ruby" },
+  { id: "perl", name: "Perl", description: "Perl" },
   // Historical languages (punch card era and early microcomputers)
   { id: "basic", name: "BASIC", description: "Beginner's All-purpose Symbolic Instruction Code (1964+)" },
   { id: "mad", name: "MAD", description: "Michigan Algorithm Decoder (1960s)" },

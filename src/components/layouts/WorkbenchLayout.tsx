@@ -1149,12 +1149,12 @@ export const WorkbenchLayout = forwardRef<WorkbenchLayoutRef, WorkbenchLayoutPro
               });
             }
 
-            // Add message
-            const annotationCount = metadata.annotations.length;
-            addMessage({
-              role: "user",
-              content: `I've restored **${originalName}**${metadata.language ? ` (${metadata.language})` : ""} with ${annotationCount} annotation${annotationCount !== 1 ? "s" : ""}.`,
-            });
+            // System message removed - internal file restore notification
+            // const annotationCount = metadata.annotations.length;
+            // addMessage({
+            //   role: "user",
+            //   content: `I've restored **${originalName}**${metadata.language ? ` (${metadata.language})` : ""} with ${annotationCount} annotation${annotationCount !== 1 ? "s" : ""}.`,
+            // });
 
             return;
           }
@@ -3773,10 +3773,14 @@ Follow the ${modeContext} guidance provided above.`;
           {/* Messages */}
           <div className="flex-1 overflow-y-auto p-4 space-y-4">
             {session.messages
-              .filter(message =>
-                !chatSearchQuery ||
-                message.content.toLowerCase().includes(chatSearchQuery.toLowerCase())
-              )
+              .filter(message => {
+                // Hide internal system messages (file load/restore notifications)
+                if (/^I've (loaded|restored|uploaded|added) \*\*/.test(message.content)) return false;
+                if (/^Session ".*" restored from/.test(message.content)) return false;
+                // Search filter
+                if (chatSearchQuery && !message.content.toLowerCase().includes(chatSearchQuery.toLowerCase())) return false;
+                return true;
+              })
               .map((message) => (
               <div
                 key={message.id}

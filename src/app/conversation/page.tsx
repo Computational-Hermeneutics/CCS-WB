@@ -1524,7 +1524,14 @@ export default function ConversationPage() {
           {/* Messages */}
           <div className="flex-1 overflow-y-auto px-6 py-6">
             <div className="max-w-3xl mx-auto space-y-6">
-              {session.messages.map((message, index) => (
+              {session.messages
+              .filter(message => {
+                // Hide internal system messages (file load/restore notifications)
+                if (/^I've (loaded|restored|uploaded|added) \*\*/.test(message.content)) return false;
+                if (/^Session ".*" restored from/.test(message.content)) return false;
+                return true;
+              })
+              .map((message, index) => (
                 <div
                   key={message.id}
                   className={cn(

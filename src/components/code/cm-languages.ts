@@ -3,7 +3,7 @@
  * Maps file extensions and language names to CodeMirror language packages
  */
 
-import type { LanguageSupport } from "@codemirror/language";
+import { type LanguageSupport, StreamLanguage } from "@codemirror/language";
 
 // Language-specific colors for visual identification
 // Colors chosen for good contrast and recognition
@@ -24,6 +24,7 @@ export const LANGUAGE_COLORS: Record<string, { light: string; dark: string }> = 
   xml: { light: "#e44d26", dark: "#f16529" }, // XML orange
   sql: { light: "#e38c00", dark: "#ffb347" }, // SQL amber
   markdown: { light: "#083fa1", dark: "#4a90d9" }, // Markdown blue
+  perl: { light: "#39457e", dark: "#7b8bc4" }, // Perl blue (camel book blue)
   plain: { light: "#6b7280", dark: "#9ca3af" }, // Plain text grey
   // Historical languages (punch card era)
   mad: { light: "#6a1b9a", dark: "#9c4dcc" }, // MAD purple (Michigan colors)
@@ -107,6 +108,12 @@ const languageLoaders: Record<string, LanguageLoader> = {
   fortran: () => import("./cm-lang-fortran").then((m) => m.fortran()),
   iplv: () => import("./cm-lang-iplv").then((m) => m.iplv()),
 
+  // Perl (via legacy modes)
+  perl: () =>
+    import("@codemirror/legacy-modes/mode/perl").then(
+      (m) => StreamLanguage.define(m.perl) as unknown as LanguageSupport
+    ),
+
   // Assembly - use C syntax as approximation for comments, numbers, strings
   assembly: () => import("@codemirror/lang-cpp").then((m) => m.cpp()),
 };
@@ -174,6 +181,11 @@ const extensionToLanguage: Record<string, string> = {
   // YAML (no native support, use plain text)
   yaml: "plain",
   yml: "plain",
+
+  // Perl
+  pl: "perl",
+  pm: "perl",
+  t: "perl",
 
   // Shell (no native support, use plain text)
   sh: "plain",
@@ -295,7 +307,8 @@ const languageAliases: Record<string, string> = {
   kotlin: "plain",
   kt: "plain",
   scala: "plain",
-  perl: "plain",
+  perl: "perl",
+  pl: "perl",
   r: "plain",
   haskell: "plain",
   hs: "plain",

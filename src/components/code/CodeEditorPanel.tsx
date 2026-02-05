@@ -1994,7 +1994,7 @@ export function CodeEditorPanel({
         {selectedFile && (
           <div ref={toolbarRef} className="px-4 py-2 border-b border-parchment bg-cream flex items-center justify-between gap-2">
             {/* Left group: mode toggle and tools */}
-            <div className="flex items-center gap-2 min-w-0 flex-shrink overflow-x-auto scrollbar-hide">
+            <div className="flex items-center gap-2 min-w-0 flex-shrink">
               {/* Mobile menu button - visible only on mobile */}
               <button
                 onClick={() => setMobileSidebarOpen(true)}
