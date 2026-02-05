@@ -2010,14 +2010,15 @@ export function CodeEditorPanel({
                   <button
                     onClick={handleSwitchToEdit}
                     className={cn(
-                      "px-1.5 sm:px-2 py-0.5 text-[9px] font-sans transition-colors whitespace-nowrap",
+                      "px-1 sm:px-1.5 md:px-2 py-0.5 text-[8px] sm:text-[9px] font-sans transition-colors whitespace-nowrap min-w-[20px] sm:min-w-0",
                       editorMode === "edit"
                         ? "bg-burgundy text-ivory"
                         : "bg-card text-slate hover:bg-cream"
                     )}
                     title="Edit code (annotations embedded as comments)"
                   >
-                    Edit
+                    <span className="hidden sm:inline">Edit</span>
+                    <span className="sm:hidden">E</span>
                   </button>
                   <button
                     onClick={() => {
@@ -2028,14 +2029,15 @@ export function CodeEditorPanel({
                       }
                     }}
                     className={cn(
-                      "px-1.5 sm:px-2 py-0.5 text-[9px] font-sans transition-colors whitespace-nowrap",
+                      "px-1 sm:px-1.5 md:px-2 py-0.5 text-[8px] sm:text-[9px] font-sans transition-colors whitespace-nowrap min-w-[20px] sm:min-w-0",
                       editorMode === "annotate"
                         ? "bg-burgundy text-ivory"
                         : "bg-card text-slate hover:bg-cream"
                     )}
                     title={editorMode === "annotate" ? "Toggle annotation panel" : "Annotate code (click lines to add annotations)"}
                   >
-                    Annotate
+                    <span className="hidden sm:inline">Annotate</span>
+                    <span className="sm:hidden">A</span>
                   </button>
                 </div>
               )}
@@ -2051,14 +2053,18 @@ export function CodeEditorPanel({
               <div className="relative flex-shrink-0" ref={languageDropdownRef}>
                 <button
                   onClick={() => setShowLanguageDropdown(!showLanguageDropdown)}
-                  className="font-sans text-[9px] text-slate hover:text-ink px-1.5 sm:px-2 py-0.5 border border-parchment hover:border-slate-muted rounded-sm transition-colors flex items-center gap-1 whitespace-nowrap"
-                  title="Click to change language"
+                  className="font-sans text-[8px] sm:text-[9px] text-slate hover:text-ink px-1 sm:px-1.5 md:px-2 py-0.5 border border-parchment hover:border-slate-muted rounded-sm transition-colors flex items-center gap-0.5 sm:gap-1 whitespace-nowrap"
+                  title={`Language: ${selectedFile?.language
+                    ? PROGRAMMING_LANGUAGES.find(l => l.id === selectedFile.language)?.name
+                      || selectedFile.language
+                    : "Select language"}`}
                 >
-                  <span className="truncate max-w-[80px] sm:max-w-none">{selectedFile?.language
+                  <span className="hidden sm:inline truncate max-w-[60px] md:max-w-none">{selectedFile?.language
                     ? PROGRAMMING_LANGUAGES.find(l => l.id === selectedFile.language)?.name
                       || selectedFile.language // Show custom language name directly
                     : "Language"}</span>
-                  <ChevronDown className={cn("h-2.5 w-2.5 transition-transform flex-shrink-0", showLanguageDropdown && "rotate-180")} strokeWidth={1.5} />
+                  <span className="sm:hidden text-[7px]">Lang</span>
+                  <ChevronDown className={cn("h-2 w-2 sm:h-2.5 sm:w-2.5 transition-transform flex-shrink-0", showLanguageDropdown && "rotate-180")} strokeWidth={1.5} />
                 </button>
                 {showLanguageDropdown && (
                   <div className="absolute top-full left-0 mt-1 w-44 bg-popover rounded-sm shadow-lg border border-parchment p-1 z-50 max-h-64 overflow-y-auto">

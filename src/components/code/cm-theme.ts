@@ -112,6 +112,9 @@ const ccsLightTheme = EditorView.theme(
       fontStyle: "italic",
       color: "hsl(var(--slate))",
       transition: "opacity 0.15s",
+      wordWrap: "break-word",
+      overflowWrap: "anywhere",
+      minWidth: "0",
     },
     ".cm-annotation-actions": {
       display: "flex",
@@ -386,6 +389,9 @@ const ccsDarkTheme = EditorView.theme(
       fontStyle: "italic",
       color: "hsl(var(--slate))",
       transition: "opacity 0.15s",
+      wordWrap: "break-word",
+      overflowWrap: "anywhere",
+      minWidth: "0",
     },
     ".cm-annotation-actions": {
       display: "flex",
