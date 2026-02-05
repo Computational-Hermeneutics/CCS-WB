@@ -1007,19 +1007,8 @@ export default function ConversationPage() {
         const importedData = JSON.parse(content);
 
         // Validate required fields
-        if (!importedData.id || !importedData.mode) {
+        if (!importedData.id) {
           throw new Error("Invalid session file format");
-        }
-
-        // Check if mode matches current mode
-        if (importedData.mode !== session.mode) {
-          const importedModeCode = MODE_CODES[importedData.mode] || "XX";
-          const currentModeCode = MODE_CODES[session.mode] || "XX";
-          const importedModeLabel = MODE_LABELS[importedModeCode] || importedData.mode;
-          const currentModeLabel = MODE_LABELS[currentModeCode] || session.mode;
-
-          alert(`Cannot load this file. It was saved in ${importedModeLabel} mode (-${importedModeCode}) but you are currently in ${currentModeLabel} mode (-${currentModeCode}). Please switch to ${importedModeLabel} mode from the home page to load this file.`);
-          return;
         }
 
         // Import the session
@@ -1048,7 +1037,7 @@ export default function ConversationPage() {
     };
     reader.readAsText(file);
     event.target.value = "";
-  }, [importSession, addMessage, session.mode, MODE_CODES, MODE_LABELS]);
+  }, [importSession, addMessage]);
 
   const handleExportConversation = () => {
     const exportData = {

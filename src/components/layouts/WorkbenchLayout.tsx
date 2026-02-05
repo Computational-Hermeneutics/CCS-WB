@@ -2413,17 +2413,8 @@ Follow the ${modeContext} guidance provided above.`;
         const importedData = JSON.parse(content);
 
         // Validate required fields
-        if (!importedData.id || !importedData.mode) {
+        if (!importedData.id) {
           throw new Error("Invalid session file format");
-        }
-
-        // Check if mode matches current mode (critique)
-        if (importedData.mode !== "critique") {
-          const importedModeCode = MODE_CODES[importedData.mode] || "XX";
-          const importedModeLabel = MODE_LABELS[importedModeCode] || importedData.mode;
-
-          alert(`Cannot load this file. It was saved in ${importedModeLabel} mode (-${importedModeCode}) but you are currently in Critique mode (-CR). Please switch to ${importedModeLabel} mode from the home page to load this file.`);
-          return;
         }
 
         // Import the session
