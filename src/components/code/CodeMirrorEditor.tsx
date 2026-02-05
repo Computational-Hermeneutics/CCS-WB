@@ -210,6 +210,7 @@ export function CodeMirrorEditor({
         },
         '.cm-scroller': {
           fontSize: '12px',
+          overflowX: 'hidden', // Disable horizontal scroll on mobile, force line wrapping
         },
         '.cm-gutters': {
           minWidth: '44px', // Touch-friendly tap targets
