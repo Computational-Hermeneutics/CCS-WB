@@ -3589,9 +3589,42 @@ Follow the ${modeContext} guidance provided above.`;
               // BUT preserve the user's current mode (don't let sample override it)
               const currentMode = session.mode;
               const sampleData = projectData as unknown as Session;
+
+              // Convert sample file IDs to UUIDs for cloud saving
+              // Sample projects use IDs like "file-1", "file-2" which can't be saved to database
+              const idMap = new Map<string, string>(); // old ID -> new UUID
+              const convertedCodeFiles = sampleData.codeFiles.map(file => {
+                // Check if ID is not a UUID (e.g., "file-1", "file-2")
+                const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(file.id);
+                if (isUUID) {
+                  return file;
+                }
+                // Generate new UUID for this file
+                const newId = generateId();
+                idMap.set(file.id, newId);
+                console.log(`[LoadSample] Converting file ID: ${file.id} → ${newId}`);
+                return { ...file, id: newId };
+              });
+
+              // Convert codeContents keys to use new UUIDs
+              const convertedCodeContents: Record<string, string> = {};
+              Object.entries(sampleData.codeContents || {}).forEach(([oldId, content]) => {
+                const newId = idMap.get(oldId) || oldId;
+                convertedCodeContents[newId] = content;
+              });
+
+              // Convert annotation codeFileId references to use new UUIDs
+              const convertedAnnotations = (sampleData.lineAnnotations || []).map(ann => {
+                const newFileId = idMap.get(ann.codeFileId) || ann.codeFileId;
+                return { ...ann, codeFileId: newFileId };
+              });
+
               importSession({
                 ...sampleData,
                 mode: currentMode, // Keep user's current mode
+                codeFiles: convertedCodeFiles,
+                codeContents: convertedCodeContents,
+                lineAnnotations: convertedAnnotations,
               });
               // Reset manual resize flag
               userHasManuallyResized.current = false;
