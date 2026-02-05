@@ -1247,9 +1247,10 @@ export function CodeEditorPanel({
 
     const observer = new ResizeObserver((entries) => {
       for (const entry of entries) {
-        // Collapse tools when toolbar width < 320px (contentRect excludes padding)
-        // The toolbar has px-4 (32px total padding), so 320 + 32 = 352px actual width threshold
-        setToolbarNarrow(entry.contentRect.width < 320);
+        // Collapse tools when toolbar width < 450px (increased from 320px for better mobile support)
+        // The toolbar has px-4 (32px total padding), so 450 + 32 = 482px actual width threshold
+        // This ensures hamburger menu activates earlier on portrait mobile
+        setToolbarNarrow(entry.contentRect.width < 450);
       }
     });
 
@@ -1991,9 +1992,9 @@ export function CodeEditorPanel({
 
         {/* Editor header */}
         {selectedFile && (
-          <div ref={toolbarRef} className="px-4 py-2 border-b border-parchment bg-cream flex items-center justify-between">
+          <div ref={toolbarRef} className="px-4 py-2 border-b border-parchment bg-cream flex items-center justify-between gap-2">
             {/* Left group: mode toggle and tools */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 min-w-0 flex-shrink overflow-x-auto scrollbar-hide">
               {/* Mobile menu button - visible only on mobile */}
               <button
                 onClick={() => setMobileSidebarOpen(true)}
@@ -2005,11 +2006,11 @@ export function CodeEditorPanel({
 
               {/* Edit/Annotate mode toggle - hidden in read-only mode */}
               {!readOnly && (
-                <div className="flex items-center border border-parchment rounded-sm overflow-hidden">
+                <div className="flex items-center border border-parchment rounded-sm overflow-hidden flex-shrink-0">
                   <button
                     onClick={handleSwitchToEdit}
                     className={cn(
-                      "px-2 py-0.5 text-[9px] font-sans transition-colors",
+                      "px-1.5 sm:px-2 py-0.5 text-[9px] font-sans transition-colors whitespace-nowrap",
                       editorMode === "edit"
                         ? "bg-burgundy text-ivory"
                         : "bg-card text-slate hover:bg-cream"
@@ -2027,7 +2028,7 @@ export function CodeEditorPanel({
                       }
                     }}
                     className={cn(
-                      "px-2 py-0.5 text-[9px] font-sans transition-colors",
+                      "px-1.5 sm:px-2 py-0.5 text-[9px] font-sans transition-colors whitespace-nowrap",
                       editorMode === "annotate"
                         ? "bg-burgundy text-ivory"
                         : "bg-card text-slate hover:bg-cream"
@@ -2047,17 +2048,17 @@ export function CodeEditorPanel({
               )}
 
               {/* Language selector - always visible */}
-              <div className="relative" ref={languageDropdownRef}>
+              <div className="relative flex-shrink-0" ref={languageDropdownRef}>
                 <button
                   onClick={() => setShowLanguageDropdown(!showLanguageDropdown)}
-                  className="font-sans text-[9px] text-slate hover:text-ink px-2 py-0.5 border border-parchment hover:border-slate-muted rounded-sm transition-colors flex items-center gap-1"
+                  className="font-sans text-[9px] text-slate hover:text-ink px-1.5 sm:px-2 py-0.5 border border-parchment hover:border-slate-muted rounded-sm transition-colors flex items-center gap-1 whitespace-nowrap"
                   title="Click to change language"
                 >
-                  <span>{selectedFile?.language
+                  <span className="truncate max-w-[80px] sm:max-w-none">{selectedFile?.language
                     ? PROGRAMMING_LANGUAGES.find(l => l.id === selectedFile.language)?.name
                       || selectedFile.language // Show custom language name directly
                     : "Language"}</span>
-                  <ChevronDown className={cn("h-2.5 w-2.5 transition-transform", showLanguageDropdown && "rotate-180")} strokeWidth={1.5} />
+                  <ChevronDown className={cn("h-2.5 w-2.5 transition-transform flex-shrink-0", showLanguageDropdown && "rotate-180")} strokeWidth={1.5} />
                 </button>
                 {showLanguageDropdown && (
                   <div className="absolute top-full left-0 mt-1 w-44 bg-popover rounded-sm shadow-lg border border-parchment p-1 z-50 max-h-64 overflow-y-auto">
@@ -2243,7 +2244,7 @@ export function CodeEditorPanel({
             </div>
 
             {/* Right group: hamburger menu (narrow) or help and settings (wide) */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-shrink-0">
               {/* Cursor position indicator for punch card files - shown in both narrow and wide */}
               {toolbarNarrow && isPunchCardFormat && cursorPosition && (
                 <span
