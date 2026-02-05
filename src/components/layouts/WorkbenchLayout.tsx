@@ -82,6 +82,7 @@ import {
   generateSessionLog,
   exportSessionLogJSON,
   exportSessionLogText,
+  exportSessionLogMarkdown,
   exportSessionLogPDF,
   MODE_CODES,
   MODE_LABELS,
@@ -1240,6 +1241,13 @@ export const WorkbenchLayout = forwardRef<WorkbenchLayoutRef, WorkbenchLayoutPro
     }
     setShowSaveDropdown(false);
   }, [projectName, autoSave]);
+
+  // Save as Markdown - export session log as markdown
+  const handleSaveAsMarkdown = useCallback(() => {
+    const log = generateSessionLog(session, projectName, codeContents, generateAnnotatedCode, profile);
+    exportSessionLogMarkdown(log, projectName);
+    setShowSaveDropdown(false);
+  }, [session, projectName, codeContents, profile]);
 
   // Reference search handlers
   const handleSearchLiterature = useCallback(() => {
@@ -2812,7 +2820,7 @@ Follow the ${modeContext} guidance provided above.`;
               <Save className="h-4 w-4" strokeWidth={1.5} />
             </button>
             {showSaveDropdown && (
-              <div className="absolute top-full left-0 mt-1 w-36 bg-popover rounded-sm shadow-lg border border-parchment p-1 z-50">
+              <div className="absolute top-full left-0 mt-1 w-48 bg-popover rounded-sm shadow-lg border border-parchment p-1 z-50">
                 <button
                   onClick={() => {
                     handleSaveSession();
@@ -2827,6 +2835,13 @@ Follow the ${modeContext} guidance provided above.`;
                   className="w-full text-left px-2 py-1.5 text-[11px] rounded-sm transition-colors text-ink hover:bg-cream"
                 >
                   Save As...
+                </button>
+                <div className="border-t border-parchment my-1" />
+                <button
+                  onClick={handleSaveAsMarkdown}
+                  className="w-full text-left px-2 py-1.5 text-[11px] rounded-sm transition-colors text-ink hover:bg-cream"
+                >
+                  Save as Markdown...
                 </button>
               </div>
             )}

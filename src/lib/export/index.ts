@@ -2,6 +2,7 @@ export {
   generateSessionLog,
   exportSessionLogJSON,
   exportSessionLogText,
+  exportSessionLogMarkdown,
   exportSessionLogPDF,
   MODE_CODES,
   MODE_LABELS,
