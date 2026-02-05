@@ -78,10 +78,23 @@ export function useProjectSave({
         }
 
         // Build bulk data for files (skip README update - too expensive for every save)
+        // IMPORTANT: Deduplicate by file ID to prevent "ON CONFLICT DO UPDATE" errors
+        // Keep only the last occurrence of each file (most recent version)
+        const seenIds = new Set<string>();
         const filesData = session.codeFiles
+          .slice() // Create a copy to avoid mutating original
+          .reverse() // Start from end to keep last occurrence
           .map((file, i) => {
             const content = session.codeContents[file.id];
             if (content === undefined) return null;
+
+            // Skip if we've already processed this ID
+            if (seenIds.has(file.id)) {
+              console.log(`saveProject: Skipping duplicate file ID: ${file.id} (${file.name})`);
+              return null;
+            }
+            seenIds.add(file.id);
+
             return {
               id: file.id,
               project_id: projectId,
@@ -90,11 +103,12 @@ export function useProjectSave({
               content: content,
               original_content: content,
               uploaded_by: user.id,
-              display_order: i,
+              display_order: session.codeFiles.length - 1 - i, // Adjust order since we reversed
               updated_at: now,
             };
           })
-          .filter(Boolean);
+          .filter(Boolean)
+          .reverse(); // Reverse back to original order
 
         // Fetch existing annotations to determine which belong to current user vs others
         // IMPORTANT: Only save annotations created by the current user to avoid RLS violations

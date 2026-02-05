@@ -300,7 +300,7 @@ export const WorkbenchLayout = forwardRef<WorkbenchLayoutRef, WorkbenchLayoutPro
     }, 2000);
 
     return () => clearTimeout(timer);
-  }, [currentProjectId, session.isDirty, session.lastModified, saveProject, session]);
+  }, [currentProjectId, session.isDirty, session.lastModified, saveProject]);
 
   // Refresh cloud connection when tab becomes visible after being hidden
   useEffect(() => {
