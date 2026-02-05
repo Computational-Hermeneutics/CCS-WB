@@ -6,14 +6,17 @@
  * Syncs annotations between local session state and Supabase for real-time collaboration.
  * Uses a hybrid approach: polling (5s interval) as reliable baseline, with Realtime
  * subscriptions as an accelerator for instant updates when available.
+ *
+ * RESILIENCE: Failed operations are queued to IndexedDB and retried automatically.
  */
 
 import { useEffect, useCallback, useRef } from "react";
-import { getSupabaseClient, isSupabaseConfigured } from "@/lib/supabase/client";
+import { getSupabaseClient, isSupabaseConfigured, recordSuccessfulRequest, recordFailedRequest } from "@/lib/supabase/client";
 import { useAuth } from "@/context/AuthContext";
 import { useProjects } from "@/context/ProjectsContext";
 import type { LineAnnotation } from "@/types/session";
 import type { RealtimeChannel } from "@supabase/supabase-js";
+import { queueOperation, processQueue, type OperationProcessor } from "@/lib/sync/operation-queue";
 
 interface AnnotationRow {
   id: string;
@@ -463,11 +466,29 @@ export function useAnnotationsSync({
         setTimeout(() => {
           fetchAndUpdate();
         }, 200);
+
+        // Record successful request
+        recordSuccessfulRequest();
       } catch (err) {
         console.error("pushAnnotation: All retry attempts failed:", err);
+
+        // Record failed request
+        if (err instanceof Error) {
+          recordFailedRequest(err);
+        }
+
+        // Queue operation for later retry
+        if (currentProjectId) {
+          try {
+            await queueOperation(currentProjectId, "annotation_create", annotationToSave);
+            console.log("[useAnnotationsSync] Queued annotation for later sync:", annotationToSave.id);
+          } catch (queueError) {
+            console.error("[useAnnotationsSync] Failed to queue annotation:", queueError);
+          }
+        }
       }
     },
-    [supabase, enabled, isAuthenticated, currentProjectId, user?.id, fetchAndUpdate]
+    [supabase, enabled, isAuthenticated, currentProjectId, user?.id, profile, fetchAndUpdate]
   );
 
   // Delete an annotation from Supabase
@@ -511,15 +532,34 @@ export function useAnnotationsSync({
 
         // Trigger a fetch to update annotations across clients
         setTimeout(() => fetchAndUpdate(), 200);
+
+        // Record successful request
+        recordSuccessfulRequest();
         return { success: true };
       } catch (err) {
         console.error("deleteAnnotation: All retry attempts failed:", err);
+
+        // Record failed request
+        if (err instanceof Error) {
+          recordFailedRequest(err);
+        }
+
+        // Queue operation for later retry
+        if (currentProjectId) {
+          try {
+            await queueOperation(currentProjectId, "annotation_delete", { id: annotationId });
+            console.log("[useAnnotationsSync] Queued annotation delete for later sync:", annotationId);
+          } catch (queueError) {
+            console.error("[useAnnotationsSync] Failed to queue annotation delete:", queueError);
+          }
+        }
+
         // Restore the annotation in UI
         setTimeout(() => fetchAndUpdate(), 0);
         return { success: false, error: err instanceof Error ? err.message : "Delete failed" };
       }
     },
-    [supabase, enabled, isAuthenticated, fetchAndUpdate]
+    [supabase, enabled, isAuthenticated, currentProjectId, fetchAndUpdate]
   );
 
   // Push a new reply to an annotation
@@ -569,8 +609,35 @@ export function useAnnotationsSync({
         setTimeout(() => {
           fetchAndUpdate();
         }, 200);
+
+        // Record successful request
+        recordSuccessfulRequest();
       } catch (err) {
         console.error("pushReply: All retry attempts failed:", err);
+
+        // Record failed request
+        if (err instanceof Error) {
+          recordFailedRequest(err);
+        }
+
+        // Queue operation for later retry
+        if (currentProjectId) {
+          try {
+            await queueOperation(currentProjectId, "reply_create", {
+              annotationId,
+              reply: {
+                id: row.id,
+                content: row.content,
+                createdAt: row.created_at,
+                addedBy: row.added_by_initials || undefined,
+                profileColor: row.profile_color || undefined,
+              },
+            });
+            console.log("[useAnnotationsSync] Queued reply for later sync:", row.id);
+          } catch (queueError) {
+            console.error("[useAnnotationsSync] Failed to queue reply:", queueError);
+          }
+        }
       }
     },
     [supabase, enabled, isAuthenticated, currentProjectId, user, profile, fetchAndUpdate]
@@ -615,16 +682,165 @@ export function useAnnotationsSync({
         // Trigger a fetch to update replies
         lastUpdateRef.current = Date.now();
         setTimeout(() => fetchAndUpdate(), 200);
+
+        // Record successful request
+        recordSuccessfulRequest();
         return { success: true };
       } catch (err) {
         console.error("deleteReply: All retry attempts failed:", err);
+
+        // Record failed request
+        if (err instanceof Error) {
+          recordFailedRequest(err);
+        }
+
+        // Queue operation for later retry (need to get annotation ID from database)
+        if (currentProjectId && supabase) {
+          try {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const { data: replyData } = await (supabase as any)
+              .from("annotation_replies")
+              .select("annotation_id")
+              .eq("id", replyId)
+              .maybeSingle();
+
+            if (replyData) {
+              await queueOperation(currentProjectId, "reply_delete", {
+                annotationId: replyData.annotation_id,
+                replyId,
+              });
+              console.log("[useAnnotationsSync] Queued reply delete for later sync:", replyId);
+            }
+          } catch (queueError) {
+            console.error("[useAnnotationsSync] Failed to queue reply delete:", queueError);
+          }
+        }
+
         // Restore the reply in UI
         setTimeout(() => fetchAndUpdate(), 0);
         return { success: false, error: err instanceof Error ? err.message : "Delete failed" };
       }
     },
-    [supabase, enabled, isAuthenticated, fetchAndUpdate]
+    [supabase, enabled, isAuthenticated, currentProjectId, fetchAndUpdate]
   );
+
+  // Create operation processor for queued operations
+  const processQueuedOperation: OperationProcessor = useCallback(
+    async (operation) => {
+      if (!supabase || !currentProjectId || !user?.id) {
+        return false;
+      }
+
+      try {
+        const currentFileIdMap = fileIdMapRef.current;
+
+        switch (operation.type) {
+          case "annotation_create": {
+            const annotation = operation.payload as LineAnnotation;
+            const fileId = currentFileIdMap[annotation.codeFileId];
+            if (!fileId) {
+              console.warn("[useAnnotationsSync] No file ID for queued annotation:", annotation.codeFileId);
+              return false;
+            }
+
+            const row = annotationToRow(annotation, fileId, currentProjectId, user?.id ?? null);
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const { error } = await (supabase as any)
+              .from("annotations")
+              .upsert(row, { onConflict: "id" })
+              .select();
+
+            if (error) throw error;
+            console.log("[useAnnotationsSync] Processed queued annotation:", annotation.id);
+            return true;
+          }
+
+          case "annotation_delete": {
+            const { id } = operation.payload as { id: string };
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const { error } = await (supabase as any)
+              .from("annotations")
+              .delete()
+              .eq("id", id);
+
+            if (error) throw error;
+            console.log("[useAnnotationsSync] Processed queued annotation delete:", id);
+            return true;
+          }
+
+          case "reply_create": {
+            const { annotationId, reply } = operation.payload as {
+              annotationId: string;
+              reply: { id: string; content: string; createdAt: string; addedBy?: string; profileColor?: string };
+            };
+
+            const row = {
+              id: reply.id,
+              annotation_id: annotationId,
+              project_id: currentProjectId,
+              user_id: user?.id || null,
+              added_by_initials: reply.addedBy || null,
+              profile_color: reply.profileColor || null,
+              content: reply.content,
+              created_at: reply.createdAt,
+              updated_at: new Date().toISOString(),
+            };
+
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const { error } = await (supabase as any)
+              .from("annotation_replies")
+              .upsert(row, { onConflict: "id" })
+              .select();
+
+            if (error) throw error;
+            console.log("[useAnnotationsSync] Processed queued reply:", reply.id);
+            return true;
+          }
+
+          case "reply_delete": {
+            const { replyId } = operation.payload as { annotationId: string; replyId: string };
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const { error } = await (supabase as any)
+              .from("annotation_replies")
+              .delete()
+              .eq("id", replyId);
+
+            if (error) throw error;
+            console.log("[useAnnotationsSync] Processed queued reply delete:", replyId);
+            return true;
+          }
+
+          default:
+            console.warn("[useAnnotationsSync] Unknown operation type:", operation.type);
+            return false;
+        }
+      } catch (error) {
+        console.error("[useAnnotationsSync] Failed to process queued operation:", error);
+        return false;
+      }
+    },
+    [supabase, currentProjectId, user?.id]
+  );
+
+  // Process pending operations from queue
+  const processQueuedOperations = useCallback(async () => {
+    if (!currentProjectId) {
+      return;
+    }
+
+    try {
+      const result = await processQueue(currentProjectId, processQueuedOperation);
+      if (result.processed > 0) {
+        console.log(
+          `[useAnnotationsSync] Queue processing: ${result.succeeded} succeeded, ${result.failed} failed, ${result.retrying} retrying`
+        );
+        // Fetch remote state after processing queue
+        setTimeout(() => fetchAndUpdate(), 500);
+      }
+    } catch (error) {
+      console.error("[useAnnotationsSync] Error processing queue:", error);
+    }
+  }, [currentProjectId, processQueuedOperation, fetchAndUpdate]);
 
   // Polling interval (5 seconds) - reliable baseline for sync
   // Also handles visibility change to resume sync when tab becomes active (Safari suspension fix)
@@ -633,28 +849,35 @@ export function useAnnotationsSync({
       return;
     }
 
-    // Initial fetch after short delay to let fileIdMap populate
-    const initialTimeoutId = setTimeout(fetchAndUpdate, 100);
+    // Initial: process queue then fetch
+    const initialTimeoutId = setTimeout(async () => {
+      await processQueuedOperations();
+      await fetchAndUpdate();
+    }, 100);
 
     // Poll every 5 seconds
-    const intervalId = setInterval(() => {
+    const intervalId = setInterval(async () => {
       // Skip if we just made an update (to avoid processing our own changes)
       const timeSinceLastUpdate = Date.now() - lastUpdateRef.current;
       if (timeSinceLastUpdate < 2000) return;
 
       const currentFileIdMap = fileIdMapRef.current;
       if (Object.keys(currentFileIdMap).length > 0) {
-        fetchAndUpdate();
+        // Process queue before fetching remote
+        await processQueuedOperations();
+        await fetchAndUpdate();
       }
     }, 5000);
 
     // Resume sync immediately when tab becomes visible (fixes Safari suspension)
-    const handleVisibilityChange = () => {
+    const handleVisibilityChange = async () => {
       if (document.visibilityState === "visible") {
-        console.log("Tab became visible, triggering annotation sync");
+        console.log("Tab became visible, processing queue and triggering annotation sync");
         const currentFileIdMap = fileIdMapRef.current;
         if (Object.keys(currentFileIdMap).length > 0) {
-          fetchAndUpdate();
+          // Process queue first, then fetch
+          await processQueuedOperations();
+          await fetchAndUpdate();
         }
       }
     };
@@ -665,7 +888,7 @@ export function useAnnotationsSync({
       clearInterval(intervalId);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
-  }, [supabase, enabled, currentProjectId, fetchAndUpdate]);
+  }, [supabase, enabled, currentProjectId, processQueuedOperations, fetchAndUpdate]);
 
   // Realtime subscription disabled due to persistent "mismatch between server and client bindings" error
   // Polling (5s) provides reliable sync. Re-enable Realtime once Supabase issue is resolved.

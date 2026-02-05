@@ -6,13 +6,16 @@
  * Syncs code files between collaborators in real-time.
  * When a new file is added, it automatically appears for other users.
  * File deletions require confirmation from other users to protect annotations.
+ *
+ * RESILIENCE: Failed operations are queued to IndexedDB and retried automatically.
  */
 
 import { useEffect, useCallback, useRef, useState } from "react";
-import { getSupabaseClient, isSupabaseConfigured } from "@/lib/supabase/client";
+import { getSupabaseClient, isSupabaseConfigured, recordSuccessfulRequest, recordFailedRequest } from "@/lib/supabase/client";
 import { useAuth } from "@/context/AuthContext";
 import { useProjects } from "@/context/ProjectsContext";
 import type { RealtimeChannel } from "@supabase/supabase-js";
+import { queueOperation, processQueue, type OperationProcessor } from "@/lib/sync/operation-queue";
 
 // Local CodeFile interface for syncing
 interface CodeFile {
@@ -236,6 +239,28 @@ export function useCodeFilesSync({
 
       if (error) {
         console.error("Error saving code file:", error);
+
+        // Record failed request
+        recordFailedRequest(new Error(error.message));
+
+        // Queue operation for later retry
+        if (currentProjectId) {
+          try {
+            queueOperation(currentProjectId, "file_save", {
+              id: file.id,
+              content: file.content,
+              name: file.name,
+              metadata: {
+                language: file.language,
+                uploadedAt: new Date().toISOString(),
+              },
+            });
+            console.log("[useCodeFilesSync] Queued file save for later sync:", file.name);
+          } catch (queueError) {
+            console.error("[useCodeFilesSync] Failed to queue file save:", queueError);
+          }
+        }
+
         return { error: new Error(error.message), skipped: false };
       }
 
@@ -243,6 +268,9 @@ export function useCodeFilesSync({
       if (data?.updated_at) {
         fileTimestampsRef.current.set(file.id, data.updated_at);
       }
+
+      // Record successful request
+      recordSuccessfulRequest();
 
       return { error: null, skipped: false };
     },
@@ -274,6 +302,20 @@ export function useCodeFilesSync({
 
       if (error) {
         console.error("deleteCodeFile: Database error:", error);
+
+        // Record failed request
+        recordFailedRequest(new Error(error.message));
+
+        // Queue operation for later retry
+        if (currentProjectId) {
+          try {
+            queueOperation(currentProjectId, "file_delete", { id: fileId });
+            console.log("[useCodeFilesSync] Queued file delete for later sync:", fileId);
+          } catch (queueError) {
+            console.error("[useCodeFilesSync] Failed to queue file delete:", queueError);
+          }
+        }
+
         return { error: new Error(error.message) };
       }
 
@@ -281,6 +323,9 @@ export function useCodeFilesSync({
 
       // Update timestamp again after delete completes
       lastUpdateRef.current = Date.now();
+
+      // Record successful request
+      recordSuccessfulRequest();
 
       return { error: null };
     },
@@ -509,6 +554,90 @@ export function useCodeFilesSync({
     return `${content.length}:${hash}`;
   }
 
+  // Create operation processor for queued operations
+  const processQueuedOperation: OperationProcessor = useCallback(
+    async (operation) => {
+      if (!supabase || !currentProjectId || !user?.id) {
+        return false;
+      }
+
+      try {
+        switch (operation.type) {
+          case "file_save": {
+            const { id, content, name, metadata } = operation.payload as {
+              id: string;
+              content: string;
+              name: string;
+              metadata?: { language?: string; uploadedAt?: string };
+            };
+
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const { error } = await (supabase as any)
+              .from("code_files")
+              .upsert(
+                {
+                  id,
+                  project_id: currentProjectId,
+                  filename: name,
+                  language: metadata?.language || "plaintext",
+                  content,
+                  original_content: content,
+                  uploaded_by: user?.id,
+                  updated_at: new Date().toISOString(),
+                },
+                { onConflict: "id" }
+              );
+
+            if (error) throw error;
+            console.log("[useCodeFilesSync] Processed queued file save:", name);
+            return true;
+          }
+
+          case "file_delete": {
+            const { id } = operation.payload as { id: string };
+
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const { error } = await (supabase as any)
+              .from("code_files")
+              .update({ deleted_at: new Date().toISOString() })
+              .eq("id", id)
+              .eq("project_id", currentProjectId);
+
+            if (error) throw error;
+            console.log("[useCodeFilesSync] Processed queued file delete:", id);
+            return true;
+          }
+
+          default:
+            console.warn("[useCodeFilesSync] Unknown operation type:", operation.type);
+            return false;
+        }
+      } catch (error) {
+        console.error("[useCodeFilesSync] Failed to process queued operation:", error);
+        return false;
+      }
+    },
+    [supabase, currentProjectId, user?.id]
+  );
+
+  // Process pending operations from queue
+  const processQueuedOperations = useCallback(async () => {
+    if (!currentProjectId) {
+      return;
+    }
+
+    try {
+      const result = await processQueue(currentProjectId, processQueuedOperation);
+      if (result.processed > 0) {
+        console.log(
+          `[useCodeFilesSync] Queue processing: ${result.succeeded} succeeded, ${result.failed} failed, ${result.retrying} retrying`
+        );
+      }
+    } catch (error) {
+      console.error("[useCodeFilesSync] Error processing queue:", error);
+    }
+  }, [currentProjectId, processQueuedOperation]);
+
   // Polling for code files (5 second interval)
   useEffect(() => {
     if (!supabase || !isAuthenticated || !currentProjectId || !enabled) {
@@ -517,8 +646,10 @@ export function useCodeFilesSync({
 
     let isMounted = true;
 
-    // Initial fetch
+    // Initial: process queue then fetch
     const initialFetch = async () => {
+      await processQueuedOperations();
+
       const files = await fetchCodeFiles();
       if (isMounted) {
         files.forEach(f => {
@@ -550,6 +681,9 @@ export function useCodeFilesSync({
         console.log("useCodeFilesSync: Skipping poll, recent update", timeSinceLastUpdate, "ms ago");
         return;
       }
+
+      // Process queue before fetching remote
+      await processQueuedOperations();
 
       const files = await fetchCodeFiles();
       const remoteIds = new Set(files.map(f => f.id));
@@ -595,10 +729,11 @@ export function useCodeFilesSync({
     const intervalId = setInterval(pollForChanges, 5000);
 
     // Resume sync immediately when tab becomes visible (fixes Safari suspension)
-    const handleVisibilityChange = () => {
+    const handleVisibilityChange = async () => {
       if (document.visibilityState === "visible") {
-        console.log("Tab became visible, triggering code files sync");
-        pollForChanges();
+        console.log("Tab became visible, processing queue and triggering code files sync");
+        await processQueuedOperations();
+        await pollForChanges();
       }
     };
     document.addEventListener("visibilitychange", handleVisibilityChange);
@@ -608,7 +743,7 @@ export function useCodeFilesSync({
       clearInterval(intervalId);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
-  }, [supabase, isAuthenticated, currentProjectId, enabled, user?.id, fetchCodeFiles, fetchPendingDeletions]);
+  }, [supabase, isAuthenticated, currentProjectId, enabled, user?.id, fetchCodeFiles, fetchPendingDeletions, processQueuedOperations]);
 
   return {
     /** Fetch all code files for current project */

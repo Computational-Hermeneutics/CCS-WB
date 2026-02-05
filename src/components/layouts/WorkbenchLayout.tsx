@@ -70,6 +70,8 @@ import { GuidedPrompts } from "@/components/prompts";
 import { FloatingCCSPanel } from "@/components/ccs";
 import { SettingsModal } from "@/components/settings/SettingsModal";
 import { SaveStatusIndicator } from "@/components/ui/SaveStatusIndicator";
+import { ConnectionStatus } from "@/components/ui/ConnectionStatus";
+import { useConnectionHealth } from "@/hooks/useConnectionHealth";
 import { UserMenu } from "@/components/auth/UserMenu";
 import { AISettingsPanel } from "@/components/settings/AISettingsPanel";
 import { useAppSettings } from "@/context/AppSettingsContext";
@@ -225,6 +227,19 @@ export const WorkbenchLayout = forwardRef<WorkbenchLayoutRef, WorkbenchLayoutPro
   } = useProjects();
   const { markLocalUpdate } = useProjectSync();
   const aiEnabled = aiSettings.aiEnabled;
+
+  // Connection health monitoring for cloud projects
+  const connectionHealth = useConnectionHealth({
+    projectId: currentProjectId,
+    enabled: !!currentProjectId && isAuthenticated,
+    onConnectionLost: () => {
+      console.log("[WorkbenchLayout] Connection lost");
+    },
+    onConnectionRestored: () => {
+      console.log("[WorkbenchLayout] Connection restored, triggering refresh");
+      refreshFromCloud();
+    },
+  });
 
   // Auto-save hooks
   const autoSave = useAutoSave({
@@ -2851,6 +2866,18 @@ Follow the ${modeContext} guidance provided above.`;
             </div>
           </div>
         )}
+
+        {/* Connection Status - only for cloud projects */}
+        {currentProjectId && isAuthenticated && (
+          <ConnectionStatus
+            health={connectionHealth.health}
+            onForceSync={() => {
+              connectionHealth.forceCheck();
+              refreshFromCloud();
+            }}
+          />
+        )}
+
         <div className="flex items-center gap-0.5 sm:gap-1 flex-shrink-0">
           {/* CCS Methods Panel Toggle - only show in Learn Methods mode */}
           {session.mode === 'interpret' && (

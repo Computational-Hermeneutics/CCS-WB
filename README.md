@@ -1,6 +1,6 @@
 # Critical Code Studies Workbench
 
-**Version 3.0.0** | CCS Methodology v2.7
+**Version 3.1.0** | CCS Methodology v2.7
 
 A web application for close reading and hermeneutic analysis of software as cultural artefact.
 
@@ -66,6 +66,12 @@ Both Analyze and Learn modes use a unified three-panel IDE interface for focused
 
 ### Cloud Projects (Collaboration)
 - **Real-time sync**: Annotations and code files sync automatically (5-second polling)
+- **Connection resilience**: Google Docs-style data protection with automatic reconnection
+  - **Operation queue**: Failed operations queued locally (IndexedDB) and retried automatically
+  - **Smart merge**: Local changes preserved during reconnection (no data loss)
+  - **Connection health**: Real-time status indicator shows sync state (connected/reconnecting/disconnected)
+  - **Heartbeat monitoring**: Detects stale connections and triggers automatic recovery
+  - **Works offline**: Continue editing when connection lost; changes sync when restored
 - **OAuth login**: Sign in with Google, GitHub, or Apple
 - **Shareable invite links**: Generate links to invite collaborators as viewers or editors
 - **Member management**: View and manage project members and their roles

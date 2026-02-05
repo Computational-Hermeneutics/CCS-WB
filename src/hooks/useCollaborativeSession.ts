@@ -801,39 +801,36 @@ export function useCollaborativeSession() {
     return result;
   }, [isInProject, emptyFileTrash, trashedFiles]);
 
-  // Refresh from cloud - fetches latest annotations and files and replaces local state
+  // Refresh from cloud with smart merge - preserves local pending changes
   const refreshFromCloud = useCallback(async () => {
     if (!isInProject) {
       console.log("refreshFromCloud: Not in a project, skipping");
       return { success: false, error: "Not in a project" };
     }
 
-    console.log("refreshFromCloud: Starting refresh...");
+    console.log("refreshFromCloud: Starting smart refresh with merge...");
 
     try {
+      const { currentProjectId } = projectsContext;
+      if (!currentProjectId) {
+        return { success: false, error: "No current project ID" };
+      }
+
       // Fetch remote annotations
       const remoteAnnotations = await fetchRemoteAnnotations();
-      console.log(`refreshFromCloud: Fetched ${remoteAnnotations.length} annotations`);
+      console.log(`refreshFromCloud: Fetched ${remoteAnnotations.length} remote annotations`);
 
       // Fetch remote files
       const remoteFiles = await fetchCodeFiles();
-      console.log(`refreshFromCloud: Fetched ${remoteFiles.length} files`);
+      console.log(`refreshFromCloud: Fetched ${remoteFiles.length} remote files`);
 
-      // Update synced tracking for annotations
-      syncedAnnotationIdsRef.current.clear();
-      remoteAnnotations.forEach(a => syncedAnnotationIdsRef.current.add(a.id));
+      // Get pending operations from queue
+      const { getPendingOperations } = await import("@/lib/sync/operation-queue");
+      const pendingOps = await getPendingOperations(currentProjectId);
+      console.log(`refreshFromCloud: Found ${pendingOps.length} pending operations`);
 
-      // Update synced tracking for files
-      syncedFilesRef.current.clear();
-      remoteFiles.forEach(f => {
-        syncedFilesRef.current.set(f.id, {
-          name: f.name,
-          contentHash: hashContentSimple(f.content),
-        });
-      });
-
-      // Build new session state
-      const newCodeFiles = remoteFiles.map(f => ({
+      // Prepare remote state for merging
+      const remoteCodeFiles = remoteFiles.map(f => ({
         id: f.id,
         name: f.name,
         language: f.language,
@@ -842,26 +839,93 @@ export function useCollaborativeSession() {
         uploadedAt: new Date().toISOString(),
       }));
 
-      const newCodeContents: Record<string, string> = {};
+      const remoteCodeContents: Record<string, string> = {};
       remoteFiles.forEach(f => {
-        newCodeContents[f.id] = f.content;
+        remoteCodeContents[f.id] = f.content;
       });
 
-      // Replace local session with remote state
+      // Get current local state
+      const localCodeFiles = sessionContext.session.codeFiles;
+      const localCodeContents = sessionContext.session.codeContents;
+      const localAnnotations = sessionContext.session.lineAnnotations;
+
+      // Merge annotations (additive strategy - no conflicts)
+      const { mergeAnnotations, mergeFiles, mergeReplies } = await import("@/lib/sync/merge-strategies");
+
+      const annotationsResult = mergeAnnotations(
+        remoteAnnotations,
+        pendingOps,
+        localAnnotations
+      );
+      console.log(`refreshFromCloud: Merged ${annotationsResult.merged.length} annotations (${annotationsResult.conflicts.length} conflicts)`);
+
+      // Merge annotation replies
+      const repliesResult = mergeReplies(
+        annotationsResult.merged,
+        pendingOps,
+        localAnnotations
+      );
+      console.log(`refreshFromCloud: Merged replies (${repliesResult.conflicts.length} conflicts)`);
+
+      // Merge files (with conflict detection)
+      const filesResult = mergeFiles(
+        remoteCodeFiles,
+        remoteCodeContents,
+        pendingOps,
+        localCodeFiles,
+        localCodeContents
+      );
+
+      if (filesResult.conflicts.length > 0) {
+        console.warn(`refreshFromCloud: ${filesResult.conflicts.length} file conflicts detected:`, filesResult.conflicts);
+        // For now, just log conflicts. In Phase 5.3, we'll show a modal.
+        // Use remote version when there's a conflict (last-write-wins)
+      }
+
+      // Update synced tracking for annotations
+      syncedAnnotationIdsRef.current.clear();
+      repliesResult.merged.forEach(a => syncedAnnotationIdsRef.current.add(a.id));
+
+      // Update synced tracking for files
+      syncedFilesRef.current.clear();
+      Object.entries(filesResult.merged.contents).forEach(([fileId, content]) => {
+        const file = filesResult.merged.files.find(f => f.id === fileId);
+        if (file) {
+          syncedFilesRef.current.set(fileId, {
+            name: file.name,
+            contentHash: hashContentSimple(content),
+          });
+        }
+      });
+
+      // Apply merged state (preserves local changes!)
       sessionContext.importSession({
         ...sessionContext.session,
-        codeFiles: newCodeFiles,
-        codeContents: newCodeContents,
-        lineAnnotations: remoteAnnotations,
+        codeFiles: filesResult.merged.files,
+        codeContents: filesResult.merged.contents,
+        lineAnnotations: repliesResult.merged,
       });
 
-      console.log("refreshFromCloud: Session updated successfully");
-      return { success: true, error: null };
+      // Process operation queue to sync pending changes
+      const { processQueue } = await import("@/lib/sync/operation-queue");
+      const queueResult = await processQueue(currentProjectId, async (op) => {
+        // Operation processor is handled by individual sync hooks
+        // Here we just return true to remove from queue since we've merged them
+        console.log(`refreshFromCloud: Marking operation as processed: ${op.type}`);
+        return true;
+      });
+
+      console.log(
+        `refreshFromCloud: Queue processed: ${queueResult.succeeded} succeeded, ${queueResult.failed} failed`
+      );
+
+      console.log("refreshFromCloud: Smart refresh completed successfully");
+      return { success: true, error: null, conflicts: filesResult.conflicts };
     } catch (err) {
       console.error("refreshFromCloud: Error", err);
       return { success: false, error: String(err) };
     }
-  }, [isInProject, fetchRemoteAnnotations, fetchCodeFiles, sessionContext]);
+  }, [isInProject, fetchRemoteAnnotations, fetchCodeFiles, sessionContext, projectsContext]);
 
   return {
     // All original session context values

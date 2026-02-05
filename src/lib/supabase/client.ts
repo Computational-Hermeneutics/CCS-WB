@@ -11,6 +11,10 @@ import type { Database } from "./types";
 // Lazy singleton pattern - client is created on first use
 let supabaseClient: SupabaseClient<Database> | null = null;
 
+// Track last successful request for connection health monitoring
+let lastSuccessfulRequest: number = Date.now();
+let lastRequestError: Error | null = null;
+
 /**
  * Get the Supabase browser client singleton.
  * Returns null if Supabase is not configured (missing environment variables).
@@ -60,4 +64,68 @@ export function isSupabaseConfigured(): boolean {
     process.env.NEXT_PUBLIC_SUPABASE_URL &&
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
   );
+}
+
+/**
+ * Test connection to Supabase with a lightweight query
+ * Updates lastSuccessfulRequest timestamp on success
+ * @returns true if connection is healthy, false otherwise
+ */
+export async function testConnection(): Promise<boolean> {
+  const client = getSupabaseClient();
+
+  if (!client) {
+    return false;
+  }
+
+  try {
+    // Lightweight query - just check if we can reach Supabase
+    const { error } = await client.from("projects").select("id").limit(1);
+
+    if (error) {
+      lastRequestError = new Error(error.message);
+      return false;
+    }
+
+    // Success
+    lastSuccessfulRequest = Date.now();
+    lastRequestError = null;
+    return true;
+  } catch (error) {
+    lastRequestError = error instanceof Error ? error : new Error("Unknown connection error");
+    return false;
+  }
+}
+
+/**
+ * Get connection health metrics
+ * @returns Health metrics for monitoring
+ */
+export function getConnectionMetrics(): {
+  lastSuccessfulRequest: number;
+  timeSinceLastSuccess: number;
+  lastError: Error | null;
+} {
+  return {
+    lastSuccessfulRequest,
+    timeSinceLastSuccess: Date.now() - lastSuccessfulRequest,
+    lastError: lastRequestError,
+  };
+}
+
+/**
+ * Record a successful Supabase request
+ * Call this after successful sync operations to update health tracking
+ */
+export function recordSuccessfulRequest(): void {
+  lastSuccessfulRequest = Date.now();
+  lastRequestError = null;
+}
+
+/**
+ * Record a failed Supabase request
+ * Call this after failed sync operations to update health tracking
+ */
+export function recordFailedRequest(error: Error): void {
+  lastRequestError = error;
 }
