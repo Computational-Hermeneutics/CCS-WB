@@ -502,9 +502,13 @@ export class AnnotationWidget extends WidgetType {
       const deleteBtn = document.createElement("button");
       deleteBtn.className = "cm-annotation-btn cm-annotation-btn-delete";
       deleteBtn.innerHTML = "&#x2715;";
+      deleteBtn.title = "Delete (Cmd/Ctrl+Click to skip confirmation)";
       deleteBtn.onclick = (e) => {
         e.stopPropagation();
-        this.onDelete?.(this.annotation.id);
+        // Pass metaKey/ctrlKey state via custom event detail to skip confirmation
+        const skipConfirm = e.metaKey || e.ctrlKey;
+        // @ts-ignore - we'll handle the optional second parameter in the callback
+        this.onDelete?.(this.annotation.id, skipConfirm);
       };
       actions.appendChild(deleteBtn);
     }

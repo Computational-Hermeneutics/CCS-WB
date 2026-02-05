@@ -2358,28 +2358,31 @@ Follow the ${modeContext} guidance provided above.`;
     }
   }, [deleteReply, session.lineAnnotations, user, projects, currentProjectId]);
 
-  const handleDeleteAnnotation = useCallback(async (annotationId: string) => {
+  const handleDeleteAnnotation = useCallback(async (annotationId: string, skipConfirmation = false) => {
     if (!removeLineAnnotation) return;
 
-    // Find the annotation to check ownership
-    const annotation = session.lineAnnotations?.find(a => a.id === annotationId);
-    let confirmMessage = "Delete this annotation?\n\nThis will permanently delete the annotation and all its replies.";
+    // Skip confirmation if Cmd/Ctrl+Click was used
+    if (!skipConfirmation) {
+      // Find the annotation to check ownership
+      const annotation = session.lineAnnotations?.find(a => a.id === annotationId);
+      let confirmMessage = "Delete this annotation?\n\nThis will permanently delete the annotation and all its replies.";
 
-    if (annotation) {
-      const annotationAuthor = annotation.addedBy;
-      const currentUserInitials = user?.user_metadata?.initials || user?.email?.substring(0, 3).toUpperCase();
-      const currentProject = projects.find(p => p.id === currentProjectId);
-      const isOwner = currentProject?.owner_id === user?.id;
+      if (annotation) {
+        const annotationAuthor = annotation.addedBy;
+        const currentUserInitials = user?.user_metadata?.initials || user?.email?.substring(0, 3).toUpperCase();
+        const currentProject = projects.find(p => p.id === currentProjectId);
+        const isOwner = currentProject?.owner_id === user?.id;
 
-      // Different message if owner is deleting someone else's annotation
-      if (isOwner && annotationAuthor && annotationAuthor !== currentUserInitials) {
-        confirmMessage = `Delete annotation by ${annotationAuthor}?\n\nThis will permanently delete this annotation and all its replies.`;
+        // Different message if owner is deleting someone else's annotation
+        if (isOwner && annotationAuthor && annotationAuthor !== currentUserInitials) {
+          confirmMessage = `Delete annotation by ${annotationAuthor}?\n\nThis will permanently delete this annotation and all its replies.`;
+        }
       }
-    }
 
-    // Always show confirmation for annotation deletion
-    const confirmed = window.confirm(confirmMessage);
-    if (!confirmed) return;
+      // Show confirmation for annotation deletion
+      const confirmed = window.confirm(confirmMessage);
+      if (!confirmed) return;
+    }
 
     // Call the wrapped removeLineAnnotation
     await removeLineAnnotation(annotationId);
