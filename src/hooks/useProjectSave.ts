@@ -43,6 +43,40 @@ export function useProjectSave({
       try {
         const now = new Date().toISOString();
 
+        // Helper to check if a string is a valid UUID
+        const isValidUUID = (id: string): boolean => {
+          const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+          return uuidRegex.test(id);
+        };
+
+        // Check if any file IDs are not valid UUIDs (e.g., sample projects with "file-1", "file-2")
+        // Skip saving files/annotations for sample projects - they should be explicitly saved by user
+        const hasNonUUIDFiles = session.codeFiles.some(f => !isValidUUID(f.id));
+        if (hasNonUUIDFiles) {
+          console.log("saveProject: Skipping auto-save for sample project (non-UUID file IDs detected)");
+          // Update project metadata only (to record last access time)
+          const sessionDataWithoutFiles = {
+            ...session,
+            codeFiles: [],
+            codeContents: {},
+            lineAnnotations: [],
+          };
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          await (supabase as any)
+            .from("projects")
+            .update({
+              session_data: sessionDataWithoutFiles,
+              mode: session.mode,
+              updated_at: now,
+            })
+            .eq("id", projectId);
+
+          console.log("saveProject: Sample project metadata updated");
+          markLocalUpdate(projectId);
+          updateProjectTimestamp(projectId);
+          return { error: null };
+        }
+
         // Build bulk data for files (skip README update - too expensive for every save)
         const filesData = session.codeFiles
           .map((file, i) => {

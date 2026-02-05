@@ -160,6 +160,12 @@ export function useAnnotationsSync({
 
   const supabase = isSupabaseConfigured() ? getSupabaseClient() : null;
 
+  // Helper to check if a string is a valid UUID
+  const isValidUUID = (id: string): boolean => {
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    return uuidRegex.test(id);
+  };
+
   // Fetch all annotations for the current project's files
   const fetchRemoteAnnotations = useCallback(async (): Promise<LineAnnotation[]> => {
     const currentFileIdMap = fileIdMapRef.current;
@@ -168,6 +174,11 @@ export function useAnnotationsSync({
     }
 
     const fileIds = Object.values(currentFileIdMap);
+
+    // Skip if any file ID is not a valid UUID (e.g., sample projects with "file-1", "file-2")
+    if (fileIds.some(id => !isValidUUID(id))) {
+      return [];
+    }
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = await (supabase as any)
       .from("annotations")
@@ -198,6 +209,11 @@ export function useAnnotationsSync({
     }
 
     const fileIds = Object.values(currentFileIdMap);
+
+    // Skip if any file ID is not a valid UUID (e.g., sample projects with "file-1", "file-2")
+    if (fileIds.some(id => !isValidUUID(id))) {
+      return;
+    }
 
     // Quick check: has anything changed since last fetch?
     try {
@@ -447,6 +463,11 @@ export function useAnnotationsSync({
       const fileId = currentFileIdMap[annotation.codeFileId];
       if (!fileId) {
         console.warn("No Supabase file_id for annotation:", annotation.codeFileId);
+        return false;
+      }
+
+      // Skip if file ID is not a valid UUID (e.g., sample projects)
+      if (!isValidUUID(fileId)) {
         return false;
       }
 
