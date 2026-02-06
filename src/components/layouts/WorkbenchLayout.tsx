@@ -1093,6 +1093,7 @@ export const WorkbenchLayout = forwardRef<WorkbenchLayoutRef, WorkbenchLayoutPro
             handleSearchLiterature={handleSearchLiterature}
             isSearchingLiterature={isSearchingLiterature}
             handleSend={handleSend}
+            onTestConnection={autoTestConnection}
             isAiReady={isAiReady}
             connectionStatus={connectionStatus}
             aiProviderDisplayName={aiProviderDisplayName}

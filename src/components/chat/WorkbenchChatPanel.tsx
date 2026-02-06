@@ -89,6 +89,7 @@ interface WorkbenchChatPanelProps {
 
   // Send
   handleSend: () => void;
+  onTestConnection: () => Promise<boolean>;
   isAiReady: boolean;
   connectionStatus: string;
 
@@ -134,6 +135,7 @@ const WorkbenchChatPanel = React.memo(function WorkbenchChatPanel({
   handleSearchLiterature,
   isSearchingLiterature,
   handleSend,
+  onTestConnection,
   isAiReady,
   connectionStatus,
   aiProviderDisplayName,
@@ -495,33 +497,35 @@ const WorkbenchChatPanel = React.memo(function WorkbenchChatPanel({
 
               {/* Send button - color indicates connection status */}
               <button
-                onClick={handleSend}
-                disabled={!input.trim() || isLoading || !isAiReady}
+                onClick={() => {
+                  if (connectionStatus !== "success" && !input.trim()) {
+                    onTestConnection();
+                  } else {
+                    handleSend();
+                  }
+                }}
+                disabled={isLoading || connectionStatus === "testing"}
                 className={cn(
                   "p-2 rounded-lg flex items-center justify-center transition-colors",
-                  isLoading
+                  isLoading || connectionStatus === "testing"
                     ? "bg-parchment text-slate-muted cursor-not-allowed"
                     : connectionStatus === "success"
                       ? input.trim() && isAiReady
                         ? "bg-burgundy text-ivory hover:bg-burgundy-dark"
                         : "bg-burgundy/30 text-burgundy cursor-not-allowed"
-                      : input.trim() && isAiReady
-                        ? "bg-amber-500 text-ivory hover:bg-amber-600"
-                        : "bg-amber-500/30 text-amber-700 cursor-not-allowed"
+                      : "bg-amber-500 text-ivory hover:bg-amber-600 cursor-pointer"
                 )}
                 title={
-                  isLoading
-                    ? "Sending..."
-                    : !input.trim()
-                      ? "Type a message"
-                      : !isAiReady
-                        ? "Click to test connection and send"
-                        : connectionStatus === "success"
-                          ? "Send message"
-                          : "Click to test connection and send"
+                  connectionStatus === "testing"
+                    ? "Testing connection..."
+                    : connectionStatus === "success"
+                      ? input.trim()
+                        ? "Send message"
+                        : "Type a message"
+                      : "Click to try to connect to AI"
                 }
               >
-                {isLoading ? (
+                {isLoading || connectionStatus === "testing" ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
                   <ArrowUp className="h-4 w-4" strokeWidth={2} />
