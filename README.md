@@ -1,6 +1,6 @@
 # Critical Code Studies Workbench
 
-**Version 3.1.0** | CCS Methodology v2.7
+**Version 3.2.0** | CCS Methodology v2.7
 
 A web application for close reading and hermeneutic analysis of software as cultural artefact.
 
@@ -262,18 +262,29 @@ CCS-WB/
 │   │   └── page.tsx                  # Landing page
 │   ├── components/
 │   │   ├── layouts/
-│   │   │   └── CritiqueLayout.tsx    # IDE-style three-panel layout
+│   │   │   ├── WorkbenchLayout.tsx   # Main IDE layout orchestrator
+│   │   │   ├── WorkbenchHeader.tsx   # Header bar with toolbar
+│   │   │   └── WorkbenchModals.tsx   # Settings, export, save modals
 │   │   ├── code/
 │   │   │   ├── CodeEditorPanel.tsx   # Code editor with annotations
 │   │   │   ├── CodeDiffViewer.tsx    # Side-by-side comparison
 │   │   │   └── AnnotatedCodeViewer.tsx
 │   │   ├── chat/
+│   │   │   ├── WorkbenchChatPanel.tsx # Chat panel with search and prompts
 │   │   │   ├── ContextPreview.tsx    # Shows LLM context
 │   │   │   └── MessageBubble.tsx     # Chat message styling
 │   │   ├── prompts/
 │   │   │   └── GuidedPrompts.tsx     # Phase-appropriate questions
 │   │   └── settings/
 │   │       └── AIProviderSettings.tsx
+│   ├── hooks/
+│   │   ├── useWorkbenchChat.ts      # Chat state and AI messaging
+│   │   ├── useWorkbenchProject.ts   # Project save/load/export
+│   │   ├── useWorkbenchFileManagement.ts # File add/remove/rename
+│   │   ├── useAnnotationSuggestions.ts  # AI annotation suggestions
+│   │   ├── useAnnotationReplies.ts  # Annotation reply threads
+│   │   ├── useReferenceSearch.ts    # Literature search
+│   │   └── useAutoSave.ts          # File system auto-save
 │   ├── context/
 │   │   ├── SessionContext.tsx        # Session state (useReducer)
 │   │   └── AISettingsContext.tsx     # AI provider config
@@ -329,6 +340,7 @@ When analysing code, use these annotation types:
 
 | Version | Changes |
 |---------|---------|
+| 3.2.0 | **Architecture refactoring**: Extracted WorkbenchLayout.tsx (4,748 → 1,163 lines, 75% reduction) and conversation/page.tsx (2,191 → 155 lines, 93% reduction) into 6 custom hooks and 3 components. Pure structural refactor with zero logic changes. Fixed pre-existing auto-save bug where stale file handles threw errors instead of recovering gracefully. |
 | 3.0.0 | **Critical fixes**: Code extraction in Create mode now handles AI responses with extra text after language fence (e.g., ` ```python # comment`), fixed CCS panel jump on click by deferring transition disable until actual drag starts, improved regex flexibility for markdown code blocks, handles unclosed code blocks gracefully. |
 | 2.22.5 | **Save status fixes**: SaveStatusIndicator text now matches parent color (no separate colors in inline mode), save status only shown for local sessions when using File System Access API, prevents confusing "Unsaved" status for manual download saves. |
 | 2.22.4 | **Interface refinements**: Cleaner chat interface (internal system messages hidden), code extraction available in all modes (not just Create), save AI responses as markdown files (FileDown button), CCS Methods Guide button improvements (Library icon, toggle behavior, stroke-weight state indication), experience level UI removed from WorkbenchLayout (now auto-derived from mode selection), updated help dropdowns with AI auto-annotation documentation. |
