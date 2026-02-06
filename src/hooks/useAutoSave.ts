@@ -100,7 +100,10 @@ export function useAutoSave(options: UseAutoSaveOptions = {}): UseAutoSaveReturn
       const handle = await adapter.retrieveHandle(handleId);
 
       if (!handle) {
-        throw new Error("File handle no longer available - permissions may have been revoked");
+        console.warn("[useAutoSave] File handle no longer available, clearing stale reference");
+        setSaveStatus("idle");
+        isSavingRef.current = false;
+        return;
       }
 
       // Serialize session to JSON
