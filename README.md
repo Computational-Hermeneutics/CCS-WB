@@ -102,7 +102,8 @@ Load pre-packaged historical code for immediate critique and analysis:
 - **Agrippa (1992)**: William Gibson's self-encrypting poem - electronic literature and digital preservation
 - **My Boyfriend Came Back from the War (1996)**: Olia Lialina's frame-splitting narrative - net.art and vernacular web aesthetics
 
-**2000s-Present - Feminist Computing and Contemporary Analysis:**
+**2000s-Present - Plain Text, Feminist Computing, and Contemporary Analysis:**
+- **Markdown (2004)**: John Gruber's plain text formatting - readability over parseability, gift economy, and the plain text ideology
 - **Git Stash (2007)**: Nanako Shiraishi's original script - feminist computing history and workplace interruption
 - **10 PRINT CHR$(205.5+RND(1)); GOTO 10 (2013)**: Montfort et al.'s book-length analysis of one line of C64 BASIC
 - **Transformer Architecture (2017)**: Attention Is All You Need - multi-head attention and the foundation of modern LLMs
@@ -152,7 +153,7 @@ Models can be customised by editing `public/models.md`. Add or remove models wit
 ### Appearance
 - **Dark mode**: Light, dark, or system-matched themes via Settings → Appearance
 - **Theme colours**: Six accent colour palettes (Burgundy, Forest, Navy, Plum, Rust, Slate) that tint both UI elements and backgrounds
-- **Custom skins**: Nostalgic visual themes (Myspace included) with custom colours, fonts, and Clippy messages; create your own skins in `public/skins/`
+- **Custom skins**: 10 nostalgic visual themes (Atari 2600, BBC Micro, C64, ELIZA, Geocities, HyperCard, Myspace, Teams, Teletext, Vaporwave) with custom colours, fonts, and Clippy messages; create your own skins in `public/skins/`
 - **Customisable fonts**: Adjust code, chat, and UI font sizes independently
 
 ### Keyboard Shortcuts
@@ -249,66 +250,123 @@ CCS-WB/
 ├── src/
 │   ├── app/                          # Next.js app router
 │   │   ├── api/                      # API routes
+│   │   │   ├── analyze/route.ts
 │   │   │   ├── chat/route.ts         # Main dialogue API
-│   │   │   ├── literature/route.ts   # Literature search
+│   │   │   ├── export/route.ts
 │   │   │   ├── generate/route.ts     # Output generation
+│   │   │   ├── literature/route.ts   # Literature search
+│   │   │   ├── profile/route.ts      # User profile
 │   │   │   ├── skill-document/route.ts
 │   │   │   ├── test-connection/route.ts
-│   │   │   ├── analyze/route.ts
-│   │   │   ├── export/route.ts
-│   │   │   └── upload/route.ts
+│   │   │   ├── upload/route.ts
+│   │   │   └── version/route.ts
+│   │   ├── auth/                     # OAuth callback handling
 │   │   ├── conversation/page.tsx     # Main conversation page
+│   │   ├── invite/                   # Shareable invite links
 │   │   ├── layout.tsx
 │   │   └── page.tsx                  # Landing page
 │   ├── components/
-│   │   ├── layouts/
-│   │   │   ├── WorkbenchLayout.tsx   # Main IDE layout orchestrator
-│   │   │   ├── WorkbenchHeader.tsx   # Header bar with toolbar
-│   │   │   └── WorkbenchModals.tsx   # Settings, export, save modals
-│   │   ├── code/
-│   │   │   ├── CodeEditorPanel.tsx   # Code editor with annotations
-│   │   │   ├── CodeDiffViewer.tsx    # Side-by-side comparison
-│   │   │   └── AnnotatedCodeViewer.tsx
+│   │   ├── auth/                     # LoginModal, UserMenu
+│   │   ├── ccs/                      # CCS guidance panel, method cards, smart hints
 │   │   ├── chat/
 │   │   │   ├── WorkbenchChatPanel.tsx # Chat panel with search and prompts
 │   │   │   ├── ContextPreview.tsx    # Shows LLM context
 │   │   │   └── MessageBubble.tsx     # Chat message styling
+│   │   ├── code/
+│   │   │   ├── CodeEditorPanel.tsx   # Code editor with annotations
+│   │   │   ├── CodeMirrorEditor.tsx  # CodeMirror wrapper
+│   │   │   ├── CodeDiffViewer.tsx    # Side-by-side comparison
+│   │   │   ├── AnnotatedCodeViewer.tsx
+│   │   │   ├── cm-annotations*.ts   # Annotation config, widgets, extensions
+│   │   │   ├── cm-lang-*.ts         # Language modes (AGC, BASIC, FORTRAN, IPL-V, MAD)
+│   │   │   ├── cm-languages.ts      # Language registry
+│   │   │   └── cm-theme.ts          # Editor theme
+│   │   ├── easter-eggs/             # Clippy
+│   │   ├── layouts/
+│   │   │   ├── WorkbenchLayout.tsx   # Main IDE layout orchestrator
+│   │   │   ├── WorkbenchHeader.tsx   # Header bar with toolbar
+│   │   │   └── WorkbenchModals.tsx   # Settings, export, save modals
+│   │   ├── projects/                # Projects, Library, Members, Admin modals
 │   │   ├── prompts/
 │   │   │   └── GuidedPrompts.tsx     # Phase-appropriate questions
-│   │   └── settings/
-│   │       └── AIProviderSettings.tsx
+│   │   ├── pwa/                     # Install prompt, favicon
+│   │   ├── settings/
+│   │   │   ├── AIProviderSettings.tsx
+│   │   │   ├── AISettingsPanel.tsx
+│   │   │   └── SettingsModal.tsx
+│   │   ├── shared/                  # ConfirmDialog, ConnectionStatus, SaveStatus, Toast
+│   │   └── ui/                      # Base UI primitives
 │   ├── hooks/
 │   │   ├── useWorkbenchChat.ts      # Chat state and AI messaging
 │   │   ├── useWorkbenchProject.ts   # Project save/load/export
 │   │   ├── useWorkbenchFileManagement.ts # File add/remove/rename
 │   │   ├── useAnnotationSuggestions.ts  # AI annotation suggestions
 │   │   ├── useAnnotationReplies.ts  # Annotation reply threads
+│   │   ├── useAnnotationsSync.ts    # Real-time annotation sync
+│   │   ├── useAutoSave.ts           # File system auto-save
+│   │   ├── useCCSGuidance.ts        # CCS methodology guidance
+│   │   ├── useCodeFilesSync.ts      # Code file sync for collaboration
+│   │   ├── useCollaborativeSession.ts # Collaborative session management
+│   │   ├── useConnectionHealth.ts   # Connection health monitoring
+│   │   ├── useLibraryRatings.ts     # Library project ratings
+│   │   ├── useProjectCRUD.ts        # Project create/read/update/delete
+│   │   ├── useProjectAdmin.ts       # Admin operations
+│   │   ├── useProjectLibrary.ts     # Library management
+│   │   ├── useProjectMembers.ts     # Member management
+│   │   ├── useProjectModals.ts      # Modal state management
+│   │   ├── useProjectSave.ts        # Project persistence
+│   │   ├── useProjectSharing.ts     # Invite links and sharing
+│   │   ├── useProjectSync.ts        # Project sync orchestration
+│   │   ├── useProjectTrash.ts       # Soft delete and recovery
 │   │   ├── useReferenceSearch.ts    # Literature search
-│   │   └── useAutoSave.ts          # File system auto-save
+│   │   ├── useUnsavedWarning.ts     # Unsaved changes detection
+│   │   └── useXPSystem.ts           # Experience/gamification
 │   ├── context/
 │   │   ├── SessionContext.tsx        # Session state (useReducer)
-│   │   └── AISettingsContext.tsx     # AI provider config
+│   │   ├── AISettingsContext.tsx     # AI provider config
+│   │   ├── AppSettingsContext.tsx    # App-wide settings
+│   │   ├── AuthContext.tsx           # Authentication state
+│   │   ├── ProjectsContext.tsx       # Projects state
+│   │   └── SkinsContext.tsx          # Visual skins state
 │   ├── lib/
 │   │   ├── ai/
 │   │   │   ├── client.ts             # Multi-provider AI client
-│   │   │   └── config.ts
+│   │   │   ├── config.ts
+│   │   │   └── load-models.ts        # Runtime model loading from models.md
 │   │   ├── export/
 │   │   │   └── session-log.ts        # Session log export utilities
+│   │   ├── file-system/              # File System Access API integration
 │   │   ├── prompts/
 │   │   │   └── ccs-methodology.ts    # Loads skill document
+│   │   ├── supabase/                 # Supabase client, server, types
+│   │   ├── sync/                     # Operation queue, merge strategies, offline support
+│   │   ├── ccs-content.ts            # CCS content utilities
+│   │   ├── code-extraction.ts        # Extract code from AI responses
+│   │   ├── config.ts
+│   │   ├── projects-utils.ts         # Project helper utilities
+│   │   ├── rate-limit.ts             # API rate limiting
+│   │   ├── session-storage.ts        # Session persistence
 │   │   ├── utils.ts
-│   │   └── config.ts
+│   │   └── xp-utils.ts              # XP system utilities
 │   └── types/
 │       ├── session.ts                # Core types + GUIDED_PROMPTS
 │       ├── ai-settings.ts
+│       ├── app-settings.ts
 │       ├── api.ts
 │       └── index.ts
-├── Critical-Code-Studies-Skill.md    # CCS methodology v2.5
+├── Critical-Code-Studies-Skill.md    # CCS methodology v2.7
 ├── CCS-Bibliography.md               # Reference bibliography
+├── docs/                             # Setup guides (Supabase, Vercel, configuration)
+├── scripts/                          # Utility scripts (sample generation)
+├── init.sh                           # Development environment setup
 └── public/
     ├── models.md                     # User-editable AI models config
+    ├── sample-code/                  # 16 sample projects (1958-2026)
+    │   └── Samples.md               # Sample project registry
     ├── assets/icons/                 # Shared retro icons for skins
-    └── skins/                        # Custom visual themes (see README)
+    ├── skins/                        # 10 custom visual themes
+    ├── manifest.json                 # PWA manifest
+    └── service-worker.js             # Offline support
 ```
 
 ## Critical Code Studies Methodology
