@@ -6,52 +6,106 @@ This file provides context for Claude Code or other AI assistants working on thi
 
 **CCS-WB** (Critical Code Studies Workbench) is a web application for close reading and hermeneutic analysis of software as cultural artefact. It implements critical code studies methodology based on the work of Mark Marino and David M. Berry.
 
+**Version**: 3.2.0 | CCS Methodology v2.7
+
 ## Technology Stack
 
-- **Framework**: Next.js 16 with React 19, TypeScript
+- **Framework**: Next.js 16 with React 19, TypeScript 5 (strict)
 - **Bundler**: Turbopack (Next.js 16 default)
 - **Styling**: Tailwind CSS with custom editorial design tokens
 - **State**: React Context + useReducer (no external state library)
 - **UI Components**: Radix UI primitives, Lucide icons
+- **Code Editor**: CodeMirror 6 with custom language modes and annotation extensions
 - **AI Integration**: Multi-provider (Anthropic, OpenAI, Google, Ollama) via Vercel AI SDK
+- **Cloud**: Supabase (auth, project storage, real-time sync)
+- **PDF Export**: jsPDF
 
 ## Key Architecture Decisions
 
 ### Entry Modes
-The app has four entry modes, each with distinct UI and prompts:
-- `critique` - IDE-style three-panel layout (file tree, code editor, chat)
-- `archaeology` - Historical software analysis
-- `interpret` - Hermeneutic exploration
-- `create` - "Vibe coding" to understand algorithms by building them
+The app has three entry modes, each with distinct UI, AI engagement style, and prompts:
+- `critique` (Analyze Code) - IDE-style three-panel layout (file tree, code editor, chat). AI acts as expert practitioner.
+- `interpret` (Learn Methods) - Exploring CCS methodology and hermeneutic frameworks. AI acts as beginner-friendly guide.
+- `create` (Create Code) - "Vibe coding" to understand algorithms by building them. AI acts as intermediate practitioner.
 
 ### Session State
 All session state flows through `SessionContext.tsx` using useReducer. The `Session` type in `types/session.ts` is the central data structure.
 
 ### CCS Methodology
-The LLM system prompts are generated from `Critical-Code-Studies-Skill.md` (a skill document loaded at runtime). This contains the CCS methodology, conversation phases, and annotation types.
+The LLM system prompts are generated from `Critical-Code-Studies-Skill.md` (a skill document loaded at runtime via `lib/prompts/ccs-methodology.ts`). This contains the CCS methodology, conversation phases, and annotation types.
+
+### Cloud Collaboration
+Supabase powers cloud projects with OAuth (Google, GitHub, Apple), real-time sync (5-second polling), shareable invite links, and member management. Connection resilience uses an operation queue with IndexedDB for offline support.
+
+### Custom Skins
+10 nostalgic visual themes (Atari 2600, BBC Micro, C64, ELIZA, Geocities, HyperCard, Myspace, Teams, Teletext, Vaporwave) managed via `SkinsContext.tsx` and loaded from `public/skins/`.
 
 ## Directory Structure
 
 ```
 src/
-├── app/                     # Next.js app router
-│   ├── api/                 # API routes (chat, literature, generate)
-│   ├── conversation/        # Main conversation page (non-critique modes)
-│   └── page.tsx             # Landing page with mode selection
+├── app/                          # Next.js app router
+│   ├── api/                      # API routes
+│   │   ├── analyze/              # Code analysis
+│   │   ├── chat/                 # Main dialogue API
+│   │   ├── export/               # Export operations
+│   │   ├── generate/             # Output generation
+│   │   ├── literature/           # Literature search
+│   │   ├── profile/              # User profile
+│   │   ├── skill-document/       # CCS methodology loader
+│   │   ├── test-connection/      # AI provider connection test
+│   │   ├── upload/               # File upload
+│   │   └── version/              # Version endpoint
+│   ├── auth/                     # OAuth callback handling
+│   ├── conversation/page.tsx     # Main conversation page
+│   ├── invite/                   # Shareable invite links
+│   └── page.tsx                  # Landing page with mode selection
 ├── components/
-│   ├── layouts/CritiqueLayout.tsx  # IDE-style three-panel layout
-│   ├── code/CodeEditorPanel.tsx    # Code editor with annotations
-│   ├── chat/                # ContextPreview, MessageBubble
-│   └── prompts/GuidedPrompts.tsx   # Phase-appropriate questions
+│   ├── auth/                     # LoginModal, UserMenu
+│   ├── ccs/                      # CCS guidance panel, method cards, smart hints
+│   ├── chat/                     # WorkbenchChatPanel, ContextPreview, MessageBubble
+│   ├── code/                     # CodeEditorPanel, CodeMirrorEditor, CodeDiffViewer,
+│   │                             # AnnotatedCodeViewer, cm-annotations*, cm-lang-*, cm-theme
+│   ├── easter-eggs/              # Clippy
+│   ├── layouts/                  # WorkbenchLayout (orchestrator), WorkbenchHeader, WorkbenchModals
+│   ├── projects/                 # ProjectsModal, LibraryModal, MembersModal, AdminModal
+│   ├── prompts/                  # GuidedPrompts (phase-appropriate questions)
+│   ├── pwa/                      # InstallPrompt, AlphaFavicon
+│   ├── settings/                 # SettingsModal, AIProviderSettings, AISettingsPanel
+│   ├── shared/                   # ConfirmDialog, ConnectionStatus, SaveStatusIndicator, Toast
+│   └── ui/                       # Base UI primitives
+├── hooks/                        # 24 custom hooks
+│   ├── useWorkbenchChat.ts       # Chat state and AI messaging
+│   ├── useWorkbenchProject.ts    # Project save/load/export
+│   ├── useWorkbenchFileManagement.ts # File add/remove/rename
+│   ├── useAnnotation*.ts         # Annotation suggestions, replies, sync
+│   ├── useProject*.ts            # CRUD, save, sharing, sync, trash, admin, library, members, modals
+│   ├── useCollaborativeSession.ts # Collaborative session management
+│   ├── useConnectionHealth.ts    # Connection health monitoring
+│   ├── useCCSGuidance.ts         # CCS methodology guidance
+│   └── ...                       # AutoSave, CodeFilesSync, LibraryRatings, ReferenceSearch, etc.
 ├── context/
-│   ├── SessionContext.tsx   # Main session state
-│   └── AISettingsContext.tsx # AI provider config
+│   ├── SessionContext.tsx        # Main session state (useReducer)
+│   ├── AISettingsContext.tsx      # AI provider config
+│   ├── AppSettingsContext.tsx     # App-wide settings
+│   ├── AuthContext.tsx            # Authentication state
+│   ├── ProjectsContext.tsx        # Projects state
+│   └── SkinsContext.tsx           # Visual skins state
 ├── lib/
-│   ├── ai/                  # Multi-provider client
-│   ├── export/              # Session log export utilities
-│   └── prompts/             # CCS methodology loader
+│   ├── ai/                       # Multi-provider client, config, model loader
+│   ├── export/                   # Session log export utilities
+│   ├── file-system/              # File System Access API integration
+│   ├── prompts/                  # CCS methodology loader
+│   ├── supabase/                 # Supabase client, server, types
+│   ├── sync/                     # Operation queue, merge strategies, offline support
+│   ├── code-extraction.ts        # Extract code from AI responses
+│   └── ...                       # config, utils, rate-limit, session-storage, etc.
 └── types/
-    └── session.ts           # Core types, GUIDED_PROMPTS constant
+    ├── session.ts                # Core types + GUIDED_PROMPTS
+    ├── ai-settings.ts
+    ├── app-settings.ts
+    ├── api.ts
+    └── index.ts
 ```
 
 ## Common Tasks
@@ -59,7 +113,7 @@ src/
 ### Adding a new annotation type
 1. Add to `LineAnnotationType` union in `types/session.ts`
 2. Add to `LINE_ANNOTATION_TYPES` array and `LINE_ANNOTATION_LABELS` object
-3. Add prefix to `ANNOTATION_PREFIXES` in `CodeEditorPanel.tsx`
+3. Add colour and prefix mappings in `components/code/cm-annotations-config.ts`
 
 ### Modifying the CCS methodology
 Edit `Critical-Code-Studies-Skill.md` at the project root. This is loaded by `lib/prompts/ccs-methodology.ts` and injected into chat API system prompts.
@@ -69,17 +123,35 @@ Edit `Critical-Code-Studies-Skill.md` at the project root. This is loaded by `li
 2. Add guided prompts to `GUIDED_PROMPTS` constant
 3. Update phase transition logic in chat API route
 
+### Adding a new sample project
+1. Create a `.ccs` project file in the CCS Workbench
+2. Create a subfolder in `public/sample-code/`
+3. Add an entry to `public/sample-code/Samples.md`
+
+### Adding a new skin
+1. Create a subfolder in `public/skins/` with `skin.json` and optional assets
+2. Follow the format documented in `public/skins/README.md`
+
+### Adding a new CodeMirror language mode
+1. Create `cm-lang-[name].ts` in `components/code/`
+2. Register it in `cm-languages.ts`
+
 ### Changing the UI design
 The design uses custom Tailwind tokens defined in `tailwind.config.ts`:
 - Colours: `burgundy`, `ink`, `parchment`, `cream`, `ivory`, `slate`, `slate-muted`
 - Fonts: `font-display` (Playfair Display), `font-body` (Source Serif), `font-sans` (Inter)
+- Theme colours: Six accent palettes (Burgundy, Forest, Navy, Plum, Rust, Slate)
 
 ## Project Files
 
 | File | Purpose |
 |------|---------|
-| `Critical-Code-Studies-Skill.md` | CCS methodology for LLM context |
+| `Critical-Code-Studies-Skill.md` | CCS methodology v2.7 for LLM context |
 | `CCS-Bibliography.md` | Reference bibliography for CCS |
+| `public/models.md` | User-editable AI models configuration |
+| `public/sample-code/Samples.md` | Sample project registry |
+| `public/skins/Skins.md` | Skin definitions |
+| `docs/` | Setup guides (Supabase, Vercel, configuration) |
 | `.env.example` | Environment variables template |
 
 ## Development Commands
@@ -93,8 +165,11 @@ npm run test     # Jest tests
 
 ## Notes for AI Assistants
 
-- The critique mode layout (`CritiqueLayout.tsx`) is the most complex component
-- Session persistence uses `.ccs` files (JSON format) saved/loaded via browser
+- `WorkbenchLayout.tsx` is the main layout orchestrator (refactored from 4,748 to 1,163 lines in v3.2.0)
+- `conversation/page.tsx` delegates to WorkbenchLayout (refactored from 2,191 to 155 lines in v3.2.0)
+- Session persistence uses `.ccs` files (JSON format) saved/loaded via browser or cloud
 - API keys are stored in browser localStorage, not server-side
-- The annotation system embeds annotations as `// An:Type: content` comments
-- When editing code in "Edit" mode, annotations are converted to comments and back
+- The annotation system uses CodeMirror 6 extensions (`cm-annotations*.ts`) with six types: Observation, Question, Metaphor, Pattern, Context, Critique
+- Custom language modes exist for AGC, BASIC, FORTRAN, IPL-V, and MAD
+- Cloud projects use Supabase with real-time polling (5-second intervals)
+- The `init.sh` script handles development environment setup
