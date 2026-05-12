@@ -36,6 +36,25 @@ The first model in each list is the default.
 - `gemini-2.5-flash` - Gemini 2.5 Flash
 - `gemini-2.5-flash-lite` - Gemini 2.5 Flash-Lite
 
+## OpenRouter
+
+- `anthropic/claude-sonnet-4` - Claude Sonnet 4
+- `openai/gpt-4o` - GPT-4o
+- `openai/gpt-4o-mini` - GPT-4o Mini
+- `google/gemini-2.0-flash-001` - Gemini 2.0 Flash
+- `meta-llama/llama-3.3-70b-instruct` - Llama 3.3 70B Instruct
+- `qwen/qwen-2.5-72b-instruct` - Qwen 2.5 72B Instruct
+- `mistralai/mistral-large` - Mistral Large
+
+## Hugging Face
+
+- `meta-llama/Llama-3.3-70B-Instruct` - Llama 3.3 70B Instruct
+- `meta-llama/Llama-3.1-8B-Instruct` - Llama 3.1 8B Instruct
+- `Qwen/Qwen2.5-72B-Instruct` - Qwen 2.5 72B Instruct
+- `Qwen/Qwen2.5-Coder-32B-Instruct` - Qwen 2.5 Coder 32B
+- `deepseek-ai/DeepSeek-R1` - DeepSeek R1
+- `deepseek-ai/DeepSeek-V3` - DeepSeek V3
+
 ---
 
 ## Custom Models

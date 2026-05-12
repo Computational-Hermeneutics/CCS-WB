@@ -45,6 +45,10 @@ function getEnvApiKey(provider: AIProvider): string {
       return process.env.GOOGLE_API_KEY || "";
     case "openai-compatible":
       return process.env.OPENAI_COMPATIBLE_API_KEY || "";
+    case "openrouter":
+      return process.env.OPENROUTER_API_KEY || "";
+    case "huggingface":
+      return process.env.HUGGINGFACE_API_KEY || process.env.HF_TOKEN || "";
     default:
       return "";
   }
@@ -94,6 +98,18 @@ export function validateAIConfig(config: AIRequestConfig): AIValidationResult {
         error: "Invalid OpenAI API key format. Keys should start with 'sk-'",
       };
     }
+    if (provider === "huggingface" && !apiKey.startsWith("hf_")) {
+      return {
+        valid: false,
+        error: "Invalid Hugging Face token format. Tokens should start with 'hf_'",
+      };
+    }
+    if (provider === "openrouter" && !apiKey.startsWith("sk-or-")) {
+      return {
+        valid: false,
+        error: "Invalid OpenRouter API key format. Keys should start with 'sk-or-'",
+      };
+    }
   }
 
   // Validate base URL for providers that need it
@@ -132,11 +148,29 @@ function createAIClient(config: AIRequestConfig) {
         baseURL: baseUrl || "http://localhost:11434/api",
       });
 
-    case "openai-compatible":
-      return createOpenAI({
+    case "openai-compatible": {
+      const compat = createOpenAI({
         apiKey,
         baseURL: baseUrl,
       });
+      return (modelId: string) => compat.chat(modelId);
+    }
+
+    case "openrouter": {
+      const or = createOpenAI({
+        apiKey,
+        baseURL: "https://openrouter.ai/api/v1",
+      });
+      return (modelId: string) => or.chat(modelId);
+    }
+
+    case "huggingface": {
+      const hf = createOpenAI({
+        apiKey,
+        baseURL: "https://router.huggingface.co/v1",
+      });
+      return (modelId: string) => hf.chat(modelId);
+    }
 
     default:
       throw new Error(`Unsupported provider: ${provider}`);

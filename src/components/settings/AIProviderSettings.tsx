@@ -248,7 +248,11 @@ export function AIProviderSettings({ onClose }: AIProviderSettingsProps) {
                     ? "e.g., gpt-4-turbo, o1-preview"
                     : settings.provider === "google"
                       ? "e.g., gemini-1.5-pro-latest, gemini-exp-1206"
-                      : "Enter model identifier"
+                      : settings.provider === "openrouter"
+                        ? "e.g., anthropic/claude-opus-4, deepseek/deepseek-chat"
+                        : settings.provider === "huggingface"
+                          ? "e.g., mistralai/Mistral-7B-Instruct-v0.3"
+                          : "Enter model identifier"
             }
             className={cn(
               "w-full px-2.5 py-1.5 bg-card border border-parchment-dark rounded-sm",
