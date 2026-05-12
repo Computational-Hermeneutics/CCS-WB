@@ -1,6 +1,6 @@
 # AI Models Configuration
 
-**Version:** 1.1
+**Version:** 1.2
 **Last Updated:** 2026-05-12
 **CCS-WB Version:** 3.3.0
 
@@ -17,6 +17,7 @@ The first model in each list is the default.
 - `llama3.1` - Llama 3.1
 - `mistral` - Mistral
 - `mixtral` - Mixtral 8x7B
+- `deepseek-r1` - DeepSeek R1
 
 ## Anthropic (Claude)
 
@@ -29,12 +30,14 @@ The first model in each list is the default.
 - `gpt-4o-mini` - GPT-4o Mini
 - `o1` - o1
 - `o1-mini` - o1-mini
+- `o3-mini` - o3-mini
 
 ## Google (Gemini)
 
 - `gemini-2.5-pro` - Gemini 2.5 Pro
 - `gemini-2.5-flash` - Gemini 2.5 Flash
 - `gemini-2.5-flash-lite` - Gemini 2.5 Flash-Lite
+- `gemini-2.0-flash` - Gemini 2.0 Flash
 
 ## OpenRouter
 
@@ -51,7 +54,11 @@ The first model in each list is the default.
 - `meta-llama/Llama-3.3-70B-Instruct` - Llama 3.3 70B Instruct
 - `meta-llama/Llama-3.1-8B-Instruct` - Llama 3.1 8B Instruct
 - `Qwen/Qwen2.5-72B-Instruct` - Qwen 2.5 72B Instruct
+- `Qwen/Qwen2.5-7B-Instruct` - Qwen 2.5 7B Instruct
 - `Qwen/Qwen2.5-Coder-32B-Instruct` - Qwen 2.5 Coder 32B
+- `Qwen/Qwen3-32B` - Qwen3 32B
+- `Qwen/Qwen3.5-27B` - Qwen3.5 27B
+- `google/gemma-4-31B-it` - Gemma 4 31B
 - `deepseek-ai/DeepSeek-R1` - DeepSeek R1
 - `deepseek-ai/DeepSeek-V3` - DeepSeek V3
 
