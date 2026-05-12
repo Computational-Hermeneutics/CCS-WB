@@ -10,6 +10,8 @@ export interface LoadedModels {
   anthropic: ModelDefinition[];
   openai: ModelDefinition[];
   google: ModelDefinition[];
+  openrouter: ModelDefinition[];
+  huggingface: ModelDefinition[];
 }
 
 // Provider keys that can be loaded from markdown
@@ -21,6 +23,8 @@ const SECTION_TO_PROVIDER: Record<string, LoadableProvider> = {
   "Anthropic (Claude)": "anthropic",
   "OpenAI": "openai",
   "Google (Gemini)": "google",
+  "OpenRouter": "openrouter",
+  "Hugging Face": "huggingface",
 };
 
 /**
@@ -34,6 +38,8 @@ export function parseModelsMarkdown(content: string): LoadedModels {
     anthropic: [],
     openai: [],
     google: [],
+    openrouter: [],
+    huggingface: [],
   };
 
   let currentProvider: LoadableProvider | null = null;
