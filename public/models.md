@@ -1,6 +1,6 @@
 # AI Models Configuration
 
-**Version:** 1.2
+**Version:** 1.3
 **Last Updated:** 2026-05-12
 **CCS-WB Version:** 3.3.0
 
@@ -15,6 +15,8 @@ The first model in each list is the default.
 
 - `llama3.2` - Llama 3.2
 - `llama3.1` - Llama 3.1
+- `gemma4` - Gemma 4
+- `gemma3` - Gemma 3
 - `mistral` - Mistral
 - `mixtral` - Mixtral 8x7B
 - `deepseek-r1` - DeepSeek R1
