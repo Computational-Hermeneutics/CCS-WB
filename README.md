@@ -1,6 +1,6 @@
 # Critical Code Studies Workbench
 
-**Version 3.2.1** | CCS Methodology v2.7
+**Version 3.3.0** | CCS Methodology v2.7
 
 A web application for close reading and hermeneutic analysis of software as cultural artefact.
 
@@ -147,6 +147,9 @@ Choose your preferred AI provider in browser settings:
 - **OpenAI** (GPT-4o, GPT-4o Mini, o1, o1-mini)
 - **Google Gemini** (Gemini 2.5 Pro, Gemini 2.5 Flash, Gemini 2.5 Flash-Lite)
 - **Ollama** (Local models: Llama 3.2, Mistral, Mixtral, etc.)
+- **OpenRouter** (300+ models behind one key: Claude, GPT-4o, Llama 3.3, Qwen, Mistral, etc.)
+- **Hugging Face** (Open-weights via Inference Providers: Llama 3.3, Qwen 2.5, DeepSeek R1/V3, etc.)
+- **OpenAI-Compatible** (Any Chat Completions endpoint: vLLM, Groq, Together, Fireworks, etc.)
 
 Models can be customised by editing `public/models.md`. Add or remove models without changing code.
 

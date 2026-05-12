@@ -1,8 +1,8 @@
 # AI Models Configuration
 
-**Version:** 1.0
-**Last Updated:** 2026-01-21
-**CCS-WB Version:** 1.8.0
+**Version:** 1.1
+**Last Updated:** 2026-05-12
+**CCS-WB Version:** 3.3.0
 
 Edit this file to customise the available AI models. Each provider section lists models in the format:
 - `model-id` - Display Name
