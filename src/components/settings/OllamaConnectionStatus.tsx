@@ -204,28 +204,55 @@ function FailurePanel({ result }: { result: Extract<PingResult, { ok: false }> }
       ? window.location.origin
       : "https://your-ccs-wb-origin";
 
-  // Origin-aware command, same shape as the Settings onboarding block.
-  const command = remote
-    ? `OLLAMA_ORIGINS="${origin},http://localhost:3000,http://127.0.0.1:3000" ollama serve`
-    : "ollama serve";
+  // Headline, diagnosis, and (origin-aware) command vary by the kind of
+  // failure. Following the manifold-atlas / LLMbench pattern: a distinct
+  // headline for each class of failure so the user immediately knows
+  // which fix applies, plus a clearly-labelled copyable command block.
+  let headline: string;
+  let diagnosis: string;
+  let commandLabel: string | null;
+  let command: string | null;
+  if (result.kind === "http_error") {
+    headline = `Ollama responded with HTTP ${result.status ?? "?"}`;
+    diagnosis =
+      "The server is running but rejected the request. Check the baseURL and any reverse proxy in front of Ollama.";
+    commandLabel = null;
+    command = null;
+  } else if (remote) {
+    headline = "Ollama is unreachable from this page (CORS)";
+    diagnosis =
+      "The browser tried to fetch Ollama directly but the request was blocked — almost certainly because the deployed origin is not in Ollama's CORS allowlist, or Ollama isn't running.";
+    commandLabel = "Stop Ollama, then run this in your terminal";
+    command = `OLLAMA_ORIGINS="${origin},http://localhost:3000,http://127.0.0.1:3000" ollama serve`;
+  } else {
+    headline = "Ollama is not running";
+    diagnosis =
+      "Nothing answered on this URL. The most likely cause is that the Ollama server hasn't been started.";
+    commandLabel = "Start it in your terminal";
+    command = "ollama serve";
+  }
 
   return (
     <div className="mt-1.5 font-sans text-[10px] text-slate-muted space-y-1.5 bg-error/5 border border-error/30 rounded-sm p-2">
       <p className="flex items-center gap-1.5 text-error font-medium">
-        <AlertTriangle className="h-3.5 w-3.5" />
-        Cannot reach Ollama at{" "}
-        <code className="font-mono text-[10px] bg-white px-1 rounded-sm border border-parchment-dark">
-          {result.baseUrl}
-        </code>
+        <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+        <span>{headline}</span>
       </p>
       <p>
-        {result.kind === "http_error"
-          ? `Ollama returned HTTP ${result.status ?? "?"}. The server is running but rejected the request — check the baseURL and any reverse proxy in front of it.`
-          : remote
-            ? "Almost certainly a CORS block from this deployed origin, or Ollama is not running on your machine. Stop Ollama, then restart it with:"
-            : "Start it in your terminal with:"}
+        Tried{" "}
+        <code className="font-mono bg-white px-1 rounded-sm">{result.baseUrl}</code>.{" "}
+        {diagnosis}
       </p>
-      {result.kind === "unreachable" && <CopyableCommand command={command} />}
+      {command && (
+        <div>
+          {commandLabel && (
+            <p className="text-[9px] uppercase tracking-widest text-slate-muted mb-0.5">
+              {commandLabel}
+            </p>
+          )}
+          <CopyableCommand command={command} />
+        </div>
+      )}
       {remote && result.kind === "unreachable" && (
         <p>
           <strong className="text-ink">Safari note:</strong> Safari blocks HTTPS pages from
