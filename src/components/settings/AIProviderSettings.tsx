@@ -4,6 +4,8 @@ import { useState, useEffect } from "react";
 import { useAISettings } from "@/context/AISettingsContext";
 import { PROVIDER_CONFIGS, getAllProviders, initializeModels, getProviderConfigWithModels } from "@/lib/ai/config";
 import { pingOllama, isRemoteOrigin } from "@/lib/ai/browser-direct";
+import type { PingResult } from "@/lib/ai/browser-direct";
+import { OllamaConnectionStatus } from "./OllamaConnectionStatus";
 import type { AIProvider } from "@/types/ai-settings";
 import { cn } from "@/lib/utils";
 import {
@@ -76,11 +78,19 @@ export function AIProviderSettings({ onClose }: AIProviderSettingsProps) {
   const [isProviderDropdownOpen, setIsProviderDropdownOpen] = useState(false);
   const [isModelDropdownOpen, setIsModelDropdownOpen] = useState(false);
   const [modelsLoaded, setModelsLoaded] = useState(false);
+  const [ollamaPing, setOllamaPing] = useState<PingResult | null>(null);
 
   // Load dynamic models from models.md on mount
   useEffect(() => {
     initializeModels().then(() => setModelsLoaded(true));
   }, []);
+
+  // Clear the rich Ollama panel whenever the provider, baseUrl, or model
+  // selection changes so the user never sees a stale result that no
+  // longer matches their current settings.
+  useEffect(() => {
+    setOllamaPing(null);
+  }, [settings.provider, settings.baseUrl, settings.model, settings.customModelId]);
 
   // Use dynamic config that includes loaded models
   const currentProvider = modelsLoaded
@@ -108,10 +118,11 @@ export function AIProviderSettings({ onClose }: AIProviderSettingsProps) {
       // user's localhost; browsers can hit http://localhost from any origin.
       if (settings.provider === "ollama") {
         const result = await pingOllama(settings.baseUrl || "http://localhost:11434");
+        setOllamaPing(result);
         if (result.ok) {
           setConnectionStatus("success");
         } else {
-          setConnectionStatus("error", result.error);
+          setConnectionStatus("error", result.message);
         }
         return;
       }
@@ -502,7 +513,17 @@ export function AIProviderSettings({ onClose }: AIProviderSettingsProps) {
           )}
         </button>
 
-        {connectionError && (
+        {/* Rich Ollama status panel — replaces the plain error string for
+            this provider, and adds installed-model listing + one-click pull. */}
+        {settings.provider === "ollama" && ollamaPing && (
+          <OllamaConnectionStatus
+            result={ollamaPing}
+            selectedModel={settings.model === "custom" ? settings.customModelId : settings.model}
+            onPulled={handleTestConnection}
+          />
+        )}
+
+        {connectionError && settings.provider !== "ollama" && (
           <p className="mt-1.5 font-sans text-[10px] text-error">{connectionError}</p>
         )}
 

@@ -300,7 +300,7 @@ export function useWorkbenchChat({
           setConnectionStatus("success");
           return true;
         }
-        setConnectionStatus("error", result.error);
+        setConnectionStatus("error", result.message);
         return false;
       }
 

@@ -42,10 +42,23 @@ export function isRemoteOrigin(): boolean {
 }
 
 /**
+ * Result of a ping. When reachable, `installedModels` lists the model
+ * IDs Ollama reports via `/api/tags` so the UI can show the user
+ * exactly what they have pulled (and flag a missing model the user has
+ * selected). When unreachable, `kind` tells the renderer which fix to
+ * suggest: a CORS block for a deployed origin needs OLLAMA_ORIGINS;
+ * a local failure usually means Ollama isn't running.
+ */
+export type PingResult =
+  | { ok: true; baseUrl: string; installedModels: string[] }
+  | { ok: false; baseUrl: string; kind: "unreachable" | "http_error"; status?: number; message: string };
+
+/**
  * Check that Ollama is reachable. Uses the native `/api/tags` endpoint,
  * which is CORS-permissive when `OLLAMA_ORIGINS` is set appropriately.
+ * On success, returns the list of installed model IDs as well.
  */
-export async function pingOllama(baseUrl: string): Promise<{ ok: true } | { ok: false; error: string }> {
+export async function pingOllama(baseUrl: string): Promise<PingResult> {
   const url = (baseUrl || "http://localhost:11434").replace(/\/+$/, "");
   try {
     const response = await fetch(`${url}/api/tags`, {
@@ -53,20 +66,22 @@ export async function pingOllama(baseUrl: string): Promise<{ ok: true } | { ok: 
       signal: AbortSignal.timeout(5000),
     });
     if (!response.ok) {
-      return { ok: false, error: `Ollama responded with HTTP ${response.status}` };
-    }
-    return { ok: true };
-  } catch (error) {
-    const msg = error instanceof Error ? error.message : "Unknown error";
-    if (msg.includes("Failed to fetch") || msg.includes("NetworkError")) {
       return {
         ok: false,
-        error: isRemoteOrigin()
-          ? `Cannot reach Ollama at ${url} from this origin. Ensure Ollama is running and started with OLLAMA_ORIGINS="${window.location.origin}" (or "*") so it accepts requests from this page.`
-          : `Cannot reach Ollama at ${url}. Start it with \`ollama serve\` in your terminal.`,
+        baseUrl: url,
+        kind: "http_error",
+        status: response.status,
+        message: `Ollama responded with HTTP ${response.status}`,
       };
     }
-    return { ok: false, error: msg };
+    const data = await response.json().catch(() => null) as { models?: Array<{ name?: string; model?: string }> } | null;
+    const installedModels = Array.isArray(data?.models)
+      ? data!.models.map((m) => m.name ?? m.model ?? "").filter(Boolean)
+      : [];
+    return { ok: true, baseUrl: url, installedModels };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unknown error";
+    return { ok: false, baseUrl: url, kind: "unreachable", message };
   }
 }
 
