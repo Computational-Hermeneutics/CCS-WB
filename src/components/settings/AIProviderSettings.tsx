@@ -383,8 +383,19 @@ export function AIProviderSettings({ onClose }: AIProviderSettingsProps) {
                 <strong className="text-ink">Ollama (Local)</strong> runs the model on
                 your own machine. CCS-WB calls it directly from your browser (skipping
                 the server route), so it works both from a local dev build and from a
-                deployed CCS-WB — provided Ollama&apos;s CORS policy allows this
-                page&apos;s origin.
+                deployed CCS-WB — provided you let Ollama&apos;s{" "}
+                <strong className="text-ink">CORS</strong> (Cross-Origin Resource
+                Sharing) policy talk to this page&apos;s origin. CORS is the
+                browser&apos;s gatekeeper for cross-origin HTTP requests: the remote
+                server has to opt in by naming the caller&apos;s origin in an{" "}
+                <code className="font-mono bg-white px-1 rounded-sm">
+                  Access-Control-Allow-Origin
+                </code>{" "}
+                header, which Ollama configures via the{" "}
+                <code className="font-mono bg-white px-1 rounded-sm">
+                  OLLAMA_ORIGINS
+                </code>{" "}
+                environment variable.
               </p>
               <p>
                 Setup: install from{" "}
