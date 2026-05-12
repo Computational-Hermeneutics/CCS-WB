@@ -6,7 +6,7 @@ This file provides context for Claude Code or other AI assistants working on thi
 
 **CCS-WB** (Critical Code Studies Workbench) is a web application for close reading and hermeneutic analysis of software as cultural artefact. It implements critical code studies methodology based on the work of Mark Marino and David M. Berry.
 
-**Version**: 3.2.0 | CCS Methodology v2.7
+**Version**: 3.3.0 | CCS Methodology v2.7
 
 ## Technology Stack
 
@@ -16,7 +16,7 @@ This file provides context for Claude Code or other AI assistants working on thi
 - **State**: React Context + useReducer (no external state library)
 - **UI Components**: Radix UI primitives, Lucide icons
 - **Code Editor**: CodeMirror 6 with custom language modes and annotation extensions
-- **AI Integration**: Multi-provider (Anthropic, OpenAI, Google, Ollama) via Vercel AI SDK
+- **AI Integration**: Multi-provider (Anthropic, OpenAI, Google, Ollama, OpenRouter, Hugging Face, OpenAI-Compatible) via Vercel AI SDK
 - **Cloud**: Supabase (auth, project storage, real-time sync)
 - **PDF Export**: jsPDF
 

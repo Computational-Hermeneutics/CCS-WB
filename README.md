@@ -401,6 +401,7 @@ When analysing code, use these annotation types:
 
 | Version | Changes |
 |---------|---------|
+| 3.3.0 | **New providers**: OpenRouter (300+ models behind one key), Hugging Face (open-weights via Inference Providers), and a hardened OpenAI-Compatible adapter that now uses Chat Completions explicitly so it works against Ollama `/v1`, vLLM, Groq, Together, Fireworks, etc. Same Settings → Test Connection onboarding as the existing providers. Models editable in `public/models.md`. |
 | 3.2.0 | **Architecture refactoring**: Extracted WorkbenchLayout.tsx (4,748 → 1,163 lines, 75% reduction) and conversation/page.tsx (2,191 → 155 lines, 93% reduction) into 6 custom hooks and 3 components. Pure structural refactor with zero logic changes. Fixed pre-existing auto-save bug where stale file handles threw errors instead of recovering gracefully. |
 | 3.0.0 | **Critical fixes**: Code extraction in Create mode now handles AI responses with extra text after language fence (e.g., ` ```python # comment`), fixed CCS panel jump on click by deferring transition disable until actual drag starts, improved regex flexibility for markdown code blocks, handles unclosed code blocks gracefully. |
 | 2.22.5 | **Save status fixes**: SaveStatusIndicator text now matches parent color (no separate colors in inline mode), save status only shown for local sessions when using File System Access API, prevents confusing "Unsaved" status for manual download saves. |
