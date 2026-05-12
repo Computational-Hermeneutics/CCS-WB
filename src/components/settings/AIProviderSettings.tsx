@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useAISettings } from "@/context/AISettingsContext";
 import { PROVIDER_CONFIGS, getAllProviders, initializeModels, getProviderConfigWithModels } from "@/lib/ai/config";
+import { pingOllama, isRemoteOrigin } from "@/lib/ai/browser-direct";
 import type { AIProvider } from "@/types/ai-settings";
 import { cn } from "@/lib/utils";
 import {
@@ -66,6 +67,19 @@ export function AIProviderSettings({ onClose }: AIProviderSettingsProps) {
     setConnectionStatus("testing");
 
     try {
+      // For Ollama, test directly from the browser. The Next.js API route
+      // would run on Vercel's serverless functions and could not reach the
+      // user's localhost; browsers can hit http://localhost from any origin.
+      if (settings.provider === "ollama") {
+        const result = await pingOllama(settings.baseUrl || "http://localhost:11434");
+        if (result.ok) {
+          setConnectionStatus("success");
+        } else {
+          setConnectionStatus("error", result.error);
+        }
+        return;
+      }
+
       const response = await fetch("/api/test-connection", {
         method: "POST",
         headers: {
@@ -327,12 +341,35 @@ export function AIProviderSettings({ onClose }: AIProviderSettingsProps) {
               "focus:outline-none focus:ring-1 focus:ring-burgundy focus:border-burgundy"
             )}
           />
-          {settings.provider === "ollama" && (
+          {settings.provider === "ollama" && !isRemoteOrigin() && (
             <p className="mt-1 font-sans text-[10px] text-slate-muted">
               Start Ollama with{" "}
               <code className="bg-cream px-1 rounded-sm text-[10px]">ollama serve</code> in
               your terminal.
             </p>
+          )}
+          {settings.provider === "ollama" && isRemoteOrigin() && (
+            <div className="mt-1.5 font-sans text-[10px] text-slate-muted space-y-1 bg-cream/60 border border-parchment-dark rounded-sm p-2">
+              <p className="font-medium text-ink">
+                Remote-origin notice
+              </p>
+              <p>
+                CCS-WB is loaded from a deployed URL but Ollama runs on your laptop. The
+                browser will call Ollama directly (loopback addresses bypass mixed-content
+                restrictions), but Ollama must allow this origin via CORS. Start Ollama with:
+              </p>
+              <p>
+                <code className="bg-white px-1 rounded-sm text-[10px] block overflow-x-auto">
+                  OLLAMA_ORIGINS=&quot;{typeof window !== "undefined" ? window.location.origin : "https://your-deploy.example"}&quot; ollama serve
+                </code>
+              </p>
+              <p>
+                Use <code className="bg-white px-1 rounded-sm">OLLAMA_ORIGINS=&quot;*&quot;</code>{" "}
+                to allow any origin (less safe). On macOS launchd, set this via{" "}
+                <code className="bg-white px-1 rounded-sm">launchctl setenv OLLAMA_ORIGINS &quot;...&quot;</code>{" "}
+                and restart Ollama.
+              </p>
+            </div>
           )}
         </div>
       )}

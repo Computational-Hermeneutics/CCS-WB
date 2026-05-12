@@ -11,6 +11,7 @@ import type { CCSMethod } from "@/lib/ccs-content";
 import { fetchWithTimeout, retryWithBackoff } from "@/lib/utils";
 import { extractCodeBlocks, generateFileName, getUniqueFileName } from "@/lib/code-extraction";
 import { generateAnnotatedCode } from "@/components/code";
+import { callOllamaDirect, pingOllama } from "@/lib/ai/browser-direct";
 
 const CRITIQUE_OPENING =
   "What code would you like to explore? You can paste it directly, upload a file, or describe what you're looking at. I'm curious what drew your attention to this particular piece of software.";
@@ -292,6 +293,17 @@ export function useWorkbenchChat({
     setConnectionStatus("testing");
 
     try {
+      // Ollama is dispatched directly from the browser (see browser-direct.ts).
+      if (aiSettings.provider === "ollama") {
+        const result = await pingOllama(aiSettings.baseUrl || "http://localhost:11434");
+        if (result.ok) {
+          setConnectionStatus("success");
+          return true;
+        }
+        setConnectionStatus("error", result.error);
+        return false;
+      }
+
       const response = await fetch("/api/test-connection", {
         method: "POST",
         headers: {
@@ -399,7 +411,22 @@ export function useWorkbenchChat({
           }
 
           if (!response.ok) throw new Error("Failed to get response");
-          return response.json();
+          const payload = await response.json();
+
+          // Browser-direct dispatch for Ollama: the server returned the
+          // prepared payload; we make the actual model call here so it
+          // works even when CCS-WB is deployed and Ollama is on localhost.
+          if (payload?.browserDirect && payload.ollamaPayload) {
+            const content = await callOllamaDirect(payload.ollamaPayload);
+            return {
+              message: {
+                ...payload.messageTemplate,
+                content,
+              },
+            };
+          }
+
+          return payload;
         },
         {
           maxRetries: 2,

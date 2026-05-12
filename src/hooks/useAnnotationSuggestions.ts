@@ -223,8 +223,16 @@ Follow the ${modeContext} guidance provided above.`;
         throw new Error("Failed to get annotation suggestions");
       }
 
-      const data = await response.json();
-      const aiResponse = data.message.content;
+      const rawPayload = await response.json();
+
+      // Browser-direct dispatch for Ollama (see browser-direct.ts).
+      let aiResponse: string;
+      if (rawPayload?.browserDirect && rawPayload.ollamaPayload) {
+        const { callOllamaDirect } = await import("@/lib/ai/browser-direct");
+        aiResponse = await callOllamaDirect(rawPayload.ollamaPayload);
+      } else {
+        aiResponse = rawPayload.message.content;
+      }
 
       console.log("[AI Annotation Suggestions] Raw AI response:", aiResponse);
 
