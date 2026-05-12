@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useAISettings } from "@/context/AISettingsContext";
 import { PROVIDER_CONFIGS, getAllProviders, initializeModels, getProviderConfigWithModels } from "@/lib/ai/config";
+import { pingOllama, isRemoteOrigin } from "@/lib/ai/browser-direct";
 import type { AIProvider } from "@/types/ai-settings";
 import { cn } from "@/lib/utils";
 import {
@@ -12,10 +13,46 @@ import {
   CheckCircle,
   XCircle,
   Loader2,
+  Copy,
+  Check,
 } from "lucide-react";
 
 interface AIProviderSettingsProps {
   onClose?: () => void;
+}
+
+/**
+ * Small inline code block with a copy-to-clipboard button. Used for the
+ * OLLAMA_ORIGINS command so users can paste the exact string with their
+ * own origin pre-filled, rather than hand-editing the example.
+ */
+function CopyableCommand({ command }: { command: string }) {
+  const [copied, setCopied] = useState(false);
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(command);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      /* clipboard unavailable; user can still select manually */
+    }
+  };
+  return (
+    <span className="flex items-start gap-1.5 my-1">
+      <code className="flex-1 font-mono text-[10px] bg-white px-1.5 py-1 rounded-sm select-all break-all border border-parchment-dark">
+        {command}
+      </code>
+      <button
+        type="button"
+        onClick={copy}
+        className="shrink-0 px-1.5 py-1 text-[10px] bg-white border border-parchment-dark rounded-sm hover:border-burgundy transition-colors flex items-center gap-1"
+        title="Copy to clipboard"
+      >
+        {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+        {copied ? "Copied" : "Copy"}
+      </button>
+    </span>
+  );
 }
 
 export function AIProviderSettings({ onClose }: AIProviderSettingsProps) {
@@ -66,6 +103,19 @@ export function AIProviderSettings({ onClose }: AIProviderSettingsProps) {
     setConnectionStatus("testing");
 
     try {
+      // For Ollama, test directly from the browser. The Next.js API route
+      // would run on Vercel's serverless functions and could not reach the
+      // user's localhost; browsers can hit http://localhost from any origin.
+      if (settings.provider === "ollama") {
+        const result = await pingOllama(settings.baseUrl || "http://localhost:11434");
+        if (result.ok) {
+          setConnectionStatus("success");
+        } else {
+          setConnectionStatus("error", result.error);
+        }
+        return;
+      }
+
       const response = await fetch("/api/test-connection", {
         method: "POST",
         headers: {
@@ -328,11 +378,78 @@ export function AIProviderSettings({ onClose }: AIProviderSettingsProps) {
             )}
           />
           {settings.provider === "ollama" && (
-            <p className="mt-1 font-sans text-[10px] text-slate-muted">
-              Start Ollama with{" "}
-              <code className="bg-cream px-1 rounded-sm text-[10px]">ollama serve</code> in
-              your terminal.
-            </p>
+            <div className="mt-1.5 font-sans text-[10px] text-slate-muted space-y-1.5 bg-cream/60 border border-parchment-dark rounded-sm p-2">
+              <p>
+                <strong className="text-ink">Ollama (Local)</strong> runs the model on
+                your own machine. CCS-WB calls it directly from your browser (skipping
+                the server route), so it works both from a local dev build and from a
+                deployed CCS-WB — provided Ollama&apos;s CORS policy allows this
+                page&apos;s origin.
+              </p>
+              <p>
+                Setup: install from{" "}
+                <a
+                  href="https://ollama.com/download"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-burgundy hover:underline"
+                >
+                  ollama.com/download
+                </a>
+                , pull a model (
+                <code className="font-mono bg-white px-1 rounded-sm">
+                  ollama pull gemma4
+                </code>{" "}
+                or{" "}
+                <code className="font-mono bg-white px-1 rounded-sm">
+                  ollama pull llama3.2
+                </code>
+                ), and start the server.
+                {!isRemoteOrigin() ? (
+                  <>
+                    {" "}
+                    A plain{" "}
+                    <code className="font-mono bg-white px-1 rounded-sm">
+                      ollama serve
+                    </code>{" "}
+                    is enough when you&apos;re running CCS-WB on localhost.
+                  </>
+                ) : (
+                  <>
+                    {" "}
+                    You&apos;re viewing CCS-WB from{" "}
+                    <span className="font-mono">
+                      {typeof window !== "undefined" ? window.location.hostname : "a deployed origin"}
+                    </span>
+                    . Start Ollama with this exact command so its CORS policy lets the
+                    browser call it from here:
+                  </>
+                )}
+              </p>
+              {isRemoteOrigin() && (
+                <>
+                  <CopyableCommand
+                    command={`OLLAMA_ORIGINS="${typeof window !== "undefined" ? window.location.origin : "https://your-ccs-wb-origin"},http://localhost:3000,http://127.0.0.1:3000" ollama serve`}
+                  />
+                  <p>
+                    <strong className="text-ink">Safari note:</strong> the browser-direct
+                    path works in Chrome, Firefox, Edge, Arc, and Brave. Safari currently
+                    blocks HTTPS pages from calling{" "}
+                    <code className="font-mono bg-white px-1 rounded-sm">
+                      http://localhost
+                    </code>{" "}
+                    regardless of CORS, so use one of the Chromium-family browsers (or
+                    Firefox) for Ollama from a deployed CCS-WB. Local dev (
+                    <code className="font-mono bg-white px-1 rounded-sm">npm run dev</code>{" "}
+                    on{" "}
+                    <code className="font-mono bg-white px-1 rounded-sm">
+                      localhost:3000
+                    </code>
+                    ) works in Safari too.
+                  </p>
+                </>
+              )}
+            </div>
           )}
         </div>
       )}

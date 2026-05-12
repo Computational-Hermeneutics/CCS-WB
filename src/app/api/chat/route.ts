@@ -374,6 +374,33 @@ Engage with these annotations in your response. They represent the analyst's dev
         };
       });
 
+    const modelName = getModelDisplayName(aiConfig.provider, aiConfig.model);
+
+    // For Ollama, return the prepared payload so the browser can dispatch
+    // the call directly. A deployed CCS-WB on Vercel cannot reach the
+    // user's localhost; the browser can.
+    if (aiConfig.provider === "ollama") {
+      return NextResponse.json({
+        browserDirect: true,
+        ollamaPayload: {
+          baseUrl: aiConfig.baseUrl || "http://localhost:11434",
+          model: aiConfig.model,
+          system: systemPrompt,
+          messages: aiMessages,
+          maxTokens: 1024,
+        },
+        messageTemplate: {
+          id: generateId(),
+          role: "assistant",
+          timestamp: getCurrentTimestamp(),
+          metadata: {
+            phase: currentPhase,
+            model: modelName,
+          },
+        },
+      });
+    }
+
     // Call AI API using unified client
     const responseContent = await generateAIResponse(aiConfig, {
       system: systemPrompt,
@@ -382,7 +409,6 @@ Engage with these annotations in your response. They represent the analyst's dev
     });
 
     // Build response message
-    const modelName = getModelDisplayName(aiConfig.provider, aiConfig.model);
     const assistantMessage: Message = {
       id: generateId(),
       role: "assistant",
