@@ -2,7 +2,7 @@
 
 **Version:** 1.3
 **Last Updated:** 2026-05-12
-**CCS-WB Version:** 3.3.0
+**CCS-WB Version:** 3.4.0
 
 Edit this file to customise the available AI models. Each provider section lists models in the format:
 - `model-id` - Display Name

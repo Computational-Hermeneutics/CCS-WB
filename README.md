@@ -1,6 +1,6 @@
 # Critical Code Studies Workbench
 
-**Version 3.3.0** | CCS Methodology v2.7
+**Version 3.4.0** | CCS Methodology v2.7
 
 A web application for close reading and hermeneutic analysis of software as cultural artefact.
 
@@ -65,6 +65,7 @@ Both Analyze and Learn modes use a unified three-panel IDE interface for focused
 - Click filename in header to rename project
 
 ### Cloud Projects (Collaboration)
+- **Master switch**: Cloud collaboration can be turned off entirely in **Settings → Profile → Cloud Collaboration**. When off, all sign-in and cloud UI is hidden, CCS-WB runs as a clean local-only workbench, and no requests are made to the backend (so a paused free-tier Supabase instance is never woken). Default on; the toggle stays available whenever Supabase is configured so it can be re-enabled. Local annotation and `.ccs` save/load are unaffected.
 - **Real-time sync**: Annotations and code files sync automatically (5-second polling)
 - **Connection resilience**: Google Docs-style data protection with automatic reconnection
   - **Operation queue**: Failed operations queued locally (IndexedDB) and retried automatically
@@ -427,6 +428,7 @@ When analysing code, use these annotation types:
 
 | Version | Changes |
 |---------|---------|
+| 3.4.0 | **Cloud collaboration master switch** (Settings → Profile): one toggle hides all Supabase-backed UI and stops all backend requests for a clean local-only workbench (default on, always re-enableable). **Browser-direct Ollama dispatch**: a deployed CCS-WB can now drive a local Ollama — the browser calls `localhost:11434` directly (server routes can't), with origin-aware `OLLAMA_ORIGINS` guidance, a copyable command, the Safari caveat, and per-failure-kind Test Connection diagnostics. Added `gemma4`/`gemma3` to the Ollama model list. |
 | 3.3.0 | **New providers**: OpenRouter (300+ models behind one key), Hugging Face (open-weights via Inference Providers), and a hardened OpenAI-Compatible adapter that now uses Chat Completions explicitly so it works against Ollama `/v1`, vLLM, Groq, Together, Fireworks, etc. Same Settings → Test Connection onboarding as the existing providers. Models editable in `public/models.md`. |
 | 3.2.0 | **Architecture refactoring**: Extracted WorkbenchLayout.tsx (4,748 → 1,163 lines, 75% reduction) and conversation/page.tsx (2,191 → 155 lines, 93% reduction) into 6 custom hooks and 3 components. Pure structural refactor with zero logic changes. Fixed pre-existing auto-save bug where stale file handles threw errors instead of recovering gracefully. |
 | 3.0.0 | **Critical fixes**: Code extraction in Create mode now handles AI responses with extra text after language fence (e.g., ` ```python # comment`), fixed CCS panel jump on click by deferring transition disable until actual drag starts, improved regex flexibility for markdown code blocks, handles unclosed code blocks gracefully. |
