@@ -15,6 +15,7 @@ import React, {
   useCallback,
 } from "react";
 import { getSupabaseClient, isSupabaseConfigured } from "@/lib/supabase/client";
+import { useAppSettings } from "@/context/AppSettingsContext";
 import type { User, Session, AuthError } from "@supabase/supabase-js";
 import type { Database, Profile, ProfileInsert } from "@/lib/supabase/types";
 
@@ -56,7 +57,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const [showLoginModal, setShowLoginModal] = useState(false);
 
-  const isSupabaseEnabled = isSupabaseConfigured();
+  // Collaboration is gated by BOTH the deployment-level Supabase config
+  // (env vars) AND the user-facing master switch in App Settings. When
+  // the user disables collaboration, isSupabaseEnabled goes false and
+  // every collaborative surface that already checks this flag hides,
+  // and no Supabase client is created so no requests are made (the
+  // Supabase free tier auto-pauses when unused — this keeps it unused).
+  const { settings: appSettings } = useAppSettings();
+  const isSupabaseEnabled =
+    isSupabaseConfigured() && appSettings.collaborationEnabled;
   const supabase = isSupabaseEnabled ? getSupabaseClient() : null;
 
   // Cache key for localStorage

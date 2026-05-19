@@ -82,6 +82,9 @@ interface AppSettingsContextValue {
   // Set accent colour
   setAccentColour: (colour: AccentColourId) => void;
 
+  // Toggle cloud collaboration master switch
+  setCollaborationEnabled: (enabled: boolean) => void;
+
   // Clear all settings
   clearSettings: () => void;
 
@@ -137,6 +140,8 @@ export function AppSettingsProvider({
             annotationIndent: parsed.settings.annotationIndent ?? DEFAULT_APP_SETTINGS.annotationIndent,
             filesPaneFontSize: parsed.settings.filesPaneFontSize ?? DEFAULT_APP_SETTINGS.filesPaneFontSize,
             codeFont: parsed.settings.codeFont ?? DEFAULT_APP_SETTINGS.codeFont,
+            collaborationEnabled:
+              parsed.settings.collaborationEnabled ?? DEFAULT_APP_SETTINGS.collaborationEnabled,
           };
           setSettings(migratedSettings);
         }
@@ -374,6 +379,14 @@ export function AppSettingsProvider({
     }));
   }, []);
 
+  // Toggle cloud collaboration master switch
+  const setCollaborationEnabled = useCallback((enabled: boolean) => {
+    setSettings((prev) => ({
+      ...prev,
+      collaborationEnabled: enabled,
+    }));
+  }, []);
+
   // Calculate effective theme (resolves "system" to actual theme)
   const effectiveTheme: "light" | "dark" =
     settings.theme === "system" ? systemTheme : settings.theme;
@@ -590,6 +603,7 @@ export function AppSettingsProvider({
         setTheme,
         effectiveTheme,
         setAccentColour,
+        setCollaborationEnabled,
         clearSettings,
         profile,
         updateProfile,

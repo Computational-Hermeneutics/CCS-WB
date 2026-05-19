@@ -7,7 +7,7 @@ import { AIProviderSettings } from "./AIProviderSettings";
 import { useAppSettings } from "@/context/AppSettingsContext";
 import { useSkins } from "@/context/SkinsContext";
 import { useAuth, type AuthProvider } from "@/context/AuthContext";
-import { getSupabaseClient } from "@/lib/supabase/client";
+import { getSupabaseClient, isSupabaseConfigured } from "@/lib/supabase/client";
 import type { UserProfile } from "@/types/app-settings";
 import {
   FONT_SIZE_MIN,
@@ -64,7 +64,14 @@ export function SettingsModal({
     effectiveTheme,
     profile,
     updateProfile,
+    settings: appSettings,
+    setCollaborationEnabled,
   } = useAppSettings();
+
+  // Supabase configured at the deployment level (env vars present).
+  // The collaboration toggle is shown whenever this is true, regardless
+  // of the user's master switch, so it can always be turned back on.
+  const supabaseConfigured = isSupabaseConfigured();
 
   const {
     isAuthenticated,
@@ -194,6 +201,40 @@ export function SettingsModal({
         <div className="flex-1 overflow-y-auto p-6">
           {activeTab === "profile" && (
             <div className="space-y-4">
+              {/* Cloud collaboration master switch. Shown whenever
+                  Supabase is configured for the deployment, so the
+                  user can always turn it back on even after disabling. */}
+              {supabaseConfigured && (
+                <div className="flex items-center justify-between pb-3 border-b border-parchment">
+                  <div className="flex-1 pr-3">
+                    <label className="block font-sans text-caption font-medium text-ink">
+                      Cloud Collaboration
+                    </label>
+                    <p className="font-sans text-[10px] text-slate-muted mt-0.5">
+                      Sign-in, shared cloud projects, members, and the public
+                      library. Turn this off for a clean local-only workbench.
+                      When off, no data is sent to or fetched from the cloud.
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setCollaborationEnabled(!appSettings.collaborationEnabled)}
+                    className={cn(
+                      "w-10 h-5 rounded-full transition-colors relative flex-shrink-0",
+                      appSettings.collaborationEnabled ? "bg-burgundy" : "bg-parchment"
+                    )}
+                    aria-pressed={appSettings.collaborationEnabled}
+                    aria-label="Toggle cloud collaboration"
+                  >
+                    <span
+                      className={cn(
+                        "absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform",
+                        appSettings.collaborationEnabled ? "translate-x-5" : "translate-x-0"
+                      )}
+                    />
+                  </button>
+                </div>
+              )}
+
               {/* Collaboration / Login - at top */}
               {isSupabaseEnabled && (
                 <div className="pb-3 border-b border-parchment">

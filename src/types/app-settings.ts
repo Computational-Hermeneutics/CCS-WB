@@ -140,6 +140,13 @@ export interface AppSettings {
   // Accent colour
   accentColour: AccentColourId;
 
+  // Cloud collaboration master switch. When false, all Supabase-backed
+  // UI (sign-in, cloud projects, members, library, sync banners,
+  // connection status) is hidden and no Supabase requests are made,
+  // even when the Supabase env vars are configured. Lets a user run
+  // CCS-WB as a clean local-only tool.
+  collaborationEnabled: boolean;
+
   // Per-mode overrides (undefined = use global)
   modeOverrides: ModeOverrides;
 }
@@ -179,6 +186,7 @@ export const DEFAULT_APP_SETTINGS: AppSettings = {
   defaultLanguage: "",
   theme: "light",
   accentColour: "burgundy",
+  collaborationEnabled: true,
   modeOverrides: {},
 };
 
