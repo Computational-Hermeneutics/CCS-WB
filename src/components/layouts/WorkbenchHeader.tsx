@@ -1202,9 +1202,10 @@ export const WorkbenchHeader = memo(function WorkbenchHeader(props: WorkbenchHea
                     <p><strong>Cloud mode</strong> (☁️ icon, normal filenames): Connected to a shared project. Changes sync automatically. Collaborate with others in real-time.</p>
                   </div>
                   <div>
-                    <h4 className="font-medium text-ink text-[11px] uppercase tracking-wide mb-1">Cloud Collaboration</h4>
-                    <p className="mb-1.5">Cloud features (sign-in, shared projects, members, the public library, and real-time sync) can be turned off entirely in <strong>Settings → Profile → Cloud Collaboration</strong>.</p>
-                    <p>When off, CCS-WB is a clean local-only workbench: no sign-in UI, no cloud project menus, and no data sent to or fetched from the cloud. You can still annotate code and save <code>.ccs</code> files. Turn it back on any time from the same toggle.</p>
+                    <h4 className="font-medium text-ink text-[11px] uppercase tracking-wide mb-1">Collaborating on Annotations</h4>
+                    <p className="mb-1.5">There are two ways to collaborate, at different levels of complexity. Most people want the first.</p>
+                    <p className="mb-1.5"><strong>1. Merge annotations (simple).</strong> The merge button (next to <em>Load session</em>) imports a collaborator&apos;s <code>.ccs</code> file into your session. You each annotate the same code separately, then combine. No sign-in, no internet, nothing of yours is overwritten. After merging, your session is the combined master and you&apos;ll be prompted to save it back out. This is the recommended workflow.</p>
+                    <p><strong>2. Cloud sync (advanced).</strong> Real-time shared projects with sign-in and live sync — more powerful but heavier, and it needs a configured cloud backend. It can be turned off entirely in <strong>Settings → Profile → Cloud Collaboration</strong>; when off, CCS-WB is a clean local-only workbench and no data is sent to or fetched from the cloud. Merge annotations (option 1) keeps working regardless of this switch.</p>
                   </div>
                   <div>
                     <h4 className="font-medium text-ink text-[11px] uppercase tracking-wide mb-1">Shortcuts</h4>

@@ -1,6 +1,6 @@
 # Critical Code Studies Workbench
 
-**Version 3.4.0** | CCS Methodology v2.7
+**Version 3.5.0** | CCS Methodology v2.7
 
 A web application for close reading and hermeneutic analysis of software as cultural artefact.
 
@@ -64,8 +64,44 @@ Both Analyze and Learn modes use a unified three-panel IDE interface for focused
 - Session logs include metadata, annotated code, full conversation, and statistics
 - Click filename in header to rename project
 
-### Cloud Projects (Collaboration)
-- **Master switch**: Cloud collaboration can be turned off entirely in **Settings → Profile → Cloud Collaboration**. When off, all sign-in and cloud UI is hidden, CCS-WB runs as a clean local-only workbench, and no requests are made to the backend (so a paused free-tier Supabase instance is never woken). Default on; the toggle stays available whenever Supabase is configured so it can be re-enabled. Local annotation and `.ccs` save/load are unaffected.
+### Collaboration
+
+CCS-WB offers **two ways to collaborate on annotations**, deliberately at
+different levels of complexity. Most users want the first. See
+[`docs/COLLABORATION.md`](docs/COLLABORATION.md) for the full model and the
+rationale behind keeping both.
+
+#### Mode 1 — File-based merge (simple, recommended, zero infrastructure)
+
+Asynchronous collaboration with no backend, no accounts, and no network: you
+each annotate the same code independently, save `.ccs` files, and merge them
+together. Ideal for co-authored close readings and the common "you mark it up,
+I mark it up, we combine" workflow.
+
+- **Merge annotations**: the merge button (next to *Load session*) pulls a
+  collaborator's `.ccs` into your session. **Additive only** — nothing of yours
+  is ever overwritten or deleted.
+- **Name-based file matching**: files are matched across `.ccs` files by name
+  (the per-session file IDs differ between machines), and the union is keyed by
+  the globally-unique annotation ID, so re-merging the same file is idempotent.
+- **Drift-aware**: if a collaborator's copy of a file differs from yours, their
+  annotations still import but are flagged for review, so misaligned line
+  anchors are visible rather than silently wrong.
+- **Reply threads merge** by reply ID; a confirmation summarises exactly what
+  will change before anything happens.
+- **Master copy**: after a merge the session holds the union of everyone's
+  annotations — a prompt offers to save it straight back out, so the combined
+  master is never lost. The saved `.ccs` keeps every annotation with its author,
+  replies, and review flags.
+
+#### Mode 2 — Cloud sync (advanced, optional, opt-in)
+
+Real-time multi-user collaboration backed by Supabase. More capable but
+heavier: it needs accounts, a configured backend, and on a free-tier Supabase
+instance the backend auto-pauses when idle (a cold start can stall the first
+requests of a live session). Off unless you opt in.
+
+- **Master switch**: Cloud collaboration can be turned off entirely in **Settings → Profile → Cloud Collaboration**. When off, all sign-in and cloud UI is hidden, CCS-WB runs as a clean local-only workbench, and no requests are made to the backend (so a paused free-tier Supabase instance is never woken). Default on; the toggle stays available whenever Supabase is configured so it can be re-enabled. Local annotation, `.ccs` save/load, and Mode 1 file-merge are unaffected by this switch.
 - **Real-time sync**: Annotations and code files sync automatically (5-second polling)
 - **Connection resilience**: Google Docs-style data protection with automatic reconnection
   - **Operation queue**: Failed operations queued locally (IndexedDB) and retried automatically
@@ -428,6 +464,7 @@ When analysing code, use these annotation types:
 
 | Version | Changes |
 |---------|---------|
+| 3.5.0 | **File-based collaborative annotation** (Mode 1): a *Merge annotations* button imports a collaborator's `.ccs` into your session — additive only, name-based file matching, idempotent union by annotation ID, drift-flagging when code differs, reply-thread merge. After a merge the session is the combined master and a prompt offers to save it back out with full provenance. Zero infrastructure, no accounts; complements (does not replace) the optional Supabase cloud sync. See `docs/COLLABORATION.md`. |
 | 3.4.0 | **Cloud collaboration master switch** (Settings → Profile): one toggle hides all Supabase-backed UI and stops all backend requests for a clean local-only workbench (default on, always re-enableable). **Browser-direct Ollama dispatch**: a deployed CCS-WB can now drive a local Ollama — the browser calls `localhost:11434` directly (server routes can't), with origin-aware `OLLAMA_ORIGINS` guidance, a copyable command, the Safari caveat, and per-failure-kind Test Connection diagnostics. Added `gemma4`/`gemma3` to the Ollama model list. |
 | 3.3.0 | **New providers**: OpenRouter (300+ models behind one key), Hugging Face (open-weights via Inference Providers), and a hardened OpenAI-Compatible adapter that now uses Chat Completions explicitly so it works against Ollama `/v1`, vLLM, Groq, Together, Fireworks, etc. Same Settings → Test Connection onboarding as the existing providers. Models editable in `public/models.md`. |
 | 3.2.0 | **Architecture refactoring**: Extracted WorkbenchLayout.tsx (4,748 → 1,163 lines, 75% reduction) and conversation/page.tsx (2,191 → 155 lines, 93% reduction) into 6 custom hooks and 3 components. Pure structural refactor with zero logic changes. Fixed pre-existing auto-save bug where stale file handles threw errors instead of recovering gracefully. |
