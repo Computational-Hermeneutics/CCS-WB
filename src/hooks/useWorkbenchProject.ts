@@ -599,6 +599,20 @@ export function useWorkbenchProject({
             (summary.repliesAdded > 0 ? ` and ${summary.repliesAdded} repl${summary.repliesAdded === 1 ? "y" : "ies"}` : "") +
             (summary.flaggedForReview > 0 ? ` (${summary.flaggedForReview} flagged for review)` : "")
         );
+
+        // This session is now the combined "master": it holds the union
+        // of everyone's annotations. Offer to save it straight back out
+        // so the merge isn't lost. The existing save writes a full .ccs
+        // (every annotation with its author, replies and orphaned flag).
+        const saveNow = window.confirm(
+          "Merge complete. This session is now the combined master copy " +
+            "(all annotations, yours and the merged-in ones).\n\n" +
+            "Save the master copy now?"
+        );
+        if (saveNow) {
+          setSaveModalName(projectName || "master");
+          setShowSaveModal(true);
+        }
       } catch (error) {
         console.error("Merge error:", error);
         alert("Failed to merge annotations. Please check the file is a valid .ccs export.");
@@ -606,7 +620,7 @@ export function useWorkbenchProject({
     };
     reader.readAsText(file);
     event.target.value = "";
-  }, [session.codeFiles, session.codeContents, session.lineAnnotations, mergeLineAnnotations, setSuccessMessage]);
+  }, [session.codeFiles, session.codeContents, session.lineAnnotations, mergeLineAnnotations, setSuccessMessage, projectName, setSaveModalName, setShowSaveModal]);
 
   // Export handlers
   const handleExportJSON = useCallback(() => {
