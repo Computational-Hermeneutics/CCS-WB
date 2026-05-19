@@ -5,7 +5,9 @@
 
 import { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import type { Session, EntryMode } from "@/types";
+import type { LineAnnotation } from "@/types/session";
 import type { UseAutoSaveReturn } from "@/hooks/useAutoSave";
+import { computeAnnotationMerge, describeMerge } from "@/lib/sync/file-merge";
 import { generateAnnotatedCode } from "@/components/code";
 import {
   generateSessionLog,
@@ -25,6 +27,7 @@ interface UseWorkbenchProjectParams {
   profile: any;
   // From useCollaborativeSession
   importSession: (data: any) => void;
+  mergeLineAnnotations: (payload: { toAdd: LineAnnotation[]; replyMerges: Array<{ annotationId: string; newReplies: import("@/types/session").AnnotationReplyData[] }> }) => void;
   clearModeSession: (mode: EntryMode) => void;
   isInProject: boolean;
   refreshFromCloud: () => Promise<{ success?: boolean; error?: any }>;
@@ -63,6 +66,7 @@ export function useWorkbenchProject({
   chatCollapsed,
   profile,
   importSession,
+  mergeLineAnnotations,
   clearModeSession,
   isInProject,
   refreshFromCloud,
@@ -84,6 +88,7 @@ export function useWorkbenchProject({
   setCodePanelWidth,
   setChatCollapsed,
   initializeOriginalContents,
+  setSuccessMessage,
   DEFAULT_CODE_PANEL_WIDTH,
 }: UseWorkbenchProjectParams) {
   // State
@@ -110,6 +115,7 @@ export function useWorkbenchProject({
 
   // Refs
   const sessionLoadInputRef = useRef<HTMLInputElement>(null);
+  const mergeAnnotationsInputRef = useRef<HTMLInputElement>(null);
   const renameInputRef = useRef<HTMLInputElement>(null);
   const projectInfoRef = useRef<HTMLDivElement>(null);
 
@@ -539,6 +545,69 @@ export function useWorkbenchProject({
     event.target.value = "";
   }, [importSession, setFavouriteMessages, setCodePanelWidth, setChatCollapsed, initializeOriginalContents]);
 
+  // Merge annotations from another collaborator's .ccs file into the
+  // current session (asynchronous file-based collaboration, tier A).
+  // Additive only: never deletes or overwrites local annotations.
+  const handleMergeAnnotationsFile = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const content = e.target?.result as string;
+        const importedData = JSON.parse(content);
+
+        if (!importedData || typeof importedData !== "object") {
+          throw new Error("Invalid .ccs file");
+        }
+
+        const summary = computeAnnotationMerge(
+          {
+            codeFiles: session.codeFiles,
+            codeContents: session.codeContents,
+            lineAnnotations: session.lineAnnotations,
+          },
+          importedData
+        );
+
+        if (
+          summary.toAdd.length === 0 &&
+          summary.repliesAdded === 0
+        ) {
+          alert(
+            `Nothing to merge. ${describeMerge(summary)}` +
+              (summary.unmatchedFiles.length > 0
+                ? `\n\nUnmatched files: ${summary.unmatchedFiles.join(", ")}`
+                : "")
+          );
+          return;
+        }
+
+        const proceed = window.confirm(
+          `Merge annotations from "${file.name}"?\n\n${describeMerge(summary)}` +
+            (summary.unmatchedFiles.length > 0
+              ? `\n\nFiles in the import with no match here (skipped): ${summary.unmatchedFiles.join(", ")}`
+              : "") +
+            `\n\nThis only adds annotations; nothing local is changed or removed.`
+        );
+        if (!proceed) return;
+
+        mergeLineAnnotations({ toAdd: summary.toAdd, replyMerges: summary.replyMerges });
+        setSuccessMessage(
+          `Merged ${summary.toAdd.length} annotation${summary.toAdd.length === 1 ? "" : "s"}` +
+            (summary.repliesAdded > 0 ? ` and ${summary.repliesAdded} repl${summary.repliesAdded === 1 ? "y" : "ies"}` : "") +
+            (summary.flaggedForReview > 0 ? ` (${summary.flaggedForReview} flagged for review)` : "")
+        );
+      } catch (error) {
+        console.error("Merge error:", error);
+        alert("Failed to merge annotations. Please check the file is a valid .ccs export.");
+      }
+    };
+    reader.readAsText(file);
+    event.target.value = "";
+  }, [session.codeFiles, session.codeContents, session.lineAnnotations, mergeLineAnnotations, setSuccessMessage]);
+
   // Export handlers
   const handleExportJSON = useCallback(() => {
     const log = generateSessionLog(session, projectName, codeContents, generateAnnotatedCode, profile);
@@ -583,6 +652,7 @@ export function useWorkbenchProject({
     isRenamingLoading,
     // Refs
     sessionLoadInputRef,
+    mergeAnnotationsInputRef,
     renameInputRef,
     projectInfoRef,
     // Derived
@@ -604,6 +674,7 @@ export function useWorkbenchProject({
     handleNewProject,
     hasUnsavedChanges,
     handleLoadSession,
+    handleMergeAnnotationsFile,
     handleExportJSON,
     handleExportText,
     handleExportPDF,

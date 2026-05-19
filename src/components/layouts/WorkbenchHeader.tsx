@@ -24,6 +24,7 @@ import {
   FilePlus2,
   Save,
   FolderOpen,
+  GitMerge,
   CloudOff,
   CloudCog,
   Plus,
@@ -92,6 +93,8 @@ interface WorkbenchHeaderProps {
   handleSaveAsMarkdown: () => void;
   handleLoadSession: (e: React.ChangeEvent<HTMLInputElement>) => void;
   sessionLoadInputRef: RefObject<HTMLInputElement | null>;
+  handleMergeAnnotationsFile: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  mergeAnnotationsInputRef: RefObject<HTMLInputElement | null>;
   setShowNewProjectModal: (show: boolean) => void;
   setShowExportModal: (show: boolean) => void;
   autoSave: UseAutoSaveReturn;
@@ -188,6 +191,8 @@ export const WorkbenchHeader = memo(function WorkbenchHeader(props: WorkbenchHea
     handleSaveAsMarkdown,
     handleLoadSession,
     sessionLoadInputRef,
+    handleMergeAnnotationsFile,
+    mergeAnnotationsInputRef,
     setShowNewProjectModal,
     setShowExportModal,
     autoSave,
@@ -669,6 +674,13 @@ export const WorkbenchHeader = memo(function WorkbenchHeader(props: WorkbenchHea
           accept=".ccs,.json"
           onChange={handleLoadSession}
         />
+        <input
+          ref={mergeAnnotationsInputRef as React.RefObject<HTMLInputElement>}
+          type="file"
+          className="hidden"
+          accept=".ccs,.json"
+          onChange={handleMergeAnnotationsFile}
+        />
         <button
           onClick={() => setShowNewProjectModal(true)}
           disabled={!!currentProjectId}
@@ -731,6 +743,13 @@ export const WorkbenchHeader = memo(function WorkbenchHeader(props: WorkbenchHea
           title={currentProjectId ? "Exit cloud project to load local session" : "Load session"}
         >
           <FolderOpen className="h-4 w-4" strokeWidth={1.5} />
+        </button>
+        <button
+          onClick={() => mergeAnnotationsInputRef.current?.click()}
+          className="hidden sm:block p-2 md:p-1.5 text-slate hover:text-ink transition-colors"
+          title="Merge annotations from a collaborator's .ccs file (additive; nothing is overwritten)"
+        >
+          <GitMerge className="h-4 w-4" strokeWidth={1.5} />
         </button>
         <div className="hidden sm:block w-px h-4 bg-parchment mx-1" />
         <button onClick={() => setShowExportModal(true)} className="p-2 md:p-1.5 text-slate hover:text-ink" title="Export session log">

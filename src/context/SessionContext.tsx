@@ -15,6 +15,7 @@ import type {
   CreateLanguage,
   ExperienceLevel,
   LineAnnotation,
+  AnnotationReplyData,
   LineAnnotationType,
   DisplaySettings,
   AnnotationDisplaySettings,
@@ -62,6 +63,7 @@ type SessionAction =
   | { type: "TRANSFER_TO_CRITIQUE"; payload: string } // version id to transfer
   // Line annotation actions
   | { type: "ADD_LINE_ANNOTATION"; payload: LineAnnotation }
+  | { type: "MERGE_LINE_ANNOTATIONS"; payload: { toAdd: LineAnnotation[]; replyMerges: Array<{ annotationId: string; newReplies: AnnotationReplyData[] }> } }
   | { type: "UPDATE_LINE_ANNOTATION"; payload: { id: string; updates: Partial<Omit<LineAnnotation, "id" | "codeFileId" | "createdAt">> } }
   | { type: "REMOVE_LINE_ANNOTATION"; payload: string }
   | { type: "CLEAR_LINE_ANNOTATIONS"; payload?: string } // optional codeFileId to clear only that file's annotations
@@ -454,6 +456,34 @@ function sessionReducer(state: Session, action: SessionAction): Session {
         lastModified: now,
       };
 
+    case "MERGE_LINE_ANNOTATIONS": {
+      // Additive union from a file-based merge. New annotations are
+      // appended (idempotent: skip ids that already exist); reply
+      // unions are applied immutably to existing annotations.
+      const { toAdd, replyMerges } = action.payload;
+      if (toAdd.length === 0 && replyMerges.length === 0) {
+        return state;
+      }
+      const existing = new Set(state.lineAnnotations.map((a) => a.id));
+      const additions = toAdd.filter((a) => !existing.has(a.id));
+      const replyMap = new Map(
+        replyMerges.map((rm) => [rm.annotationId, rm.newReplies])
+      );
+      const updatedExisting = replyMap.size === 0
+        ? state.lineAnnotations
+        : state.lineAnnotations.map((a) => {
+            const extra = replyMap.get(a.id);
+            if (!extra || extra.length === 0) return a;
+            return { ...a, replies: [...(a.replies ?? []), ...extra] };
+          });
+      return {
+        ...state,
+        lineAnnotations: [...updatedExisting, ...additions],
+        isDirty: true,
+        lastModified: now,
+      };
+    }
+
     case "UPDATE_LINE_ANNOTATION":
       return {
         ...state,
@@ -624,6 +654,7 @@ interface SessionContextType {
   hasSavedSession: (mode: EntryMode) => boolean;
   // Line annotation functions
   addLineAnnotation: (annotation: Omit<LineAnnotation, "id" | "createdAt">) => void;
+  mergeLineAnnotations: (payload: { toAdd: LineAnnotation[]; replyMerges: Array<{ annotationId: string; newReplies: AnnotationReplyData[] }> }) => void;
   updateLineAnnotation: (id: string, updates: Partial<Omit<LineAnnotation, "id" | "codeFileId" | "createdAt">>) => void;
   removeLineAnnotation: (id: string) => void;
   clearLineAnnotations: (codeFileId?: string) => void;
@@ -875,6 +906,13 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     []
   );
 
+  // Bulk additive merge from a file-based collaboration import. The
+  // annotations are expected to already carry their final ids and
+  // remapped codeFileIds (see lib/sync/file-merge.ts).
+  const mergeLineAnnotations = useCallback((payload: { toAdd: LineAnnotation[]; replyMerges: Array<{ annotationId: string; newReplies: AnnotationReplyData[] }> }) => {
+    dispatch({ type: "MERGE_LINE_ANNOTATIONS", payload });
+  }, []);
+
   const updateLineAnnotation = useCallback((id: string, updates: Partial<Omit<LineAnnotation, "id" | "codeFileId" | "createdAt">>) => {
     dispatch({ type: "UPDATE_LINE_ANNOTATION", payload: { id, updates } });
   }, []);
@@ -961,6 +999,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     hasSavedSession,
     // Line annotations
     addLineAnnotation,
+    mergeLineAnnotations,
     updateLineAnnotation,
     removeLineAnnotation,
     clearLineAnnotations,

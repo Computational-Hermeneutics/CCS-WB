@@ -102,6 +102,7 @@ export const WorkbenchLayout = forwardRef<WorkbenchLayoutRef, WorkbenchLayoutPro
     setCodeContent,
     removeCodeContent,
     addLineAnnotation,
+    mergeLineAnnotations,
     updateLineAnnotation,
     removeLineAnnotation,
     clearLineAnnotations,
@@ -479,6 +480,7 @@ export const WorkbenchLayout = forwardRef<WorkbenchLayoutRef, WorkbenchLayoutPro
     renameValue, setRenameValue,
     isRenamingLoading,
     sessionLoadInputRef,
+    mergeAnnotationsInputRef,
     renameInputRef,
     projectInfoRef,
     currentProject,
@@ -498,6 +500,7 @@ export const WorkbenchLayout = forwardRef<WorkbenchLayoutRef, WorkbenchLayoutPro
     handleNewProject,
     hasUnsavedChanges,
     handleLoadSession,
+    handleMergeAnnotationsFile,
     handleExportJSON,
     handleExportText,
     handleExportPDF,
@@ -509,6 +512,7 @@ export const WorkbenchLayout = forwardRef<WorkbenchLayoutRef, WorkbenchLayoutPro
     chatCollapsed,
     profile,
     importSession,
+    mergeLineAnnotations,
     clearModeSession,
     isInProject,
     refreshFromCloud,
@@ -810,7 +814,9 @@ export const WorkbenchLayout = forwardRef<WorkbenchLayoutRef, WorkbenchLayoutPro
         handleSaveAs={handleSaveAs}
         handleSaveAsMarkdown={handleSaveAsMarkdown}
         handleLoadSession={handleLoadSession}
+        handleMergeAnnotationsFile={handleMergeAnnotationsFile}
         sessionLoadInputRef={sessionLoadInputRef}
+        mergeAnnotationsInputRef={mergeAnnotationsInputRef}
         setShowNewProjectModal={setShowNewProjectModal}
         setShowExportModal={setShowExportModal}
         autoSave={autoSave}
