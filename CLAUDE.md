@@ -34,8 +34,29 @@ All session state flows through `SessionContext.tsx` using useReducer. The `Sess
 ### CCS Methodology
 The LLM system prompts are generated from `Critical-Code-Studies-Skill.md` (a skill document loaded at runtime via `lib/prompts/ccs-methodology.ts`). This contains the CCS methodology, conversation phases, and annotation types.
 
-### Cloud Collaboration
-Supabase powers cloud projects with OAuth (Google, GitHub, Apple), real-time sync (5-second polling), shareable invite links, and member management. Connection resilience uses an operation queue with IndexedDB for offline support.
+### Collaboration (two modes — see `docs/COLLABORATION.md`)
+There are **two deliberately different collaboration modes**. Read
+`docs/COLLABORATION.md` before changing anything here — it records the
+model and the parked-tier decisions.
+
+- **Mode 1 — file-based merge (simple, default, zero infra):**
+  asynchronous. `src/lib/sync/file-merge.ts` (pure
+  `computeAnnotationMerge`), the `MERGE_LINE_ANNOTATIONS` reducer case in
+  `SessionContext`, and `handleMergeAnnotationsFile` in
+  `useWorkbenchProject`. Additive only, name-based file matching,
+  idempotent union by annotation UUID, drift-flags via `orphaned`,
+  reply-thread union, then a save-master prompt.
+- **Mode 2 — Supabase cloud (advanced, opt-in):** OAuth (Google,
+  GitHub, Apple), real-time sync (5-second polling), invite links,
+  member management; operation queue + IndexedDB for offline. Gated by
+  the `collaborationEnabled` app setting, folded into `isSupabaseEnabled`
+  in `AuthContext` (Settings → Profile → Cloud Collaboration).
+
+**Parked, do not build speculatively:** a live Yjs/PartyKit tier and a
+shared append-only UUID log (Git/JSONL, KV endpoint, or Google Sheets).
+Both have written rationale and explicit revisit triggers in
+`docs/COLLABORATION.md`. Implement only when a concrete workflow demands
+it.
 
 ### Custom Skins
 10 nostalgic visual themes (Atari 2600, BBC Micro, C64, ELIZA, Geocities, HyperCard, Myspace, Teams, Teletext, Vaporwave) managed via `SkinsContext.tsx` and loaded from `public/skins/`.

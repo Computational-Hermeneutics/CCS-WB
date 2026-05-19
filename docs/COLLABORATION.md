@@ -112,3 +112,48 @@ fallback if no third-party service is acceptable.
 This mirrors the project's general "add capacity only when a real
 workflow needs it" principle rather than pre-building for hypothetical
 load.
+
+---
+
+## Parked option: shared append-only annotation log
+
+A second future direction (distinct from the live Yjs tier) is a
+**shared append-only log**: one immutable record per annotation, keyed
+by its UUID; edits are superseding records (UUID + timestamp), deletes
+are tombstones; every client folds the log into state. This is an
+event-sourcing / CRDT-style model — conflict-free by construction and
+well suited to low-contention scholarly annotation. It also produces a
+**human-inspectable audit trail** (who annotated what, when), which has
+scholarly value in its own right, not just engineering value.
+
+The substrate is a separate choice from the model. Candidates,
+audience-ranked:
+
+- **Git / JSONL file** — annotations as an append-only `.jsonl` in a
+  repo, one line per UUID, collaboration via commits/PRs. The most
+  fitting option for a code-studies tool: the annotations of code are
+  themselves version-controlled like code, fully auditable, zero new
+  infrastructure if collaborators already use GitHub. Conceptually this
+  is Mode 1 (file merge) made continuous.
+- **Dumb KV / blob endpoint** — Cloudflare Workers + KV or a Durable
+  Object, Val.town, or a tiny serverless function: `POST annotation` /
+  `GET log since cursor`. ~50 lines, free tier that does not auto-pause,
+  no schema, no OAuth; the room is an opaque URL/ID (the capability).
+- **Google Sheets / Docs** — `spreadsheets.values.append`, one row per
+  annotation. Unique virtue: a lay-readable shared surface, which
+  genuinely matters for teaching and non-technical collaborators.
+  Caveats: it does **not** deliver tier-A's zero-auth property (browser
+  writes need Google OAuth, or a server-side service account; public
+  reads need an API key), Sheets API quotas (~60 reads/min/user), no
+  realtime (poll-based, like current Mode 2), and a shared mutable sheet
+  is fragile unless treated strictly as append-only and parsed by header
+  + UUID with row order ignored.
+
+**Assessment.** The append-only UUID log is the right abstraction if a
+durable shared tier is ever built; it is orthogonal to the Yjs option
+(Yjs optimises for *live* editing, the append-log for *durable,
+auditable* shared state). Pick the substrate by audience: Git/JSONL for
+technical co-authors, a tiny KV endpoint for seminars, Sheets only where
+a human-readable shared spreadsheet is itself a requirement. Not built;
+same revisit discipline as the Yjs tier — implement when a concrete
+workflow demands it.
