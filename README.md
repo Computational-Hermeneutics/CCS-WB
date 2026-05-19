@@ -244,7 +244,33 @@ For a completely free setup using local AI:
 
 4. In the Workbench settings, select "Ollama (Local)" as your provider.
 
-Recommended models for code analysis: `llama3.2`, `mistral`, `codellama`
+Recommended models for code analysis: `llama3.2`, `gemma4`, `mistral`, `codellama`
+
+#### Browser-direct dispatch and a deployed CCS-WB
+
+Ollama is the one provider CCS-WB calls **directly from the browser**, bypassing the
+Next.js API route. A deployed CCS-WB (e.g. on Vercel) runs its API routes as serverless
+functions that cannot reach your laptop's `localhost:11434`; browsers, however, treat
+`localhost`/`127.0.0.1` as a potentially-trustworthy origin and may call it from an HTTPS
+page. The only remaining gate is **CORS** (Cross-Origin Resource Sharing): Ollama must
+opt in to the page's origin via the `OLLAMA_ORIGINS` environment variable.
+
+- **Local CCS-WB** (`npm run dev` on `localhost:3000`): a plain `ollama serve` is enough.
+- **Deployed CCS-WB**: start Ollama with the deployed origin allowlisted, e.g.
+  `OLLAMA_ORIGINS="https://your-ccs-wb.example,http://localhost:3000,http://127.0.0.1:3000" ollama serve`.
+  The Settings → AI panel shows the exact command with your origin pre-filled and a copy button.
+- **Safari note**: Safari blocks HTTPS pages from calling `http://localhost` regardless of
+  CORS. Use Chrome, Firefox, Edge, Arc, or Brave to drive a local Ollama from a deployed
+  CCS-WB; local dev works in Safari too.
+
+The Settings → AI **Test Connection** for Ollama runs as a direct browser ping and reports
+exactly which class of failure occurred, with the fix:
+
+| Scenario | Headline | Command label | Command |
+|----------|----------|---------------|---------|
+| Local, Ollama not started | **Ollama is not running** | START IT IN YOUR TERMINAL | `ollama serve` |
+| Deployed, CORS block | **Ollama is unreachable from this page (CORS)** | STOP OLLAMA, THEN RUN THIS IN YOUR TERMINAL | `OLLAMA_ORIGINS="…" ollama serve` |
+| Reachable but rejecting | **Ollama responded with HTTP \<n\>** | *(no command — server is up)* | — |
 
 ## Project Structure
 
