@@ -1,6 +1,6 @@
 # Critical Code Studies Workbench
 
-**Version 3.5.0** | CCS Methodology v2.7
+**Version 3.6.0** | CCS Methodology v2.7
 
 A web application for close reading and hermeneutic analysis of software as cultural artefact.
 
@@ -94,12 +94,22 @@ I mark it up, we combine" workflow.
   master is never lost. The saved `.ccs` keeps every annotation with its author,
   replies, and review flags.
 
-#### Mode 2 — Cloud sync (advanced, optional, opt-in)
+#### Mode 2 — Cloud sync (advanced, **self-hosted**, opt-in)
 
-Real-time multi-user collaboration backed by Supabase. More capable but
-heavier: it needs accounts, a configured backend, and on a free-tier Supabase
-instance the backend auto-pauses when idle (a cold start can stall the first
-requests of a live session). Off unless you opt in.
+Real-time multi-user collaboration backed by Supabase — more capable but
+heavier and **self-hosted**: CCS-WB itself does not ship with a hosted
+cloud backend. To use this mode you provide your own Supabase project
+(free tier is fine) and either run your own CCS-WB build pointed at it
+or set the env vars on your own Vercel deployment. See
+[`docs/SUPABASE_SETUP.md`](docs/SUPABASE_SETUP.md). Note that on
+Supabase's free tier the backend auto-pauses when idle, so the first
+request of a session after inactivity can stall briefly — fine for
+small groups, plan a warm-up if you're starting a live seminar.
+
+**Annotation comments work without Mode 2.** Threaded comments on
+individual annotations are part of the local data model: they are saved
+into the `.ccs` file, survive load, and merge correctly via Mode 1.
+Mode 2 only adds *real-time multi-user sync* of those comments on top.
 
 - **Master switch**: Cloud collaboration can be turned off entirely in **Settings → Profile → Cloud Collaboration**. When off, all sign-in and cloud UI is hidden, CCS-WB runs as a clean local-only workbench, and no requests are made to the backend (so a paused free-tier Supabase instance is never woken). Default on; the toggle stays available whenever Supabase is configured so it can be re-enabled. Local annotation, `.ccs` save/load, and Mode 1 file-merge are unaffected by this switch.
 - **Real-time sync**: Annotations and code files sync automatically (5-second polling)
@@ -464,6 +474,7 @@ When analysing code, use these annotation types:
 
 | Version | Changes |
 |---------|---------|
+| 3.6.0 | **Threaded comments on annotations now work locally** without Supabase. Previously the data model was local but the add/delete UI and code paths were entirely cloud-gated, so comments effectively required a signed-in cloud project; they now write via the `SessionContext` reducer and persist in `.ccs`. The optional Supabase sync still layers on top when configured. Mode 2 (Cloud sync) is reframed as **self-hosted** — CCS-WB does not ship with a hosted backend; bring your own Supabase project (see `docs/SUPABASE_SETUP.md`). `docs/COLLABORATION.md` records that "LAN sharing" is a deployment of the parked Yjs tier, not a separate mode. |
 | 3.5.0 | **File-based collaborative annotation** (Mode 1): a *Merge annotations* button imports a collaborator's `.ccs` into your session — additive only, name-based file matching, idempotent union by annotation ID, drift-flagging when code differs, reply-thread merge. After a merge the session is the combined master and a prompt offers to save it back out with full provenance. Zero infrastructure, no accounts; complements (does not replace) the optional Supabase cloud sync. See `docs/COLLABORATION.md`. |
 | 3.4.0 | **Cloud collaboration master switch** (Settings → Profile): one toggle hides all Supabase-backed UI and stops all backend requests for a clean local-only workbench (default on, always re-enableable). **Browser-direct Ollama dispatch**: a deployed CCS-WB can now drive a local Ollama — the browser calls `localhost:11434` directly (server routes can't), with origin-aware `OLLAMA_ORIGINS` guidance, a copyable command, the Safari caveat, and per-failure-kind Test Connection diagnostics. Added `gemma4`/`gemma3` to the Ollama model list. |
 | 3.3.0 | **New providers**: OpenRouter (300+ models behind one key), Hugging Face (open-weights via Inference Providers), and a hardened OpenAI-Compatible adapter that now uses Chat Completions explicitly so it works against Ollama `/v1`, vLLM, Groq, Together, Fireworks, etc. Same Settings → Test Connection onboarding as the existing providers. Models editable in `public/models.md`. |

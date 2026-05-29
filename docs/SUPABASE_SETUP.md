@@ -10,14 +10,34 @@
 
 ---
 
-This document explains how to configure Supabase for the Critical Code Studies Workbench (CCS-WB) to enable collaborative features including shared projects, annotations, and the library system.
+This document explains how to **self-host** the optional Supabase backend
+for Critical Code Studies Workbench (CCS-WB) if you want **real-time
+multi-user cloud sync** (Mode 2 in `docs/COLLABORATION.md`). Supabase is
+**not a hosted service we run** — CCS-WB is shipped as a local-first
+client; to use cloud sync you bring your own Supabase project and either
+self-host the CCS-WB build pointed at it, or set the env vars on your
+own Vercel deployment.
 
 ## Overview
 
-CCS-WB can run in two modes:
+CCS-WB runs in three independent modes; only the third needs this guide:
 
-1. **Local-only mode**: No Supabase required. All data stored in browser localStorage.
-2. **Collaborative mode**: Requires Supabase. Enables cloud projects, shared annotations, library submissions, and team collaboration.
+1. **Local-only (default).** No Supabase, no accounts, no network. Code
+   annotation, threaded comments on annotations, and `.ccs` save/load
+   all work fully offline; comments persist in the `.ccs` file and merge
+   correctly through file-based collaboration (Mode 1).
+2. **File-based collaboration (Mode 1).** Asynchronous: collaborators
+   exchange `.ccs` files; the *Merge annotations* button unions them.
+   Still no Supabase. See `docs/COLLABORATION.md`.
+3. **Cloud sync (Mode 2 — this document).** Real-time multi-user
+   collaboration via Supabase: shared projects, OAuth sign-in, members
+   and roles, invite links, live sync, public library. Self-hosted: you
+   provide the Supabase project and its credentials. On the free tier,
+   the backend auto-pauses when idle, so the first request of a session
+   after inactivity can stall briefly.
+
+If Supabase env vars are not set at build time, Modes 1 and 2 above are
+fully functional and the cloud UI is hidden entirely.
 
 ## Prerequisites
 

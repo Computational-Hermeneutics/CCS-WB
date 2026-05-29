@@ -75,10 +75,20 @@ session can stall until it wakes. It is controlled by a master switch in
   paused free-tier instance is never even woken.
 - The toggle stays visible whenever Supabase is configured, so it can
   always be turned back on.
-- Mode 1 (file merge), local annotation, and `.ccs` save/load are
-  unaffected by this switch.
+- Mode 1 (file merge), local annotation, **threaded comments on
+  annotations**, and `.ccs` save/load are unaffected by this switch.
+  Comments are part of the local data model: they are added/deleted via
+  the SessionContext (`ADD_ANNOTATION_REPLY` / `DELETE_ANNOTATION_REPLY`),
+  saved into the `.ccs` file, and merged by `file-merge.ts` (reply union
+  by id). When Supabase is connected, the optional `useAnnotationsSync`
+  hook pushes the same rows for live multi-user sync; the local reducer
+  is idempotent on reply id so a remote pull arriving after the local
+  dispatch is a no-op.
 
-Setup lives in `docs/SUPABASE_SETUP.md`.
+Supabase is **self-hosted, not a service we run.** CCS-WB ships as a
+local-first client and the public deployment does not depend on a hosted
+backend; to use Mode 2 you bring your own Supabase project. Setup lives
+in `docs/SUPABASE_SETUP.md`.
 
 ---
 
@@ -112,6 +122,15 @@ fallback if no third-party service is acceptable.
 This mirrors the project's general "add capacity only when a real
 workflow needs it" principle rather than pre-building for hypothetical
 load.
+
+**LAN sharing is not a separate mode.** A frequently-asked-about
+"share over the local network in a seminar room" feature is *the same
+architecture* as the parked Yjs/PartyKit tier, just with the relay
+deployed on someone's laptop on the LAN instead of in a cloud. Room =
+URL, no accounts, ephemeral, CRDT/append-log; the only difference is
+where the relay process runs. Record this here rather than tracking a
+fourth mode: when/if a LAN-share spike is built, it is a deployment
+variant of the parked real-time tier, not a new design.
 
 ---
 
