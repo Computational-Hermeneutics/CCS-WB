@@ -99,7 +99,7 @@ export function createSimpleAnnotationsExtension(
               replyInputOpenFor === ann.id, // Only this annotation cares if it has input open
               onOpenReplyInput,
               onCloseReplyInput,
-              isInProject ?? true // Enable replies for cloud projects, disable for local files
+              true // Replies are a local feature; the .ccs file carries them. Cloud sync, when on, is layered on top.
             ),
             block: true,
             side: 1,

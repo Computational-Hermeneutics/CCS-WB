@@ -65,6 +65,8 @@ type SessionAction =
   | { type: "ADD_LINE_ANNOTATION"; payload: LineAnnotation }
   | { type: "MERGE_LINE_ANNOTATIONS"; payload: { toAdd: LineAnnotation[]; replyMerges: Array<{ annotationId: string; newReplies: AnnotationReplyData[] }> } }
   | { type: "UPDATE_LINE_ANNOTATION"; payload: { id: string; updates: Partial<Omit<LineAnnotation, "id" | "codeFileId" | "createdAt">> } }
+  | { type: "ADD_ANNOTATION_REPLY"; payload: { annotationId: string; reply: AnnotationReplyData } }
+  | { type: "DELETE_ANNOTATION_REPLY"; payload: { annotationId: string; replyId: string } }
   | { type: "REMOVE_LINE_ANNOTATION"; payload: string }
   | { type: "CLEAR_LINE_ANNOTATIONS"; payload?: string } // optional codeFileId to clear only that file's annotations
   // Code contents actions
@@ -496,6 +498,40 @@ function sessionReducer(state: Session, action: SessionAction): Session {
         lastModified: now,
       };
 
+    case "ADD_ANNOTATION_REPLY": {
+      // Local-first reply add: works without Supabase/auth. When the
+      // optional cloud-sync hook is also active, it has already pushed
+      // the row separately; the cloud pull will reconcile by reply id.
+      const { annotationId, reply } = action.payload;
+      return {
+        ...state,
+        lineAnnotations: state.lineAnnotations.map((ann) => {
+          if (ann.id !== annotationId) return ann;
+          // Idempotent: don't double-append if a reply with this id is
+          // already present (the cloud pull may race the local dispatch).
+          if ((ann.replies ?? []).some((r) => r.id === reply.id)) return ann;
+          return { ...ann, replies: [...(ann.replies ?? []), reply] };
+        }),
+        isDirty: true,
+        lastModified: now,
+      };
+    }
+
+    case "DELETE_ANNOTATION_REPLY": {
+      const { annotationId, replyId } = action.payload;
+      return {
+        ...state,
+        lineAnnotations: state.lineAnnotations.map((ann) => {
+          if (ann.id !== annotationId) return ann;
+          const existing = ann.replies ?? [];
+          if (!existing.some((r) => r.id === replyId)) return ann;
+          return { ...ann, replies: existing.filter((r) => r.id !== replyId) };
+        }),
+        isDirty: true,
+        lastModified: now,
+      };
+    }
+
     case "REMOVE_LINE_ANNOTATION":
       return {
         ...state,
@@ -656,6 +692,8 @@ interface SessionContextType {
   addLineAnnotation: (annotation: Omit<LineAnnotation, "id" | "createdAt">) => void;
   mergeLineAnnotations: (payload: { toAdd: LineAnnotation[]; replyMerges: Array<{ annotationId: string; newReplies: AnnotationReplyData[] }> }) => void;
   updateLineAnnotation: (id: string, updates: Partial<Omit<LineAnnotation, "id" | "codeFileId" | "createdAt">>) => void;
+  addAnnotationReply: (annotationId: string, reply: AnnotationReplyData) => void;
+  deleteAnnotationReply: (annotationId: string, replyId: string) => void;
   removeLineAnnotation: (id: string) => void;
   clearLineAnnotations: (codeFileId?: string) => void;
   // Code contents functions
@@ -917,6 +955,17 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     dispatch({ type: "UPDATE_LINE_ANNOTATION", payload: { id, updates } });
   }, []);
 
+  // Local-first reply add/delete. The optional cloud sync hook may also
+  // push the row to Supabase; the reducer is idempotent on reply id so
+  // a remote pull arriving later is a no-op.
+  const addAnnotationReply = useCallback((annotationId: string, reply: AnnotationReplyData) => {
+    dispatch({ type: "ADD_ANNOTATION_REPLY", payload: { annotationId, reply } });
+  }, []);
+
+  const deleteAnnotationReply = useCallback((annotationId: string, replyId: string) => {
+    dispatch({ type: "DELETE_ANNOTATION_REPLY", payload: { annotationId, replyId } });
+  }, []);
+
   const removeLineAnnotation = useCallback((id: string) => {
     dispatch({ type: "REMOVE_LINE_ANNOTATION", payload: id });
   }, []);
@@ -1001,6 +1050,8 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     addLineAnnotation,
     mergeLineAnnotations,
     updateLineAnnotation,
+    addAnnotationReply,
+    deleteAnnotationReply,
     removeLineAnnotation,
     clearLineAnnotations,
     // Code contents
