@@ -43,7 +43,7 @@ are fully functional and the cloud UI is hidden entirely.
 
 | | Runtime (UI) — recommended | Build-time (env vars) |
 |---|---|---|
-| Where you set it | **Settings → Profile → Cloud Backend** in any running CCS-WB | `NEXT_PUBLIC_SUPABASE_URL` + `NEXT_PUBLIC_SUPABASE_ANON_KEY` at `npm run build` time |
+| Where you set it | **Settings → Cloud → Cloud Backend (Supabase)** in any running CCS-WB | `NEXT_PUBLIC_SUPABASE_URL` + `NEXT_PUBLIC_SUPABASE_ANON_KEY` at `npm run build` time |
 | Scope | Per-browser (localStorage) | Per-deployment |
 | Rebuild needed | No — Save & reload | Yes |
 | Best for | An end user plugging into their own backend without forking | Self-hosters running their own CCS-WB build |

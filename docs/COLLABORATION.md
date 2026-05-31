@@ -67,7 +67,7 @@ live annotation/code sync, presence, a public library.
 configured Supabase backend and accounts, and on the free tier the
 backend **auto-pauses when idle**, so the first requests of a live
 session can stall until it wakes. It is controlled by a master switch in
-**Settings → Profile → Cloud Collaboration**:
+**Settings → Cloud → Enable Cloud Collaboration**:
 
 - Default on (when Supabase is configured for the deployment).
 - When off: all sign-in and cloud UI is hidden, CCS-WB is a clean
@@ -90,7 +90,7 @@ local-first client and the public deployment does not depend on a hosted
 backend; to use Mode 2 you bring your own Supabase project. Two ways to
 plug it in:
 
-- **At runtime, from the UI (recommended).** Settings → Profile →
+- **At runtime, from the UI (recommended).** Settings → Cloud →
   **Cloud Backend (Supabase)** takes a URL + anon key, persists them to
   browser localStorage, and reloads. No fork, no rebuild, no env vars.
   See `src/lib/supabase/runtime-config.ts`.

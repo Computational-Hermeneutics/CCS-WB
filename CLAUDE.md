@@ -6,7 +6,7 @@ This file provides context for Claude Code or other AI assistants working on thi
 
 **CCS-WB** (Critical Code Studies Workbench) is a web application for close reading and hermeneutic analysis of software as cultural artefact. It implements critical code studies methodology based on the work of Mark Marino and David M. Berry.
 
-**Version**: 4.0.0 | CCS Methodology v2.7
+**Version**: 4.1.0 | CCS Methodology v2.7
 
 ## Technology Stack
 
@@ -50,7 +50,7 @@ model and the parked-tier decisions.
   GitHub, Apple), real-time sync (5-second polling), invite links,
   member management; operation queue + IndexedDB for offline. Gated by
   the `collaborationEnabled` app setting, folded into `isSupabaseEnabled`
-  in `AuthContext` (Settings → Profile → Cloud Collaboration).
+  in `AuthContext` (Settings → Cloud → Enable Cloud Collaboration).
 
 **Parked, do not build speculatively:** a live Yjs/PartyKit tier and a
 shared append-only UUID log (Git/JSONL, KV endpoint, or Google Sheets).
