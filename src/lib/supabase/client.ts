@@ -7,6 +7,7 @@
 
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "./types";
+import { resolveSupabaseConfig } from "./runtime-config";
 
 // Lazy singleton pattern - client is created on first use
 let supabaseClient: SupabaseClient<Database> | null = null;
@@ -25,14 +26,13 @@ export function getSupabaseClient(): SupabaseClient<Database> | null {
     return supabaseClient;
   }
 
-  // Check for required environment variables
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-  if (!supabaseUrl || !supabaseAnonKey) {
-    // Supabase not configured - collaborative features disabled
+  // Resolve from runtime config (Settings → Cloud Backend) first, env
+  // vars second. Either source is sufficient.
+  const resolved = resolveSupabaseConfig();
+  if (!resolved) {
     return null;
   }
+  const { url: supabaseUrl, anonKey: supabaseAnonKey } = resolved;
 
   // Create and cache the client with resilient auth settings
   supabaseClient = createClient<Database>(supabaseUrl, supabaseAnonKey, {
@@ -56,14 +56,20 @@ export function getSupabaseClient(): SupabaseClient<Database> | null {
 }
 
 /**
- * Check if Supabase is configured (has required environment variables).
+ * Check if Supabase is configured (via runtime override OR env vars).
  * Use this to conditionally show collaborative features.
  */
 export function isSupabaseConfigured(): boolean {
-  return !!(
-    process.env.NEXT_PUBLIC_SUPABASE_URL &&
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  );
+  return resolveSupabaseConfig() !== null;
+}
+
+/**
+ * Drop the cached client so the next getSupabaseClient() rebuilds with
+ * whatever the current resolved config is. Called when the user saves
+ * or clears a runtime config in Settings.
+ */
+export function resetSupabaseClient(): void {
+  supabaseClient = null;
 }
 
 /**

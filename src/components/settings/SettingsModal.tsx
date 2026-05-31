@@ -7,7 +7,14 @@ import { AIProviderSettings } from "./AIProviderSettings";
 import { useAppSettings } from "@/context/AppSettingsContext";
 import { useSkins } from "@/context/SkinsContext";
 import { useAuth, type AuthProvider } from "@/context/AuthContext";
-import { getSupabaseClient, isSupabaseConfigured } from "@/lib/supabase/client";
+import { getSupabaseClient, isSupabaseConfigured, resetSupabaseClient } from "@/lib/supabase/client";
+import {
+  getRuntimeSupabaseConfig,
+  setRuntimeSupabaseConfig,
+  clearRuntimeSupabaseConfig,
+  looksLikeSupabaseUrl,
+  resolveSupabaseConfig,
+} from "@/lib/supabase/runtime-config";
 import type { UserProfile } from "@/types/app-settings";
 import {
   FONT_SIZE_MIN,
@@ -106,6 +113,45 @@ export function SettingsModal({
   const [tempColor, setTempColor] = useState<string | null>(null);
   const [isSavingColor, setIsSavingColor] = useState(false);
 
+  // Runtime Supabase config form (Cloud Backend section). Local form
+  // state mirrors localStorage; Save persists it and reloads the page so
+  // every hook picks up the new client.
+  const initialRuntime = typeof window !== "undefined" ? getRuntimeSupabaseConfig() : null;
+  const resolvedConfig = typeof window !== "undefined" ? resolveSupabaseConfig() : null;
+  const [backendUrl, setBackendUrl] = useState(initialRuntime?.url ?? "");
+  const [backendKey, setBackendKey] = useState(initialRuntime?.anonKey ?? "");
+  const [backendError, setBackendError] = useState<string | null>(null);
+  const [backendSaving, setBackendSaving] = useState(false);
+  const [showBackendForm, setShowBackendForm] = useState(false);
+
+  const handleSaveBackend = () => {
+    setBackendError(null);
+    const url = backendUrl.trim();
+    const key = backendKey.trim();
+    if (!url || !key) {
+      setBackendError("Both URL and anon key are required.");
+      return;
+    }
+    if (!looksLikeSupabaseUrl(url)) {
+      setBackendError("URL must be a valid https:// URL (your Supabase project URL).");
+      return;
+    }
+    setBackendSaving(true);
+    setRuntimeSupabaseConfig({ url, anonKey: key });
+    resetSupabaseClient();
+    // Reload so AuthContext and every Supabase-consuming hook pick up the new client.
+    window.location.reload();
+  };
+
+  const handleClearBackend = () => {
+    if (!window.confirm("Remove your custom Supabase backend? Cloud sync will fall back to env-var config if any, otherwise be disabled. The page will reload.")) {
+      return;
+    }
+    clearRuntimeSupabaseConfig();
+    resetSupabaseClient();
+    window.location.reload();
+  };
+
   // When logged in, use auth profile name; otherwise use local profile name
   const displayName = isAuthenticated && authProfile?.display_name
     ? authProfile.display_name
@@ -201,6 +247,85 @@ export function SettingsModal({
         <div className="flex-1 overflow-y-auto p-6">
           {activeTab === "profile" && (
             <div className="space-y-4">
+              {/* Cloud Backend (Supabase): user-supplied URL + anon key.
+                  CCS-WB v4.0 ships as a local-first client with no
+                  hosted backend; this lets users plug in their own
+                  Supabase project at runtime, no rebuild needed. */}
+              <div className="pb-3 border-b border-parchment">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex-1">
+                    <label className="block font-sans text-caption font-medium text-ink">
+                      Cloud Backend (Supabase)
+                    </label>
+                    <p className="font-sans text-[10px] text-slate-muted mt-0.5">
+                      Optional — only needed for Mode-2 real-time multi-user sync.
+                      {resolvedConfig
+                        ? resolvedConfig.source === "runtime"
+                          ? " Using a user-supplied backend (set below)."
+                          : " Using the deployment's built-in backend (env vars)."
+                        : " Not configured — Modes 0 and 1 work fully without it."}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setShowBackendForm(s => !s)}
+                    className="shrink-0 px-2 py-1 text-[10px] bg-cream text-ink border border-parchment-dark rounded-sm hover:border-burgundy transition-colors"
+                  >
+                    {showBackendForm ? "Hide" : initialRuntime ? "Edit" : "Add"}
+                  </button>
+                </div>
+                {showBackendForm && (
+                  <div className="mt-2 space-y-2">
+                    <div>
+                      <label className="block font-sans text-[10px] uppercase tracking-widest text-slate-muted mb-1">
+                        Project URL
+                      </label>
+                      <input
+                        type="text"
+                        value={backendUrl}
+                        onChange={(e) => setBackendUrl(e.target.value)}
+                        placeholder="https://abcdefghij.supabase.co"
+                        className="w-full px-2.5 py-1.5 bg-card border border-parchment-dark rounded-sm font-mono text-[10px] text-ink placeholder:text-slate-muted focus:outline-none focus:ring-1 focus:ring-burgundy focus:border-burgundy"
+                      />
+                    </div>
+                    <div>
+                      <label className="block font-sans text-[10px] uppercase tracking-widest text-slate-muted mb-1">
+                        Anon (public) key
+                      </label>
+                      <input
+                        type="password"
+                        value={backendKey}
+                        onChange={(e) => setBackendKey(e.target.value)}
+                        placeholder="eyJhbGciOi…"
+                        className="w-full px-2.5 py-1.5 bg-card border border-parchment-dark rounded-sm font-mono text-[10px] text-ink placeholder:text-slate-muted focus:outline-none focus:ring-1 focus:ring-burgundy focus:border-burgundy"
+                      />
+                      <p className="mt-1 font-sans text-[10px] text-slate-muted">
+                        Stored in your browser only. Use your project&apos;s <em>anon / public</em> key (Project Settings → API), not the service-role key.
+                      </p>
+                    </div>
+                    {backendError && (
+                      <p className="font-sans text-[10px] text-error">{backendError}</p>
+                    )}
+                    <div className="flex items-center gap-2 pt-1">
+                      <button
+                        onClick={handleSaveBackend}
+                        disabled={backendSaving}
+                        className="px-2.5 py-1.5 text-[11px] bg-burgundy text-white rounded-sm hover:bg-burgundy/90 transition-colors disabled:opacity-50"
+                      >
+                        {backendSaving ? "Saving…" : "Save & reload"}
+                      </button>
+                      {initialRuntime && (
+                        <button
+                          onClick={handleClearBackend}
+                          className="px-2.5 py-1.5 text-[11px] bg-card text-ink border border-parchment-dark rounded-sm hover:border-error transition-colors"
+                        >
+                          Remove
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+
               {/* Cloud collaboration master switch. Shown whenever
                   Supabase is configured for the deployment, so the
                   user can always turn it back on even after disabling. */}
