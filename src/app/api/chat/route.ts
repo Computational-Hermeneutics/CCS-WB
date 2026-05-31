@@ -461,6 +461,35 @@ Engage with these annotations in your response. They represent the analyst's dev
       });
     }
 
+    if (
+      (aiConfig.provider === "openrouter" ||
+        aiConfig.provider === "huggingface" ||
+        aiConfig.provider === "openai-compatible") &&
+      aiConfig.apiKey
+    ) {
+      // For openai-compatible, the user must have supplied a baseUrl;
+      // for OpenRouter/HF the per-provider dispatcher fills the default.
+      return NextResponse.json({
+        browserDirect: true,
+        provider: aiConfig.provider,
+        payload: {
+          provider: aiConfig.provider,
+          apiKey: aiConfig.apiKey,
+          baseUrl: aiConfig.baseUrl || undefined,
+          model: aiConfig.model,
+          system: systemPrompt,
+          messages: aiMessages,
+          maxTokens: 1024,
+        },
+        messageTemplate: {
+          id: generateId(),
+          role: "assistant",
+          timestamp: getCurrentTimestamp(),
+          metadata: { phase: currentPhase, model: modelName },
+        },
+      });
+    }
+
     // Call AI API using unified client
     const responseContent = await generateAIResponse(aiConfig, {
       system: systemPrompt,

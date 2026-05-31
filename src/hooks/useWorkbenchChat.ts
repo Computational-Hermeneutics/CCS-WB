@@ -11,7 +11,7 @@ import type { CCSMethod } from "@/lib/ccs-content";
 import { fetchWithTimeout, retryWithBackoff } from "@/lib/utils";
 import { extractCodeBlocks, generateFileName, getUniqueFileName } from "@/lib/code-extraction";
 import { generateAnnotatedCode } from "@/components/code";
-import { dispatchBrowserDirect, pingOllama, pingAnthropic, pingOpenAI } from "@/lib/ai/browser-direct";
+import { dispatchBrowserDirect, pingOllama, pingAnthropic, pingOpenAI, pingOpenRouter, pingHuggingFace, pingOpenAICompatibleGeneric } from "@/lib/ai/browser-direct";
 
 const CRITIQUE_OPENING =
   "What code would you like to explore? You can paste it directly, upload a file, or describe what you're looking at. I'm curious what drew your attention to this particular piece of software.";
@@ -315,6 +315,38 @@ export function useWorkbenchChat({
           ? (aiSettings.customModelId || "gpt-4o-mini")
           : aiSettings.model;
         const result = await pingOpenAI(aiSettings.apiKey || "", modelToTest);
+        if (result.ok) { setConnectionStatus("success"); return true; }
+        setConnectionStatus("error", result.message);
+        return false;
+      }
+      if (aiSettings.provider === "openrouter") {
+        const modelToTest = aiSettings.model === "custom"
+          ? (aiSettings.customModelId || "openai/gpt-4o-mini")
+          : aiSettings.model;
+        const result = await pingOpenRouter(aiSettings.apiKey || "", modelToTest);
+        if (result.ok) { setConnectionStatus("success"); return true; }
+        setConnectionStatus("error", result.message);
+        return false;
+      }
+      if (aiSettings.provider === "huggingface") {
+        const modelToTest = aiSettings.model === "custom"
+          ? (aiSettings.customModelId || "meta-llama/Llama-3.1-8B-Instruct")
+          : aiSettings.model;
+        const result = await pingHuggingFace(aiSettings.apiKey || "", modelToTest);
+        if (result.ok) { setConnectionStatus("success"); return true; }
+        setConnectionStatus("error", result.message);
+        return false;
+      }
+      if (aiSettings.provider === "openai-compatible") {
+        const baseUrl = aiSettings.baseUrl || "";
+        if (!baseUrl) {
+          setConnectionStatus("error", "Base URL is required for the OpenAI-Compatible provider.");
+          return false;
+        }
+        const modelToTest = aiSettings.model === "custom"
+          ? (aiSettings.customModelId || "gpt-4o-mini")
+          : aiSettings.model;
+        const result = await pingOpenAICompatibleGeneric(baseUrl, aiSettings.apiKey || "", modelToTest);
         if (result.ok) { setConnectionStatus("success"); return true; }
         setConnectionStatus("error", result.message);
         return false;

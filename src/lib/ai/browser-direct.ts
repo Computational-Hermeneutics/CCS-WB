@@ -56,7 +56,10 @@ export function shouldBrowserDispatch(provider: AIProvider): boolean {
   return (
     provider === "ollama" ||
     provider === "anthropic" ||
-    provider === "openai"
+    provider === "openai" ||
+    provider === "openrouter" ||
+    provider === "huggingface" ||
+    provider === "openai-compatible"
   );
 }
 
@@ -194,6 +197,12 @@ export async function dispatchBrowserDirect(envelope: any): Promise<string> {
       return callAnthropicDirect(payload);
     case "openai":
       return callOpenAIDirect(payload);
+    case "openrouter":
+      return callOpenRouterDirect(payload);
+    case "huggingface":
+      return callHuggingFaceDirect(payload);
+    case "openai-compatible":
+      return callOpenAICompatibleGenericDirect(payload);
     default:
       throw new Error(`dispatchBrowserDirect: provider "${payload.provider}" not yet supported in browser-direct mode.`);
   }
@@ -404,4 +413,28 @@ export async function callOpenAICompatibleDirect(payload: OpenAICompatiblePayloa
 /** OpenAI-specific entry point — fills in the base URL. */
 export function callOpenAIDirect(payload: Omit<OpenAICompatiblePayload, "baseUrl"> & { baseUrl?: string }): Promise<string> {
   return callOpenAICompatibleDirect({ ...payload, baseUrl: payload.baseUrl || OPENAI_BASE }, "OpenAI");
+}
+
+/** OpenRouter — OpenAI-compatible at openrouter.ai/api/v1. */
+export function pingOpenRouter(apiKey: string, model = "openai/gpt-4o-mini") {
+  return pingOpenAICompatible(OPENROUTER_BASE, apiKey, model, "OpenRouter");
+}
+export function callOpenRouterDirect(payload: Omit<OpenAICompatiblePayload, "baseUrl"> & { baseUrl?: string }): Promise<string> {
+  return callOpenAICompatibleDirect({ ...payload, baseUrl: payload.baseUrl || OPENROUTER_BASE }, "OpenRouter");
+}
+
+/** Hugging Face Router — OpenAI-compatible at router.huggingface.co/v1. */
+export function pingHuggingFace(apiKey: string, model = "meta-llama/Llama-3.1-8B-Instruct") {
+  return pingOpenAICompatible(HUGGINGFACE_BASE, apiKey, model, "Hugging Face");
+}
+export function callHuggingFaceDirect(payload: Omit<OpenAICompatiblePayload, "baseUrl"> & { baseUrl?: string }): Promise<string> {
+  return callOpenAICompatibleDirect({ ...payload, baseUrl: payload.baseUrl || HUGGINGFACE_BASE }, "Hugging Face");
+}
+
+/** Generic openai-compatible — user supplies the base URL. */
+export function pingOpenAICompatibleGeneric(baseUrl: string, apiKey: string, model: string) {
+  return pingOpenAICompatible(baseUrl, apiKey, model, "OpenAI-Compatible API");
+}
+export function callOpenAICompatibleGenericDirect(payload: OpenAICompatiblePayload): Promise<string> {
+  return callOpenAICompatibleDirect(payload, "OpenAI-Compatible API");
 }
