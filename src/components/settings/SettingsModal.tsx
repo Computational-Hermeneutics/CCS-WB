@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { X, Bot, Palette, Info, Minus, Plus, Code, User, Loader2, Mail, LogOut, Users } from "lucide-react";
+import { X, Bot, Palette, Info, Minus, Plus, Code, User, Loader2, Mail, LogOut, Users, Cloud, ExternalLink } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AIProviderSettings } from "./AIProviderSettings";
 import { useAppSettings } from "@/context/AppSettingsContext";
@@ -36,7 +36,7 @@ import {
   type CodeFontId,
 } from "@/types/app-settings";
 
-type SettingsTab = "profile" | "code" | "appearance" | "ai" | "about";
+type SettingsTab = "profile" | "code" | "appearance" | "ai" | "cloud" | "about";
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -196,6 +196,7 @@ export function SettingsModal({
     { id: "code", label: "Code", icon: <Code className="h-4 w-4" /> },
     { id: "appearance", label: "Appearance", icon: <Palette className="h-4 w-4" /> },
     { id: "ai", label: "AI", icon: <Bot className="h-4 w-4" /> },
+    { id: "cloud", label: "Cloud", icon: <Cloud className="h-4 w-4" /> },
     { id: "about", label: "About", icon: <Info className="h-4 w-4" /> },
   ];
 
@@ -247,261 +248,23 @@ export function SettingsModal({
         <div className="flex-1 overflow-y-auto p-6">
           {activeTab === "profile" && (
             <div className="space-y-4">
-              {/* Cloud Backend (Supabase): user-supplied URL + anon key.
-                  CCS-WB v4.0 ships as a local-first client with no
-                  hosted backend; this lets users plug in their own
-                  Supabase project at runtime, no rebuild needed. */}
+              {/* Breadcrumb: cloud sign-in / backend config moved to its
+                  own Cloud tab in v4.1 so the considerable explanation
+                  it warrants has room to breathe. Profile is now just
+                  the user's own identity (name, initials, etc.). */}
               <div className="pb-3 border-b border-parchment">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex-1">
-                    <label className="block font-sans text-caption font-medium text-ink">
-                      Cloud Backend (Supabase)
-                    </label>
-                    <p className="font-sans text-[10px] text-slate-muted mt-0.5">
-                      Optional — only needed for Mode-2 real-time multi-user sync.
-                      {resolvedConfig
-                        ? resolvedConfig.source === "runtime"
-                          ? " Using a user-supplied backend (set below)."
-                          : " Using the deployment's built-in backend (env vars)."
-                        : " Not configured — Modes 0 and 1 work fully without it."}
-                    </p>
-                  </div>
+                <p className="font-sans text-[10px] text-slate-muted">
+                  Looking for sign-in or shared cloud projects? Cloud
+                  collaboration lives in its own tab now — see{" "}
                   <button
-                    onClick={() => setShowBackendForm(s => !s)}
-                    className="shrink-0 px-2 py-1 text-[10px] bg-cream text-ink border border-parchment-dark rounded-sm hover:border-burgundy transition-colors"
+                    onClick={() => setActiveTab("cloud")}
+                    className="text-burgundy hover:underline"
                   >
-                    {showBackendForm ? "Hide" : initialRuntime ? "Edit" : "Add"}
+                    Settings → Cloud
                   </button>
-                </div>
-                {showBackendForm && (
-                  <div className="mt-2 space-y-2">
-                    <div>
-                      <label className="block font-sans text-[10px] uppercase tracking-widest text-slate-muted mb-1">
-                        Project URL
-                      </label>
-                      <input
-                        type="text"
-                        value={backendUrl}
-                        onChange={(e) => setBackendUrl(e.target.value)}
-                        placeholder="https://abcdefghij.supabase.co"
-                        className="w-full px-2.5 py-1.5 bg-card border border-parchment-dark rounded-sm font-mono text-[10px] text-ink placeholder:text-slate-muted focus:outline-none focus:ring-1 focus:ring-burgundy focus:border-burgundy"
-                      />
-                    </div>
-                    <div>
-                      <label className="block font-sans text-[10px] uppercase tracking-widest text-slate-muted mb-1">
-                        Anon (public) key
-                      </label>
-                      <input
-                        type="password"
-                        value={backendKey}
-                        onChange={(e) => setBackendKey(e.target.value)}
-                        placeholder="eyJhbGciOi…"
-                        className="w-full px-2.5 py-1.5 bg-card border border-parchment-dark rounded-sm font-mono text-[10px] text-ink placeholder:text-slate-muted focus:outline-none focus:ring-1 focus:ring-burgundy focus:border-burgundy"
-                      />
-                      <p className="mt-1 font-sans text-[10px] text-slate-muted">
-                        Stored in your browser only. Use your project&apos;s <em>anon / public</em> key (Project Settings → API), not the service-role key.
-                      </p>
-                    </div>
-                    {backendError && (
-                      <p className="font-sans text-[10px] text-error">{backendError}</p>
-                    )}
-                    <div className="flex items-center gap-2 pt-1">
-                      <button
-                        onClick={handleSaveBackend}
-                        disabled={backendSaving}
-                        className="px-2.5 py-1.5 text-[11px] bg-burgundy text-white rounded-sm hover:bg-burgundy/90 transition-colors disabled:opacity-50"
-                      >
-                        {backendSaving ? "Saving…" : "Save & reload"}
-                      </button>
-                      {initialRuntime && (
-                        <button
-                          onClick={handleClearBackend}
-                          className="px-2.5 py-1.5 text-[11px] bg-card text-ink border border-parchment-dark rounded-sm hover:border-error transition-colors"
-                        >
-                          Remove
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                )}
+                  .
+                </p>
               </div>
-
-              {/* Cloud collaboration master switch. Shown whenever
-                  Supabase is configured for the deployment, so the
-                  user can always turn it back on even after disabling. */}
-              {supabaseConfigured && (
-                <div className="flex items-center justify-between pb-3 border-b border-parchment">
-                  <div className="flex-1 pr-3">
-                    <label className="block font-sans text-caption font-medium text-ink">
-                      Cloud Collaboration
-                    </label>
-                    <p className="font-sans text-[10px] text-slate-muted mt-0.5">
-                      Sign-in, shared cloud projects, members, and the public
-                      library. Turn this off for a clean local-only workbench.
-                      When off, no data is sent to or fetched from the cloud.
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => setCollaborationEnabled(!appSettings.collaborationEnabled)}
-                    className={cn(
-                      "w-10 h-5 rounded-full transition-colors relative flex-shrink-0",
-                      appSettings.collaborationEnabled ? "bg-burgundy" : "bg-parchment"
-                    )}
-                    aria-pressed={appSettings.collaborationEnabled}
-                    aria-label="Toggle cloud collaboration"
-                  >
-                    <span
-                      className={cn(
-                        "absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform",
-                        appSettings.collaborationEnabled ? "translate-x-5" : "translate-x-0"
-                      )}
-                    />
-                  </button>
-                </div>
-              )}
-
-              {/* Collaboration / Login - at top */}
-              {isSupabaseEnabled && (
-                <div className="pb-3 border-b border-parchment">
-                  {isAuthenticated ? (
-                    // Signed in state - show photo and info
-                    <div className="flex items-center gap-3">
-                      {authProfile?.avatar_url ? (
-                        <img
-                          src={authProfile.avatar_url}
-                          alt=""
-                          className="w-10 h-10 rounded-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-10 h-10 rounded-full bg-burgundy/20 flex items-center justify-center">
-                          <span className="font-sans text-caption font-medium text-burgundy">
-                            {(authProfile?.display_name || user?.email || "U")[0].toUpperCase()}
-                          </span>
-                        </div>
-                      )}
-                      <div className="flex-1 min-w-0">
-                        <p className="font-sans text-caption text-ink truncate">
-                          {authProfile?.display_name || user?.email}
-                        </p>
-                        <p className="font-sans text-[10px] text-slate-muted truncate">
-                          {user?.email}
-                        </p>
-                      </div>
-                      <button
-                        onClick={handleSignOut}
-                        disabled={collabLoading !== null}
-                        className={cn(
-                          "flex items-center gap-1 px-2 py-1 font-sans text-[10px] text-slate-muted hover:text-ink transition-colors",
-                          "disabled:opacity-50 disabled:cursor-not-allowed"
-                        )}
-                      >
-                        {collabLoading === "signout" ? (
-                          <Loader2 className="h-3 w-3 animate-spin" />
-                        ) : (
-                          <LogOut className="h-3 w-3" />
-                        )}
-                        Sign out
-                      </button>
-                    </div>
-                  ) : (
-                    // Sign in options
-                    <div className="space-y-2">
-                      <p className="font-sans text-[10px] text-slate-muted">
-                        Sign in to collaborate on shared projects
-                      </p>
-                      {collabError && (
-                        <p className="font-sans text-[10px] text-error">{collabError}</p>
-                      )}
-                      {magicLinkSent && (
-                        <p className="font-sans text-[10px] text-success">
-                          Check your email for a sign-in link.
-                        </p>
-                      )}
-                      {/* OAuth + Email row */}
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => handleProviderSignIn("google")}
-                          disabled={collabLoading !== null}
-                          className={cn(
-                            "flex items-center justify-center gap-1 px-2 py-1.5",
-                            "bg-white border border-parchment-dark rounded-sm",
-                            "font-sans text-[10px] text-ink",
-                            "hover:bg-cream transition-colors",
-                            "disabled:opacity-50 disabled:cursor-not-allowed"
-                          )}
-                        >
-                          {collabLoading === "google" ? (
-                            <Loader2 className="h-3 w-3 animate-spin" />
-                          ) : (
-                            <svg className="h-3 w-3" viewBox="0 0 24 24" fill="currentColor">
-                              <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
-                              <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
-                              <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
-                              <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
-                            </svg>
-                          )}
-                        </button>
-                        <button
-                          onClick={() => handleProviderSignIn("github")}
-                          disabled={collabLoading !== null}
-                          className={cn(
-                            "flex items-center justify-center gap-1 px-2 py-1.5",
-                            "bg-ink border border-ink rounded-sm",
-                            "font-sans text-[10px] text-ivory",
-                            "hover:bg-ink/90 transition-colors",
-                            "disabled:opacity-50 disabled:cursor-not-allowed"
-                          )}
-                        >
-                          {collabLoading === "github" ? (
-                            <Loader2 className="h-3 w-3 animate-spin" />
-                          ) : (
-                            <svg className="h-3 w-3" viewBox="0 0 24 24" fill="currentColor">
-                              <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z" />
-                            </svg>
-                          )}
-                        </button>
-                        <form onSubmit={handleMagicLink} className="flex gap-1 flex-1">
-                          <div className="relative flex-1">
-                            <Mail className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-slate-muted" />
-                            <input
-                              type="email"
-                              value={collabEmail}
-                              onChange={(e) => setCollabEmail(e.target.value)}
-                              placeholder="Email"
-                              disabled={collabLoading !== null}
-                              className={cn(
-                                "w-full pl-7 pr-2 py-1.5",
-                                "bg-card border border-parchment-dark rounded-sm",
-                                "font-sans text-[10px] text-ink",
-                                "placeholder:text-slate-muted",
-                                "focus:outline-none focus:ring-1 focus:ring-burgundy focus:border-burgundy",
-                                "disabled:opacity-50 disabled:cursor-not-allowed"
-                              )}
-                            />
-                          </div>
-                          <button
-                            type="submit"
-                            disabled={!collabEmail.trim() || collabLoading !== null}
-                            className={cn(
-                              "px-2 py-1.5",
-                              "bg-burgundy border border-burgundy rounded-sm",
-                              "font-sans text-[10px] text-ivory",
-                              "hover:bg-burgundy-dark transition-colors",
-                              "disabled:opacity-50 disabled:cursor-not-allowed"
-                            )}
-                          >
-                            {collabLoading === "email" ? (
-                              <Loader2 className="h-3 w-3 animate-spin" />
-                            ) : (
-                              "→"
-                            )}
-                          </button>
-                        </form>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
 
               {/* Profile fields - Name, Initials, Affiliation on one row */}
               <div className="flex gap-2">
@@ -1140,6 +903,325 @@ export function SettingsModal({
                   </div>
                 )}
               </div>
+            </div>
+          )}
+
+          {activeTab === "cloud" && (
+            <div className="space-y-5">
+              {/* Intro: what Mode 2 is, why it's optional, what it costs
+                  to set up, and how it relates to Modes 0/1. */}
+              <div className="space-y-2 pb-3 border-b border-parchment">
+                <h3 className="font-display text-base text-ink">Cloud Collaboration</h3>
+                <p className="font-sans text-caption text-slate leading-relaxed">
+                  CCS-WB is a <strong>local-first workbench</strong>. Most users never
+                  need this tab — annotation, comments, file save/load and merging
+                  collaborators&apos; <code className="font-mono text-[11px] bg-cream px-1 rounded-sm">.ccs</code> files
+                  (Modes 0 and 1) all work fully offline, with no account and no backend.
+                </p>
+                <p className="font-sans text-caption text-slate leading-relaxed">
+                  This tab exists for <strong>Mode 2</strong>: real-time multi-user sync
+                  across the network — shared cloud projects, OAuth sign-in, members,
+                  the public library. It is powered by Supabase, which you{" "}
+                  <strong>bring your own</strong>: CCS-WB does not ship with a hosted
+                  backend. Set up is non-trivial and worth doing only if your workflow
+                  genuinely needs live multi-user editing in the same project.
+                </p>
+              </div>
+
+              {/* Setup overview — collapsed by default to avoid wall-of-text. */}
+              <details className="pb-3 border-b border-parchment">
+                <summary className="cursor-pointer font-sans text-caption font-medium text-ink hover:text-burgundy">
+                  What setting this up actually involves
+                </summary>
+                <div className="mt-2 space-y-2 font-sans text-[11px] text-slate leading-relaxed">
+                  <p>
+                    Plain Supabase is a hosted Postgres database with an auth service,
+                    row-level security (RLS) policies, and a realtime channel. To use
+                    Mode 2 you need to:
+                  </p>
+                  <ol className="list-decimal pl-5 space-y-1">
+                    <li>
+                      Create a Supabase project (free tier is enough for small
+                      groups — see{" "}
+                      <a
+                        href="https://supabase.com"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-burgundy hover:underline inline-flex items-center gap-0.5"
+                      >
+                        supabase.com <ExternalLink className="h-2.5 w-2.5" />
+                      </a>
+                      ).
+                    </li>
+                    <li>
+                      Run the SQL schema + RLS policies (~700 lines, in
+                      <code className="font-mono text-[10px] bg-cream px-1 rounded-sm mx-0.5">docs/sql/</code>)
+                      from the SQL Editor in your Supabase dashboard.
+                    </li>
+                    <li>
+                      Configure OAuth providers (Google / GitHub / Apple) in
+                      Supabase Authentication settings if you want social sign-in.
+                    </li>
+                    <li>
+                      Paste this project&apos;s URL + anon key into the form below,
+                      hit <em>Save &amp; reload</em>.
+                    </li>
+                  </ol>
+                  <p>
+                    Full step-by-step is in{" "}
+                    <code className="font-mono text-[10px] bg-cream px-1 rounded-sm">
+                      docs/SUPABASE_SETUP.md
+                    </code>
+                    .
+                  </p>
+                  <p>
+                    <strong className="text-ink">Free-tier caveat:</strong> Supabase
+                    auto-pauses idle projects, so the first request of a live session
+                    after inactivity can stall briefly while the database wakes. Fine
+                    for small groups, plan a warm-up before a workshop.
+                  </p>
+                  <p>
+                    <strong className="text-ink">Privacy:</strong> annotations, code,
+                    and replies sync via your Supabase. The CCS-WB deployment never
+                    sees your data; the keys here are stored in your browser&apos;s
+                    localStorage only.
+                  </p>
+                </div>
+              </details>
+
+              {/* Cloud Backend (Supabase): user-supplied URL + anon key. */}
+              <div className="pb-3 border-b border-parchment">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex-1">
+                    <label className="block font-sans text-caption font-medium text-ink">
+                      Cloud Backend (Supabase)
+                    </label>
+                    <p className="font-sans text-[10px] text-slate-muted mt-0.5">
+                      {resolvedConfig
+                        ? resolvedConfig.source === "runtime"
+                          ? "Using a user-supplied backend (set below)."
+                          : "Using the deployment's built-in backend (env vars)."
+                        : "Not configured. Modes 0 and 1 work fully without it; Mode 2 needs a backend."}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setShowBackendForm(s => !s)}
+                    className="shrink-0 px-2 py-1 text-[10px] bg-cream text-ink border border-parchment-dark rounded-sm hover:border-burgundy transition-colors"
+                  >
+                    {showBackendForm ? "Hide" : initialRuntime ? "Edit" : "Add"}
+                  </button>
+                </div>
+                {showBackendForm && (
+                  <div className="mt-2 space-y-2">
+                    <div>
+                      <label className="block font-sans text-[10px] uppercase tracking-widest text-slate-muted mb-1">
+                        Project URL
+                      </label>
+                      <input
+                        type="text"
+                        value={backendUrl}
+                        onChange={(e) => setBackendUrl(e.target.value)}
+                        placeholder="https://abcdefghij.supabase.co"
+                        className="w-full px-2.5 py-1.5 bg-card border border-parchment-dark rounded-sm font-mono text-[10px] text-ink placeholder:text-slate-muted focus:outline-none focus:ring-1 focus:ring-burgundy focus:border-burgundy"
+                      />
+                    </div>
+                    <div>
+                      <label className="block font-sans text-[10px] uppercase tracking-widest text-slate-muted mb-1">
+                        Anon (public) key
+                      </label>
+                      <input
+                        type="password"
+                        value={backendKey}
+                        onChange={(e) => setBackendKey(e.target.value)}
+                        placeholder="eyJhbGciOi…"
+                        className="w-full px-2.5 py-1.5 bg-card border border-parchment-dark rounded-sm font-mono text-[10px] text-ink placeholder:text-slate-muted focus:outline-none focus:ring-1 focus:ring-burgundy focus:border-burgundy"
+                      />
+                      <p className="mt-1 font-sans text-[10px] text-slate-muted">
+                        Stored in your browser only. Use your project&apos;s{" "}
+                        <em>anon / public</em> key (Project Settings → API), not the
+                        service-role key.
+                      </p>
+                    </div>
+                    {backendError && (
+                      <p className="font-sans text-[10px] text-error">{backendError}</p>
+                    )}
+                    <div className="flex items-center gap-2 pt-1">
+                      <button
+                        onClick={handleSaveBackend}
+                        disabled={backendSaving}
+                        className="px-2.5 py-1.5 text-[11px] bg-burgundy text-white rounded-sm hover:bg-burgundy/90 transition-colors disabled:opacity-50"
+                      >
+                        {backendSaving ? "Saving…" : "Save & reload"}
+                      </button>
+                      {initialRuntime && (
+                        <button
+                          onClick={handleClearBackend}
+                          className="px-2.5 py-1.5 text-[11px] bg-card text-ink border border-parchment-dark rounded-sm hover:border-error transition-colors"
+                        >
+                          Remove
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Cloud collaboration master switch. */}
+              {supabaseConfigured && (
+                <div className="flex items-center justify-between pb-3 border-b border-parchment">
+                  <div className="flex-1 pr-3">
+                    <label className="block font-sans text-caption font-medium text-ink">
+                      Enable Cloud Collaboration
+                    </label>
+                    <p className="font-sans text-[10px] text-slate-muted mt-0.5">
+                      Master switch for sign-in, shared projects, members, the
+                      public library, and real-time sync. Turn off for a clean
+                      local-only workbench — no data is sent to or fetched from
+                      the cloud. Modes 0 and 1 are unaffected.
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setCollaborationEnabled(!appSettings.collaborationEnabled)}
+                    className={cn(
+                      "w-10 h-5 rounded-full transition-colors relative flex-shrink-0",
+                      appSettings.collaborationEnabled ? "bg-burgundy" : "bg-parchment"
+                    )}
+                    aria-pressed={appSettings.collaborationEnabled}
+                    aria-label="Toggle cloud collaboration"
+                  >
+                    <span
+                      className={cn(
+                        "absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform",
+                        appSettings.collaborationEnabled ? "translate-x-5" : "translate-x-0"
+                      )}
+                    />
+                  </button>
+                </div>
+              )}
+
+              {/* Sign-in / signed-in state. */}
+              {isSupabaseEnabled && (
+                <div className="pb-3">
+                  {isAuthenticated ? (
+                    <div className="flex items-center gap-3">
+                      {authProfile?.avatar_url ? (
+                        <img src={authProfile.avatar_url} alt="" className="w-10 h-10 rounded-full object-cover" />
+                      ) : (
+                        <div className="w-10 h-10 rounded-full bg-burgundy/20 flex items-center justify-center">
+                          <span className="font-sans text-caption font-medium text-burgundy">
+                            {(authProfile?.display_name || user?.email || "U")[0].toUpperCase()}
+                          </span>
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <p className="font-sans text-caption text-ink truncate">
+                          {authProfile?.display_name || user?.email}
+                        </p>
+                        <p className="font-sans text-[10px] text-slate-muted truncate">
+                          {user?.email}
+                        </p>
+                      </div>
+                      <button
+                        onClick={handleSignOut}
+                        disabled={collabLoading !== null}
+                        className={cn(
+                          "flex items-center gap-1 px-2 py-1 font-sans text-[10px] text-slate-muted hover:text-ink transition-colors",
+                          "disabled:opacity-50 disabled:cursor-not-allowed"
+                        )}
+                      >
+                        {collabLoading === "signout" ? <Loader2 className="h-3 w-3 animate-spin" /> : <LogOut className="h-3 w-3" />}
+                        Sign out
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <p className="font-sans text-[10px] text-slate-muted">
+                        Sign in to collaborate on shared projects
+                      </p>
+                      {collabError && <p className="font-sans text-[10px] text-error">{collabError}</p>}
+                      {magicLinkSent && (
+                        <p className="font-sans text-[10px] text-success">
+                          Check your email for a sign-in link.
+                        </p>
+                      )}
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleProviderSignIn("google")}
+                          disabled={collabLoading !== null}
+                          className={cn(
+                            "flex items-center justify-center gap-1 px-2 py-1.5 bg-white border border-parchment-dark rounded-sm font-sans text-[10px] text-ink hover:bg-cream transition-colors",
+                            "disabled:opacity-50 disabled:cursor-not-allowed"
+                          )}
+                        >
+                          {collabLoading === "google" ? (
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                          ) : (
+                            <svg className="h-3 w-3" viewBox="0 0 24 24" fill="currentColor">
+                              <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
+                              <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
+                              <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
+                              <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
+                            </svg>
+                          )}
+                        </button>
+                        <button
+                          onClick={() => handleProviderSignIn("github")}
+                          disabled={collabLoading !== null}
+                          className={cn(
+                            "flex items-center justify-center gap-1 px-2 py-1.5 bg-ink border border-ink rounded-sm font-sans text-[10px] text-ivory hover:bg-ink/90 transition-colors",
+                            "disabled:opacity-50 disabled:cursor-not-allowed"
+                          )}
+                        >
+                          {collabLoading === "github" ? (
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                          ) : (
+                            <svg className="h-3 w-3" viewBox="0 0 24 24" fill="currentColor">
+                              <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z" />
+                            </svg>
+                          )}
+                        </button>
+                        <form onSubmit={handleMagicLink} className="flex gap-1 flex-1">
+                          <div className="relative flex-1">
+                            <Mail className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-slate-muted" />
+                            <input
+                              type="email"
+                              value={collabEmail}
+                              onChange={(e) => setCollabEmail(e.target.value)}
+                              placeholder="Email"
+                              disabled={collabLoading !== null}
+                              className={cn(
+                                "w-full pl-7 pr-2 py-1.5 bg-card border border-parchment-dark rounded-sm font-sans text-[10px] text-ink placeholder:text-slate-muted",
+                                "focus:outline-none focus:ring-1 focus:ring-burgundy focus:border-burgundy",
+                                "disabled:opacity-50 disabled:cursor-not-allowed"
+                              )}
+                            />
+                          </div>
+                          <button
+                            type="submit"
+                            disabled={!collabEmail.trim() || collabLoading !== null}
+                            className={cn(
+                              "px-2 py-1.5 bg-burgundy border border-burgundy rounded-sm font-sans text-[10px] text-ivory hover:bg-burgundy-dark transition-colors",
+                              "disabled:opacity-50 disabled:cursor-not-allowed"
+                            )}
+                          >
+                            {collabLoading === "email" ? <Loader2 className="h-3 w-3 animate-spin" /> : "→"}
+                          </button>
+                        </form>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Friendly null state when no backend is configured */}
+              {!supabaseConfigured && (
+                <div className="pb-3 text-center">
+                  <p className="font-sans text-[10px] text-slate-muted italic">
+                    No backend configured yet. Add one above to enable sign-in
+                    and shared projects.
+                  </p>
+                </div>
+              )}
             </div>
           )}
 
