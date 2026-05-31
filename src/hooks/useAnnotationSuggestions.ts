@@ -260,11 +260,11 @@ All lineNumber values MUST be between 1 and ${lineCount} inclusive.
 Do NOT use line numbers from any original source code if this is an excerpt or sample.
 Only use line numbers that actually exist in the provided file (1-${lineCount}).
 
-ANNOTATION TYPES REQUESTED: Only generate annotations of these types: ${typesDescription}.
+ANNOTATION TYPES — STRICT WHITELIST. The user has selected exactly the following types: ${typesDescription}. Every annotation you generate MUST have its "type" field set to one of those exact strings, and no others. Annotations of any other type will be discarded. If you cannot produce useful annotations of the requested types for some lines, skip those lines — do not substitute a different type.
 
 For each annotation, provide exactly these three fields:
 1. "lineNumber" (required): A positive integer between 1 and ${lineCount} indicating which line to annotate
-2. "type" (required): Must be one of these exact strings: ${typesDescription}
+2. "type" (required): Must be one of these exact strings (no others): ${typesDescription}
 3. "content" (required): Your annotation text (1-2 concise sentences explaining the interpretive entry point)
 
 Respond ONLY with this JSON structure (no other fields, no other text):
@@ -413,24 +413,38 @@ Follow the ${modeContext} guidance provided above.`;
 
       console.log("[AI Annotation Suggestions] Normalized suggestions:", suggestions);
 
-      // Validate and prepare annotations
+      // Validate and prepare annotations. Models — especially smaller
+      // local ones — routinely ignore the "only these types" instruction
+      // in the prompt and return every type they know about. Enforce the
+      // user's selection here as a hard post-filter so unrequested types
+      // never reach the review modal regardless of model behaviour.
       const codeLines = fileContent.split('\n');
+      let droppedByTypeFilter = 0;
       const validSuggestions = suggestions
         .filter((s: any) => {
           // Convert string line numbers to integers
           const lineNum = typeof s.lineNumber === 'string' ? parseInt(s.lineNumber, 10) : s.lineNumber;
 
+          const typeStr = typeof s.type === 'string' ? s.type.toLowerCase().trim() : '';
+          const isRequestedType = (requestedTypes as Set<string>).has(typeStr);
+
           const isValid = lineNum &&
                  lineNum > 0 &&
                  lineNum <= codeLines.length &&
-                 s.type &&
+                 typeStr &&
+                 isRequestedType &&
                  s.content;
 
           if (!isValid) {
-            console.log("[AI Annotation Suggestions] Invalid suggestion filtered out:", s);
-            console.log("  - lineNumber:", lineNum, "(valid range: 1-" + codeLines.length + ")");
-            console.log("  - type:", s.type);
-            console.log("  - content:", s.content ? "present" : "missing");
+            if (typeStr && !isRequestedType) {
+              droppedByTypeFilter += 1;
+              console.log(`[AI Annotation Suggestions] Dropped unrequested type "${typeStr}" — user selected:`, Array.from(requestedTypes));
+            } else {
+              console.log("[AI Annotation Suggestions] Invalid suggestion filtered out:", s);
+              console.log("  - lineNumber:", lineNum, "(valid range: 1-" + codeLines.length + ")");
+              console.log("  - type:", typeStr);
+              console.log("  - content:", s.content ? "present" : "missing");
+            }
           }
 
           return isValid;
@@ -439,16 +453,27 @@ Follow the ${modeContext} guidance provided above.`;
           const lineNum = typeof s.lineNumber === 'string' ? parseInt(s.lineNumber, 10) : s.lineNumber;
           return {
             lineNumber: lineNum,
-            type: s.type as LineAnnotationType,
+            type: (s.type as string).toLowerCase().trim() as LineAnnotationType,
             content: s.content,
             lineContent: codeLines[lineNum - 1] || '',
           };
         });
 
+      if (droppedByTypeFilter > 0) {
+        console.warn(`[AI Annotation Suggestions] Dropped ${droppedByTypeFilter} suggestion(s) of unrequested types. The model ignored the type restriction in the prompt; the post-filter enforced it.`);
+      }
+
       console.log("[AI Annotation Suggestions] Valid suggestions after filtering:", validSuggestions.length);
 
       if (validSuggestions.length === 0) {
-        setSuccessMessage("No valid annotation suggestions found. Check browser console for details.");
+        if (droppedByTypeFilter > 0) {
+          setSuccessMessage(
+            `The model returned ${droppedByTypeFilter} suggestion${droppedByTypeFilter === 1 ? "" : "s"} but none of the types you selected. ` +
+            `Try a stronger model, or widen the selection.`
+          );
+        } else {
+          setSuccessMessage("No valid annotation suggestions found. Check browser console for details.");
+        }
         return;
       }
 
