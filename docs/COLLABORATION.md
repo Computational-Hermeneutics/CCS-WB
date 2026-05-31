@@ -87,8 +87,45 @@ session can stall until it wakes. It is controlled by a master switch in
 
 Supabase is **self-hosted, not a service we run.** CCS-WB ships as a
 local-first client and the public deployment does not depend on a hosted
-backend; to use Mode 2 you bring your own Supabase project. Setup lives
-in `docs/SUPABASE_SETUP.md`.
+backend; to use Mode 2 you bring your own Supabase project. Two ways to
+plug it in:
+
+- **At runtime, from the UI (recommended).** Settings → Profile →
+  **Cloud Backend (Supabase)** takes a URL + anon key, persists them to
+  browser localStorage, and reloads. No fork, no rebuild, no env vars.
+  See `src/lib/supabase/runtime-config.ts`.
+- **At build time, via env vars.** For self-hosters running their own
+  CCS-WB build: set `NEXT_PUBLIC_SUPABASE_URL` and
+  `NEXT_PUBLIC_SUPABASE_ANON_KEY`. The runtime-UI value takes
+  precedence when both are present.
+
+Full setup (project provisioning, RLS, schema) lives in
+`docs/SUPABASE_SETUP.md`.
+
+## AI provider dispatch is local-first too (v4.0+)
+
+A related v4.0 architectural change worth recording alongside the
+collaboration model: **every AI provider is now dispatched directly
+from the browser** when an API key is in localStorage (the default
+configuration). The `/api/chat`, `/api/test-connection` etc. routes
+build the prompt server-side as before, but for browser-direct
+providers they return a provider-tagged envelope
+`{ browserDirect, provider, payload, messageTemplate }`; the client
+calls the model itself via `src/lib/ai/browser-direct.ts`
+(`dispatchBrowserDirect`).
+
+Coverage as of v4.1: Ollama, Anthropic, OpenAI, OpenRouter, Hugging
+Face, OpenAI-compatible, Google. Test Connection for each runs
+browser-side. The server-side `/api/*` routes are preserved as a
+fallback for deployments that wire provider keys via env vars.
+
+Practical consequences:
+
+- The static PWA shell can drive the entire workbench with no server
+  running, completing v4.0's "fully local" framing.
+- A deployed CCS-WB can reach a local Ollama (browser → `localhost`;
+  the server route never could).
+- CCS-WB is host-independent: any static-file host works.
 
 ---
 

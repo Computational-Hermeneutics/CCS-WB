@@ -36,8 +36,22 @@ CCS-WB runs in three independent modes; only the third needs this guide:
    the backend auto-pauses when idle, so the first request of a session
    after inactivity can stall briefly.
 
-If Supabase env vars are not set at build time, Modes 1 and 2 above are
-fully functional and the cloud UI is hidden entirely.
+If neither runtime UI config nor env vars are set, Modes 0 and 1 above
+are fully functional and the cloud UI is hidden entirely.
+
+### Two ways to point CCS-WB at your Supabase project
+
+| | Runtime (UI) — recommended | Build-time (env vars) |
+|---|---|---|
+| Where you set it | **Settings → Profile → Cloud Backend** in any running CCS-WB | `NEXT_PUBLIC_SUPABASE_URL` + `NEXT_PUBLIC_SUPABASE_ANON_KEY` at `npm run build` time |
+| Scope | Per-browser (localStorage) | Per-deployment |
+| Rebuild needed | No — Save & reload | Yes |
+| Best for | An end user plugging into their own backend without forking | Self-hosters running their own CCS-WB build |
+| Precedence | Wins when both are set | Fallback if no runtime config |
+
+Either way you still need to provision the Supabase project itself
+(the rest of this document) — they're just two different places to
+record its URL + anon key.
 
 ## Prerequisites
 

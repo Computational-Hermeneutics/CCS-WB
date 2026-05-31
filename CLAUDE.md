@@ -16,7 +16,7 @@ This file provides context for Claude Code or other AI assistants working on thi
 - **State**: React Context + useReducer (no external state library)
 - **UI Components**: Radix UI primitives, Lucide icons
 - **Code Editor**: CodeMirror 6 with custom language modes and annotation extensions
-- **AI Integration**: Multi-provider (Anthropic, OpenAI, Google, Ollama, OpenRouter, Hugging Face, OpenAI-Compatible) via Vercel AI SDK
+- **AI Integration**: Multi-provider (Anthropic, OpenAI, Google, Ollama, OpenRouter, Hugging Face, OpenAI-Compatible). Default path is **browser-direct dispatch** for every provider via `src/lib/ai/browser-direct.ts` (`dispatchBrowserDirect` + `ping*` per provider); the `/api/*` routes still build the prompt but return a `{ browserDirect, provider, payload, messageTemplate }` envelope for the browser to complete the call. Server-side `generateAIResponse` via Vercel AI SDK is the fallback for env-var-keyed deployments only.
 - **Cloud**: Supabase (auth, project storage, real-time sync)
 - **PDF Export**: jsPDF
 
