@@ -180,9 +180,29 @@ export async function callOllamaDirect(payload: OllamaPayload): Promise<string> 
   }
 
   const data = await response.json();
-  const content = data?.choices?.[0]?.message?.content;
+  const choice = data?.choices?.[0];
+  const content = choice?.message?.content;
+  const finishReason: string | undefined = choice?.finish_reason;
   if (typeof content !== "string" || content.trim() === "") {
-    throw new Error("Ollama returned an empty response. The model may need more tokens, or it may be a reasoning model whose output went to the `reasoning` field.");
+    if (finishReason === "length") {
+      throw new Error(
+        "Ollama hit the output token limit before producing any text. " +
+        "Try a higher max_tokens budget or a less verbose model."
+      );
+    }
+    const hasReasoning = typeof choice?.message?.reasoning === "string" && choice.message.reasoning.length > 0;
+    if (hasReasoning) {
+      throw new Error(
+        "Ollama returned empty content but produced reasoning output. " +
+        "This is typical of reasoning models (qwen3-vl, deepseek-r1) — try a non-reasoning model like llama3.2 or gemma3."
+      );
+    }
+    throw new Error("Ollama returned an empty response.");
+  }
+  if (finishReason === "length") {
+    // Output was truncated mid-stream. Upstream JSON parsing will then
+    // fail; log so the cause is visible in the console.
+    console.warn("[Ollama] Response truncated by max_tokens. Output may be incomplete.");
   }
   return content;
 }
@@ -421,9 +441,17 @@ export async function callOpenAICompatibleDirect(payload: OpenAICompatiblePayloa
   }
 
   const data = await response.json();
-  const content = data?.choices?.[0]?.message?.content;
+  const choice = data?.choices?.[0];
+  const content = choice?.message?.content;
+  const finishReason: string | undefined = choice?.finish_reason;
   if (typeof content !== "string" || content.trim() === "") {
+    if (finishReason === "length") {
+      throw new Error(`${providerLabel} hit the output token limit before producing any text. Try a higher max_tokens budget.`);
+    }
     throw new Error(`${providerLabel} returned an empty response.`);
+  }
+  if (finishReason === "length") {
+    console.warn(`[${providerLabel}] Response truncated by max_tokens. Output may be incomplete.`);
   }
   return content;
 }

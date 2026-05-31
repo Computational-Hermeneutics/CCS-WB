@@ -240,6 +240,15 @@ export async function POST(request: NextRequest) {
     const body: ChatRequest = await request.json();
     const { messages, currentPhase, experienceLevel, analysisContext, literatureContext, mode, codeContext, createLanguage, defaultLanguage } = body;
 
+    // Callers (e.g. annotation suggestions, which need to emit several
+    // paragraph-length JSON entries) may bump the output token budget.
+    // The default 1024 is enough for a normal chat reply; longer-form
+    // structured output gets truncated, which then fails JSON parsing.
+    // Clamp to a sane upper bound so a typo can't run away with cost.
+    const requestedMaxTokens = typeof (body as unknown as { maxTokens?: unknown }).maxTokens === "number"
+      ? Math.min(8192, Math.max(64, (body as unknown as { maxTokens: number }).maxTokens))
+      : 1024;
+
     // Extract conversation style settings from headers (moved from session to AI settings)
     const beDirectMode = request.headers.get("X-AI-Be-Direct") === "true";
     const teachMeMode = request.headers.get("X-AI-Teach-Me") === "true";
@@ -399,7 +408,7 @@ Engage with these annotations in your response. They represent the analyst's dev
           model: aiConfig.model,
           system: systemPrompt,
           messages: aiMessages,
-          maxTokens: 1024,
+          maxTokens: requestedMaxTokens,
         },
         payload: {
           provider: "ollama",
@@ -407,7 +416,7 @@ Engage with these annotations in your response. They represent the analyst's dev
           model: aiConfig.model,
           system: systemPrompt,
           messages: aiMessages,
-          maxTokens: 1024,
+          maxTokens: requestedMaxTokens,
         },
         messageTemplate: {
           id: generateId(),
@@ -428,7 +437,7 @@ Engage with these annotations in your response. They represent the analyst's dev
           model: aiConfig.model,
           system: systemPrompt,
           messages: aiMessages,
-          maxTokens: 1024,
+          maxTokens: requestedMaxTokens,
         },
         messageTemplate: {
           id: generateId(),
@@ -450,7 +459,7 @@ Engage with these annotations in your response. They represent the analyst's dev
           model: aiConfig.model,
           system: systemPrompt,
           messages: aiMessages,
-          maxTokens: 1024,
+          maxTokens: requestedMaxTokens,
         },
         messageTemplate: {
           id: generateId(),
@@ -471,7 +480,7 @@ Engage with these annotations in your response. They represent the analyst's dev
           model: aiConfig.model,
           system: systemPrompt,
           messages: aiMessages,
-          maxTokens: 1024,
+          maxTokens: requestedMaxTokens,
         },
         messageTemplate: {
           id: generateId(),
@@ -500,7 +509,7 @@ Engage with these annotations in your response. They represent the analyst's dev
           model: aiConfig.model,
           system: systemPrompt,
           messages: aiMessages,
-          maxTokens: 1024,
+          maxTokens: requestedMaxTokens,
         },
         messageTemplate: {
           id: generateId(),
@@ -515,7 +524,7 @@ Engage with these annotations in your response. They represent the analyst's dev
     const responseContent = await generateAIResponse(aiConfig, {
       system: systemPrompt,
       messages: aiMessages,
-      maxTokens: 1024,
+      maxTokens: requestedMaxTokens,
     });
 
     // Build response message

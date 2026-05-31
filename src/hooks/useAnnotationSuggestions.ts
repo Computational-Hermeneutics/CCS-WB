@@ -96,6 +96,32 @@ function extractAnnotationJson(raw: string): { annotations: unknown[] } | null {
     }
   }
 
+  // 5. Truncation recovery: the model was cut off mid-array by
+  //    max_tokens, leaving an unclosed [{...},{...partial}. Find the
+  //    first "[" and collect every fully-balanced top-level object
+  //    inside it (discarding any partial one at the tail). If we
+  //    rescued >=1, return them — better partial than nothing.
+  const firstBracket = text.indexOf("[");
+  if (firstBracket !== -1) {
+    const rescued: unknown[] = [];
+    let i = firstBracket + 1;
+    while (i < text.length) {
+      while (i < text.length && text[i] !== "{") i++;
+      if (i >= text.length) break;
+      const obj = extractBalanced(text, i);
+      if (!obj) break; // partial / truncated — stop here
+      const parsedObj = tryParse(`[${obj}]`);
+      if (parsedObj && parsedObj.annotations.length === 1) {
+        rescued.push(parsedObj.annotations[0]);
+      }
+      i += obj.length;
+    }
+    if (rescued.length > 0 && rescued.some((a) => a && typeof a === "object" && "lineNumber" in (a as object))) {
+      console.warn(`[AI Annotation Suggestions] Output appears truncated; rescued ${rescued.length} complete annotation(s) and dropped the partial tail.`);
+      return { annotations: rescued };
+    }
+  }
+
   return null;
 }
 
@@ -304,6 +330,12 @@ Follow the ${modeContext} guidance provided above.`;
           ],
           settings: session.settings,
           mode: "critique",
+          // Annotation suggestions emit 3-5 paragraph-length JSON
+          // entries; the default 1024-token reply budget truncates
+          // verbose models (gemma, large reasoners) mid-array, so the
+          // JSON parser then sees an unclosed bracket. 4096 gives
+          // comfortable headroom while still being a hard cap.
+          maxTokens: 4096,
         }),
       });
 
