@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { X, Bot, Palette, Info, Minus, Plus, Code, User, Loader2, Mail, LogOut, Users, Cloud, ExternalLink } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AIProviderSettings } from "./AIProviderSettings";
+import { AISetupGuide } from "./AISetupGuide";
 import { useAppSettings } from "@/context/AppSettingsContext";
 import { useSkins } from "@/context/SkinsContext";
 import { useAuth, type AuthProvider } from "@/context/AuthContext";
@@ -460,7 +461,12 @@ export function SettingsModal({
             </div>
           )}
 
-          {activeTab === "ai" && <AIProviderSettings />}
+          {activeTab === "ai" && (
+            <div className="space-y-5">
+              <AISetupGuide />
+              <AIProviderSettings />
+            </div>
+          )}
 
           {activeTab === "appearance" && (
             <div className="space-y-4">
