@@ -568,7 +568,7 @@ export function AIProviderSettings({ onClose }: AIProviderSettingsProps) {
           ) : connectionStatus === "error" ? (
             <>
               <XCircle className="h-3.5 w-3.5" />
-              Connection failed
+              Connection failed — click to retry
             </>
           ) : (
             "Test Connection"
@@ -582,6 +582,8 @@ export function AIProviderSettings({ onClose }: AIProviderSettingsProps) {
             result={ollamaPing}
             selectedModel={settings.model === "custom" ? settings.customModelId : settings.model}
             onPulled={handleTestConnection}
+            onRetry={handleTestConnection}
+            testing={connectionStatus === "testing"}
           />
         )}
 

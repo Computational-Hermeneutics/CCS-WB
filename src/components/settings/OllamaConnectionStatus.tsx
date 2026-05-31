@@ -46,6 +46,12 @@ interface OllamaConnectionStatusProps {
   selectedModel?: string;
   /** Called after a successful `ollama pull` so the parent can refresh state. */
   onPulled?: () => void;
+  /** Called when the user clicks the inline Retry button in the failure
+   *  panel. The parent re-runs the connection test. */
+  onRetry?: () => void;
+  /** True while a connection test is in flight, so the inline Retry
+   *  button can render a spinner and disable itself. */
+  testing?: boolean;
 }
 
 /**
@@ -59,13 +65,13 @@ interface OllamaConnectionStatusProps {
  * the user's selected model is not in the list, offers a one-click
  * `ollama pull <model>` (browser-direct to /api/pull).
  */
-export function OllamaConnectionStatus({ result, selectedModel, onPulled }: OllamaConnectionStatusProps) {
+export function OllamaConnectionStatus({ result, selectedModel, onPulled, onRetry, testing }: OllamaConnectionStatusProps) {
   const [pulling, setPulling] = useState(false);
   const [pullError, setPullError] = useState<string | null>(null);
   const [pulled, setPulled] = useState(false);
 
   if (!result.ok) {
-    return <FailurePanel result={result} />;
+    return <FailurePanel result={result} onRetry={onRetry} testing={testing} />;
   }
 
   const installed = result.installedModels;
@@ -197,7 +203,7 @@ export function OllamaConnectionStatus({ result, selectedModel, onPulled }: Olla
   );
 }
 
-function FailurePanel({ result }: { result: Extract<PingResult, { ok: false }> }) {
+function FailurePanel({ result, onRetry, testing }: { result: Extract<PingResult, { ok: false }>; onRetry?: () => void; testing?: boolean }) {
   const remote = isRemoteOrigin();
   const origin =
     typeof window !== "undefined" && window.location?.origin
@@ -261,6 +267,30 @@ function FailurePanel({ result }: { result: Extract<PingResult, { ok: false }> }
           regardless of CORS — use Chrome, Firefox, Edge, Arc, or Brave for Ollama from a
           deployed CCS-WB. Local dev works in Safari.
         </p>
+      )}
+      {onRetry && (
+        <div className="pt-2 border-t border-error/20">
+          <button
+            type="button"
+            onClick={onRetry}
+            disabled={!!testing}
+            className={cn(
+              "inline-flex items-center gap-1.5 px-2.5 py-1 text-[11px] rounded-sm transition-colors",
+              "bg-white border border-error/40 text-error",
+              "hover:bg-error/10 hover:border-error",
+              testing && "opacity-50 cursor-not-allowed"
+            )}
+          >
+            {testing ? (
+              <>
+                <Loader2 className="h-3 w-3 animate-spin" />
+                Testing…
+              </>
+            ) : (
+              <>Retry connection</>
+            )}
+          </button>
+        </div>
       )}
       <details className="pt-1 border-t border-error/20">
         <summary className="cursor-pointer text-slate-muted hover:text-ink">
