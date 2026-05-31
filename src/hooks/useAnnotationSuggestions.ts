@@ -7,6 +7,98 @@ import { useState, useCallback } from "react";
 import type { Session, LineAnnotationType, LineAnnotation } from "@/types";
 import type { AISettings } from "@/types/ai-settings";
 
+/**
+ * Find the smallest substring starting at `start` that is a balanced
+ * bracket expression matching the opener at `text[start]` ("{" or "[").
+ * Respects string literals so braces inside JSON strings don't confuse
+ * the counter. Returns the substring including both brackets, or null.
+ */
+function extractBalanced(text: string, start: number): string | null {
+  const open = text[start];
+  const close = open === "{" ? "}" : open === "[" ? "]" : "";
+  if (!close) return null;
+  let depth = 0;
+  let inString = false;
+  let escaped = false;
+  for (let i = start; i < text.length; i++) {
+    const ch = text[i];
+    if (inString) {
+      if (escaped) { escaped = false; continue; }
+      if (ch === "\\") { escaped = true; continue; }
+      if (ch === '"') inString = false;
+      continue;
+    }
+    if (ch === '"') { inString = true; continue; }
+    if (ch === open) depth++;
+    else if (ch === close) {
+      depth--;
+      if (depth === 0) return text.slice(start, i + 1);
+    }
+  }
+  return null;
+}
+
+/**
+ * Permissive recovery of the annotations JSON from an LLM response.
+ * Strips reasoning preambles, tries fenced-then-bare extraction, and
+ * uses a brace-counting balanced extractor rather than greedy regex so
+ * stray punctuation in the prose doesn't break parsing.
+ */
+function extractAnnotationJson(raw: string): { annotations: unknown[] } | null {
+  if (!raw) return null;
+
+  // 1. Strip reasoning-model preambles like <think>…</think> or
+  //    <thought>…</thought> which can contain stray braces.
+  let text = raw.replace(/<think(?:ing)?>[\s\S]*?<\/think(?:ing)?>/gi, "");
+  text = text.replace(/<thought>[\s\S]*?<\/thought>/gi, "");
+
+  const tryParse = (candidate: string): { annotations: unknown[] } | null => {
+    try {
+      const obj = JSON.parse(candidate);
+      if (Array.isArray(obj)) return { annotations: obj };
+      if (obj && typeof obj === "object" && Array.isArray((obj as { annotations?: unknown }).annotations)) {
+        return obj as { annotations: unknown[] };
+      }
+    } catch {
+      /* fall through */
+    }
+    return null;
+  };
+
+  // 2. Try every fenced ```json … ``` (or plain ``` … ```) block, in
+  //    order. Don't require the fence to end the response.
+  const fenceRe = /```(?:json|JSON)?\s*([\s\S]*?)```/g;
+  let m: RegExpExecArray | null;
+  while ((m = fenceRe.exec(text)) !== null) {
+    const parsed = tryParse(m[1].trim());
+    if (parsed) return parsed;
+  }
+
+  // 3. Walk every "{" in order, looking for a balanced JSON object that
+  //    contains an "annotations" key and parses cleanly.
+  for (let i = 0; i < text.length; i++) {
+    if (text[i] !== "{") continue;
+    const candidate = extractBalanced(text, i);
+    if (!candidate || !/"annotations"\s*:/.test(candidate)) continue;
+    const parsed = tryParse(candidate);
+    if (parsed) return parsed;
+  }
+
+  // 4. Walk every "[" in order, looking for a balanced array that
+  //    parses as an array of objects with a lineNumber field.
+  for (let i = 0; i < text.length; i++) {
+    if (text[i] !== "[") continue;
+    const candidate = extractBalanced(text, i);
+    if (!candidate) continue;
+    const parsed = tryParse(candidate);
+    if (parsed && parsed.annotations.some((a) => a && typeof a === "object" && "lineNumber" in (a as object))) {
+      return parsed;
+    }
+  }
+
+  return null;
+}
+
 interface UseAnnotationSuggestionsParams {
   selectedFileId: string | null;
   session: Session;
@@ -237,40 +329,28 @@ Follow the ${modeContext} guidance provided above.`;
 
       console.log("[AI Annotation Suggestions] Raw AI response:", aiResponse);
 
-      // Try to extract JSON from the response (handle markdown code fences)
-      let jsonText = aiResponse;
+      // Robust JSON extraction. Local models (especially reasoning
+      // variants like qwen3-vl, deepseek-r1, and some gemma builds)
+      // routinely emit:
+      //   - <think>…</think> blocks before the answer,
+      //   - chatty prefaces like "Here are 5 annotations:" then a fence,
+      //   - fenced JSON with trailing prose after the closing fence,
+      //   - bare JSON with no fence, or
+      //   - stray braces in the thinking text.
+      // Walk through the most permissive recovery steps in order; only
+      // give up when none of them yield parseable JSON containing the
+      // expected shape.
+      const parsed = extractAnnotationJson(aiResponse);
 
-      // Remove markdown code fences if present (use greedy match to handle backticks in content)
-      const codeBlockMatch = aiResponse.match(/```(?:json)?\s*([\s\S]*)\s*```\s*$/);
-      if (codeBlockMatch) {
-        jsonText = codeBlockMatch[1];
-      }
-
-      // Try to find JSON object with annotations array (use greedy match)
-      let jsonMatch = jsonText.match(/\{[\s\S]*"annotations"[\s\S]*\}/);
-      if (!jsonMatch) {
-        // Try to find just the array (greedy match)
-        const arrayMatch = jsonText.match(/\[[\s\S]*\]/);
-        if (arrayMatch) {
-          jsonText = `{"annotations": ${arrayMatch[0]}}`;
-          jsonMatch = [jsonText];
-        }
-      }
-
-      if (!jsonMatch) {
+      if (!parsed) {
         console.error("[AI Annotation Suggestions] Could not extract JSON from response");
         console.error("Response text:", aiResponse);
-        setSuccessMessage("AI response was not in expected format");
-        return;
-      }
-
-      let parsed;
-      try {
-        parsed = JSON.parse(jsonMatch[0]);
-      } catch (parseError) {
-        console.error("[AI Annotation Suggestions] JSON parse error:", parseError);
-        console.error("Attempted to parse:", jsonMatch[0]);
-        setSuccessMessage("Failed to parse AI response");
+        const looksLikeRefusal = /sorry|cannot|can't|unable|refuse/i.test(aiResponse.slice(0, 200));
+        setSuccessMessage(
+          looksLikeRefusal
+            ? "The model declined to produce annotations. Try a stronger model or rephrase."
+            : "Model output wasn't valid JSON. Check the browser console for the raw response, or try a different model — local models vary in how strictly they follow format instructions."
+        );
         return;
       }
 
