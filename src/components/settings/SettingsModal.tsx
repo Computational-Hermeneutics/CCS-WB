@@ -914,18 +914,19 @@ export function SettingsModal({
 
           {activeTab === "cloud" && (
             <div className="space-y-5">
-              {/* Intro: what Mode 2 is, why it's optional, what it costs
-                  to set up, and how it relates to Modes 0/1. */}
+              {/* Intro: what Cloud is, why it's optional, what it costs
+                  to set up, and how it relates to Local. */}
               <div className="space-y-2 pb-3 border-b border-parchment">
                 <h3 className="font-display text-base text-ink">Cloud Collaboration</h3>
                 <p className="font-sans text-caption text-slate leading-relaxed">
-                  CCS-WB is a <strong>local-first workbench</strong>. Most users never
-                  need this tab — annotation, comments, file save/load and merging
-                  collaborators&apos; <code className="font-mono text-[11px] bg-cream px-1 rounded-sm">.ccs</code> files
-                  (Modes 0 and 1) all work fully offline, with no account and no backend.
+                  CCS-WB has two collaboration tiers, <strong>Local</strong> and{" "}
+                  <strong>Cloud</strong>. Most users never need this tab — Local covers
+                  annotation, threaded comments on annotations, <code className="font-mono text-[11px] bg-cream px-1 rounded-sm">.ccs</code>{" "}
+                  save/load, and merging collaborators&apos; <code className="font-mono text-[11px] bg-cream px-1 rounded-sm">.ccs</code>{" "}
+                  files — all fully offline, with no account and no backend.
                 </p>
                 <p className="font-sans text-caption text-slate leading-relaxed">
-                  This tab exists for <strong>Mode 2</strong>: real-time multi-user sync
+                  This tab is for <strong>Cloud</strong>: real-time multi-user sync
                   across the network — shared cloud projects, OAuth sign-in, members,
                   the public library. It is powered by Supabase, which you{" "}
                   <strong>bring your own</strong>: CCS-WB does not ship with a hosted
@@ -943,7 +944,7 @@ export function SettingsModal({
                   <p>
                     Plain Supabase is a hosted Postgres database with an auth service,
                     row-level security (RLS) policies, and a realtime channel. To use
-                    Mode 2 you need to:
+                    Cloud you need to:
                   </p>
                   <ol className="list-decimal pl-5 space-y-1">
                     <li>
@@ -1007,7 +1008,7 @@ export function SettingsModal({
                         ? resolvedConfig.source === "runtime"
                           ? "Using a user-supplied backend (set below)."
                           : "Using the deployment's built-in backend (env vars)."
-                        : "Not configured. Modes 0 and 1 work fully without it; Mode 2 needs a backend."}
+                        : "Not configured. Local works fully without it; Cloud needs a backend."}
                     </p>
                   </div>
                   <button
@@ -1083,7 +1084,7 @@ export function SettingsModal({
                       Master switch for sign-in, shared projects, members, the
                       public library, and real-time sync. Turn off for a clean
                       local-only workbench — no data is sent to or fetched from
-                      the cloud. Modes 0 and 1 are unaffected.
+                      the cloud. Local is unaffected.
                     </p>
                   </div>
                   <button

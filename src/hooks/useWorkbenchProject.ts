@@ -546,7 +546,7 @@ export function useWorkbenchProject({
   }, [importSession, setFavouriteMessages, setCodePanelWidth, setChatCollapsed, initializeOriginalContents]);
 
   // Merge annotations from another collaborator's .ccs file into the
-  // current session (asynchronous file-based collaboration, tier A).
+  // current session (asynchronous file-based collaboration, Local tier).
   // Additive only: never deletes or overwrites local annotations.
   const handleMergeAnnotationsFile = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];

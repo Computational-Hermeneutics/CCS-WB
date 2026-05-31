@@ -66,17 +66,18 @@ Both Analyze and Learn modes use a unified three-panel IDE interface for focused
 
 ### Collaboration
 
-CCS-WB offers **two ways to collaborate on annotations**, deliberately at
-different levels of complexity. Most users want the first. See
+CCS-WB has **two collaboration tiers, *Local* and *Cloud***, deliberately at
+different levels of complexity. Most users want Local. See
 [`docs/COLLABORATION.md`](docs/COLLABORATION.md) for the full model and the
 rationale behind keeping both.
 
-#### Mode 1 — File-based merge (simple, recommended, zero infrastructure)
+#### Local — annotation, comments, and file-based collaboration (simple, recommended, zero infrastructure)
 
-Asynchronous collaboration with no backend, no accounts, and no network: you
-each annotate the same code independently, save `.ccs` files, and merge them
-together. Ideal for co-authored close readings and the common "you mark it up,
-I mark it up, we combine" workflow.
+Everything that doesn't need a backend: annotate code, write threaded
+comments on annotations, save/load `.ccs` files, and merge collaborators'
+`.ccs` files into yours. Asynchronous, no accounts, no network — ideal for
+co-authored close readings and the common "you mark it up, I mark it up,
+we combine" workflow.
 
 - **Merge annotations**: the merge button (next to *Load session*) pulls a
   collaborator's `.ccs` into your session. **Additive only** — nothing of yours
@@ -94,24 +95,25 @@ I mark it up, we combine" workflow.
   master is never lost. The saved `.ccs` keeps every annotation with its author,
   replies, and review flags.
 
-#### Mode 2 — Cloud sync (advanced, **self-hosted**, opt-in)
+#### Cloud — real-time multi-user sync (advanced, **self-hosted**, opt-in)
 
 Real-time multi-user collaboration backed by Supabase — more capable but
 heavier and **self-hosted**: CCS-WB itself does not ship with a hosted
-cloud backend. To use this mode you provide your own Supabase project
-(free tier is fine) and either run your own CCS-WB build pointed at it
-or set the env vars on your own Vercel deployment. See
+backend. To use Cloud you provide your own Supabase project (free tier
+is fine) and either run your own CCS-WB build pointed at it or set the
+env vars on your own Vercel deployment. See
 [`docs/SUPABASE_SETUP.md`](docs/SUPABASE_SETUP.md). Note that on
 Supabase's free tier the backend auto-pauses when idle, so the first
 request of a session after inactivity can stall briefly — fine for
 small groups, plan a warm-up if you're starting a live seminar.
 
-**Annotation comments work without Mode 2.** Threaded comments on
+**Annotation comments do not require Cloud.** Threaded comments on
 individual annotations are part of the local data model: they are saved
-into the `.ccs` file, survive load, and merge correctly via Mode 1.
-Mode 2 only adds *real-time multi-user sync* of those comments on top.
+into the `.ccs` file, survive load, and merge correctly via Local file
+merge. Cloud only adds *real-time multi-user sync* of those comments
+on top.
 
-- **Master switch**: Cloud collaboration can be turned off entirely in **Settings → Cloud → Enable Cloud Collaboration**. When off, all sign-in and cloud UI is hidden, CCS-WB runs as a clean local-only workbench, and no requests are made to the backend (so a paused free-tier Supabase instance is never woken). Default on; the toggle stays available whenever Supabase is configured so it can be re-enabled. Local annotation, `.ccs` save/load, and Mode 1 file-merge are unaffected by this switch.
+- **Master switch**: Cloud can be turned off entirely in **Settings → Cloud → Enable Cloud Collaboration**. When off, all sign-in and cloud UI is hidden, CCS-WB runs as a clean local-only workbench, and no requests are made to the backend (so a paused free-tier Supabase instance is never woken). Default on; the toggle stays available whenever Supabase is configured so it can be re-enabled. Local (annotation, comments, `.ccs` save/load, file merge) is unaffected by this switch.
 - **Real-time sync**: Annotations and code files sync automatically (5-second polling)
 - **Connection resilience**: Google Docs-style data protection with automatic reconnection
   - **Operation queue**: Failed operations queued locally (IndexedDB) and retried automatically

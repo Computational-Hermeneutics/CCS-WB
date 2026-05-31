@@ -1,6 +1,6 @@
 // Asynchronous, file-based collaborative annotation.
 //
-// Tier (A) of the collaboration model: two people work on the same code
+// Part of the Local collaboration tier: two people work on the same code
 // independently, each saving a `.ccs` file, then one merges the other's
 // annotations in. No backend, no accounts, no realtime — just a union
 // of annotation sets.

@@ -1,7 +1,7 @@
 // Runtime Supabase configuration.
 //
 // In v4.0 the public CCS-WB deployment ships as a local-first client
-// with no hosted backend. Users who want Mode-2 cloud sync supply
+// with no hosted backend. Users who want Cloud sync supply
 // their own Supabase project's URL + anon key — *at runtime, from the
 // Settings UI* — rather than having to fork-and-rebuild with env vars.
 //
@@ -11,7 +11,7 @@
 //   2. NEXT_PUBLIC_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_ANON_KEY env
 //      vars at build time. Preserved as the fallback so any deployment
 //      that already wired its own Supabase via env vars keeps working.
-//   3. Nothing — Mode 2 is unavailable; Modes 0 and 1 still work.
+//   3. Nothing — Cloud is unavailable; Local still works.
 //
 // Server-side code (the API routes) only sees the env-var path; the
 // runtime override is browser-only by design. With browser-direct AI
