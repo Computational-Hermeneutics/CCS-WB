@@ -225,11 +225,12 @@ Follow the ${modeContext} guidance provided above.`;
 
       const rawPayload = await response.json();
 
-      // Browser-direct dispatch for Ollama (see browser-direct.ts).
+      // Browser-direct dispatch (see browser-direct.ts) for every
+      // provider that opts in via shouldBrowserDispatch.
       let aiResponse: string;
-      if (rawPayload?.browserDirect && rawPayload.ollamaPayload) {
-        const { callOllamaDirect } = await import("@/lib/ai/browser-direct");
-        aiResponse = await callOllamaDirect(rawPayload.ollamaPayload);
+      if (rawPayload?.browserDirect) {
+        const { dispatchBrowserDirect } = await import("@/lib/ai/browser-direct");
+        aiResponse = await dispatchBrowserDirect(rawPayload);
       } else {
         aiResponse = rawPayload.message.content;
       }

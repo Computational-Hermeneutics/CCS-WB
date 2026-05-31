@@ -11,7 +11,7 @@ import type { CCSMethod } from "@/lib/ccs-content";
 import { fetchWithTimeout, retryWithBackoff } from "@/lib/utils";
 import { extractCodeBlocks, generateFileName, getUniqueFileName } from "@/lib/code-extraction";
 import { generateAnnotatedCode } from "@/components/code";
-import { callOllamaDirect, pingOllama } from "@/lib/ai/browser-direct";
+import { dispatchBrowserDirect, pingOllama, pingAnthropic } from "@/lib/ai/browser-direct";
 
 const CRITIQUE_OPENING =
   "What code would you like to explore? You can paste it directly, upload a file, or describe what you're looking at. I'm curious what drew your attention to this particular piece of software.";
@@ -293,13 +293,20 @@ export function useWorkbenchChat({
     setConnectionStatus("testing");
 
     try {
-      // Ollama is dispatched directly from the browser (see browser-direct.ts).
+      // Browser-direct providers do their reachability check from the
+      // browser; no API route round-trip needed.
       if (aiSettings.provider === "ollama") {
         const result = await pingOllama(aiSettings.baseUrl || "http://localhost:11434");
-        if (result.ok) {
-          setConnectionStatus("success");
-          return true;
-        }
+        if (result.ok) { setConnectionStatus("success"); return true; }
+        setConnectionStatus("error", result.message);
+        return false;
+      }
+      if (aiSettings.provider === "anthropic") {
+        const modelToTest = aiSettings.model === "custom"
+          ? (aiSettings.customModelId || "claude-3-5-haiku-20241022")
+          : aiSettings.model;
+        const result = await pingAnthropic(aiSettings.apiKey || "", modelToTest);
+        if (result.ok) { setConnectionStatus("success"); return true; }
         setConnectionStatus("error", result.message);
         return false;
       }
@@ -413,11 +420,12 @@ export function useWorkbenchChat({
           if (!response.ok) throw new Error("Failed to get response");
           const payload = await response.json();
 
-          // Browser-direct dispatch for Ollama: the server returned the
-          // prepared payload; we make the actual model call here so it
-          // works even when CCS-WB is deployed and Ollama is on localhost.
-          if (payload?.browserDirect && payload.ollamaPayload) {
-            const content = await callOllamaDirect(payload.ollamaPayload);
+          // Browser-direct dispatch: the server returned the prepared
+          // payload; we make the actual model call here so CCS-WB
+          // doesn't depend on the API route at runtime. Handles every
+          // provider that opts in via shouldBrowserDispatch.
+          if (payload?.browserDirect) {
+            const content = await dispatchBrowserDirect(payload);
             return {
               message: {
                 ...payload.messageTemplate,

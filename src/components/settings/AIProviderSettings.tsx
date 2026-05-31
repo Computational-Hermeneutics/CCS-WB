@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useAISettings } from "@/context/AISettingsContext";
 import { PROVIDER_CONFIGS, getAllProviders, initializeModels, getProviderConfigWithModels } from "@/lib/ai/config";
-import { pingOllama, isRemoteOrigin } from "@/lib/ai/browser-direct";
+import { pingOllama, pingAnthropic, isRemoteOrigin } from "@/lib/ai/browser-direct";
 import type { PingResult } from "@/lib/ai/browser-direct";
 import { OllamaConnectionStatus } from "./OllamaConnectionStatus";
 import type { AIProvider } from "@/types/ai-settings";
@@ -119,6 +119,21 @@ export function AIProviderSettings({ onClose }: AIProviderSettingsProps) {
       if (settings.provider === "ollama") {
         const result = await pingOllama(settings.baseUrl || "http://localhost:11434");
         setOllamaPing(result);
+        if (result.ok) {
+          setConnectionStatus("success");
+        } else {
+          setConnectionStatus("error", result.message);
+        }
+        return;
+      }
+
+      // Anthropic: browser-direct ping so CCS-WB stays host-independent
+      // (the static PWA shell can verify the key without a server).
+      if (settings.provider === "anthropic") {
+        const modelToTest = settings.model === "custom"
+          ? (settings.customModelId || "claude-3-5-haiku-20241022")
+          : settings.model;
+        const result = await pingAnthropic(settings.apiKey || "", modelToTest);
         if (result.ok) {
           setConnectionStatus("success");
         } else {

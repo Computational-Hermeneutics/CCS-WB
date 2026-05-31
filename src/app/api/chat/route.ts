@@ -376,13 +376,33 @@ Engage with these annotations in your response. They represent the analyst's dev
 
     const modelName = getModelDisplayName(aiConfig.provider, aiConfig.model);
 
-    // For Ollama, return the prepared payload so the browser can dispatch
-    // the call directly. A deployed CCS-WB on Vercel cannot reach the
-    // user's localhost; the browser can.
+    // For browser-direct providers, return the prepared payload so the
+    // browser can dispatch the model call itself. The route still does
+    // all prompt building (methodology, code with line numbers,
+    // experience-level guidance); only the final model call moves.
+    //
+    // - Ollama: the deployed serverless route cannot reach the user's
+    //   localhost; the browser can (loopback exemption).
+    // - Anthropic: opting browser-direct removes the server dependency
+    //   for the default case so CCS-WB runs as a host-independent SPA.
+    //
+    // The envelope is provider-tagged so the client switches on
+    // `payload.provider` to choose its dispatcher.
     if (aiConfig.provider === "ollama") {
       return NextResponse.json({
         browserDirect: true,
+        provider: "ollama",
+        // Legacy shape preserved for backwards compatibility with hooks
+        // not yet migrated to the generalised envelope.
         ollamaPayload: {
+          baseUrl: aiConfig.baseUrl || "http://localhost:11434",
+          model: aiConfig.model,
+          system: systemPrompt,
+          messages: aiMessages,
+          maxTokens: 1024,
+        },
+        payload: {
+          provider: "ollama",
           baseUrl: aiConfig.baseUrl || "http://localhost:11434",
           model: aiConfig.model,
           system: systemPrompt,
@@ -393,10 +413,28 @@ Engage with these annotations in your response. They represent the analyst's dev
           id: generateId(),
           role: "assistant",
           timestamp: getCurrentTimestamp(),
-          metadata: {
-            phase: currentPhase,
-            model: modelName,
-          },
+          metadata: { phase: currentPhase, model: modelName },
+        },
+      });
+    }
+
+    if (aiConfig.provider === "anthropic" && aiConfig.apiKey) {
+      return NextResponse.json({
+        browserDirect: true,
+        provider: "anthropic",
+        payload: {
+          provider: "anthropic",
+          apiKey: aiConfig.apiKey,
+          model: aiConfig.model,
+          system: systemPrompt,
+          messages: aiMessages,
+          maxTokens: 1024,
+        },
+        messageTemplate: {
+          id: generateId(),
+          role: "assistant",
+          timestamp: getCurrentTimestamp(),
+          metadata: { phase: currentPhase, model: modelName },
         },
       });
     }
