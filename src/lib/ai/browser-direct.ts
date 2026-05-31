@@ -46,12 +46,36 @@ export interface AnthropicPayload {
 
 /**
  * Providers that should be dispatched directly from the browser rather
- * than via the Next.js API route. Currently Ollama + Anthropic; the
- * remaining commercial providers will be added in subsequent commits.
+ * than via the Next.js API route. Migration order: Ollama (1st),
+ * Anthropic (spike), then the OpenAI-compatible family.
  */
 export function shouldBrowserDispatch(provider: AIProvider): boolean {
-  return provider === "ollama" || provider === "anthropic";
+  // Flip each entry on as the dispatcher and the route branch land
+  // together. Keeping this in lockstep with implementation rather than
+  // enabling speculatively avoids "dispatcher: not yet supported" errors.
+  return (
+    provider === "ollama" ||
+    provider === "anthropic" ||
+    provider === "openai"
+  );
 }
+
+// Shared payload shape for OpenAI Chat Completions and its many
+// API-compatible cousins (OpenRouter, Hugging Face Router, vLLM, Groq,
+// Together, Ollama's /v1 endpoint, etc.).
+export interface OpenAICompatiblePayload {
+  apiKey: string;
+  baseUrl: string;
+  model: string;
+  system: string;
+  messages: Array<{ role: "user" | "assistant"; content: string }>;
+  maxTokens: number;
+  temperature?: number;
+}
+
+const OPENAI_BASE = "https://api.openai.com/v1";
+const OPENROUTER_BASE = "https://openrouter.ai/api/v1";
+const HUGGINGFACE_BASE = "https://router.huggingface.co/v1";
 
 /**
  * True when the page is loaded from a non-loopback origin. Used to warn
@@ -168,6 +192,8 @@ export async function dispatchBrowserDirect(envelope: any): Promise<string> {
       return callOllamaDirect(payload);
     case "anthropic":
       return callAnthropicDirect(payload);
+    case "openai":
+      return callOpenAIDirect(payload);
     default:
       throw new Error(`dispatchBrowserDirect: provider "${payload.provider}" not yet supported in browser-direct mode.`);
   }
@@ -273,4 +299,109 @@ export async function callAnthropicDirect(payload: AnthropicPayload): Promise<st
     throw new Error("Anthropic returned an empty response.");
   }
   return text;
+}
+
+// ---- OpenAI-compatible browser-direct dispatch ----
+//
+// Shared implementation for OpenAI itself plus every API-compatible
+// provider (OpenRouter, Hugging Face Router, Ollama's /v1 endpoint, any
+// vLLM/Groq/Together/Fireworks instance the user points us at). All
+// speak Chat Completions; the only per-provider differences are the
+// base URL and the cheapest-known test model.
+
+/** Cheap reachability + key validity check via a 1-token chat call. */
+export async function pingOpenAICompatible(
+  baseUrl: string,
+  apiKey: string,
+  model: string,
+  providerLabel: string
+): Promise<
+  | { ok: true }
+  | { ok: false; kind: "auth" | "network" | "http_error"; status?: number; message: string }
+> {
+  if (!apiKey) {
+    return { ok: false, kind: "auth", message: `No ${providerLabel} API key configured.` };
+  }
+  const url = baseUrl.replace(/\/+$/, "") + "/chat/completions";
+  try {
+    const response = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+      body: JSON.stringify({
+        model,
+        max_tokens: 1,
+        messages: [{ role: "user", content: "ping" }],
+      }),
+      signal: AbortSignal.timeout(10000),
+    });
+    if (response.ok) return { ok: true };
+    if (response.status === 401 || response.status === 403) {
+      return { ok: false, kind: "auth", status: response.status, message: `Authentication failed — check your ${providerLabel} API key.` };
+    }
+    const errText = await response.text().catch(() => "");
+    return {
+      ok: false,
+      kind: "http_error",
+      status: response.status,
+      message: `${providerLabel} responded with HTTP ${response.status}${errText ? `: ${errText.slice(0, 160)}` : ""}`,
+    };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unknown error";
+    return { ok: false, kind: "network", message };
+  }
+}
+
+/** Convenience: provider-specific pings that pick the right base URL. */
+export function pingOpenAI(apiKey: string, model = "gpt-4o-mini") {
+  return pingOpenAICompatible(OPENAI_BASE, apiKey, model, "OpenAI");
+}
+
+/**
+ * Call any OpenAI-Chat-Completions-compatible endpoint from the browser.
+ * Returns the assistant text content.
+ */
+export async function callOpenAICompatibleDirect(payload: OpenAICompatiblePayload, providerLabel = "OpenAI"): Promise<string> {
+  if (!payload.apiKey) {
+    throw new Error(`${providerLabel} API key is required for browser-direct dispatch.`);
+  }
+  const url = payload.baseUrl.replace(/\/+$/, "") + "/chat/completions";
+  const messages = [
+    ...(payload.system ? [{ role: "system" as const, content: payload.system }] : []),
+    ...payload.messages,
+  ];
+
+  const response = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${payload.apiKey}` },
+    body: JSON.stringify({
+      model: payload.model,
+      messages,
+      max_tokens: payload.maxTokens,
+      ...(payload.temperature !== undefined ? { temperature: payload.temperature } : {}),
+    }),
+    signal: AbortSignal.timeout(120000),
+  });
+
+  if (!response.ok) {
+    const errText = await response.text().catch(() => "");
+    if (response.status === 401 || response.status === 403) {
+      throw new Error(`Authentication failed for ${providerLabel}. Please check your API key in Settings.`);
+    }
+    if (response.status === 429) {
+      throw new Error(`Rate limit exceeded for ${providerLabel}. Please wait and try again.`);
+    }
+    throw new Error(`${providerLabel} returned HTTP ${response.status}${errText ? `: ${errText.slice(0, 200)}` : ""}`);
+  }
+
+  const data = await response.json();
+  const content = data?.choices?.[0]?.message?.content;
+  if (typeof content !== "string" || content.trim() === "") {
+    throw new Error(`${providerLabel} returned an empty response.`);
+  }
+  return content;
+}
+
+/** OpenAI-specific entry point — fills in the base URL. */
+export function callOpenAIDirect(payload: Omit<OpenAICompatiblePayload, "baseUrl"> & { baseUrl?: string }): Promise<string> {
+  return callOpenAICompatibleDirect({ ...payload, baseUrl: payload.baseUrl || OPENAI_BASE }, "OpenAI");
 }

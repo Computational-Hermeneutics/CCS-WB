@@ -439,6 +439,28 @@ Engage with these annotations in your response. They represent the analyst's dev
       });
     }
 
+    if (aiConfig.provider === "openai" && aiConfig.apiKey) {
+      return NextResponse.json({
+        browserDirect: true,
+        provider: "openai",
+        payload: {
+          provider: "openai",
+          apiKey: aiConfig.apiKey,
+          baseUrl: aiConfig.baseUrl || undefined,
+          model: aiConfig.model,
+          system: systemPrompt,
+          messages: aiMessages,
+          maxTokens: 1024,
+        },
+        messageTemplate: {
+          id: generateId(),
+          role: "assistant",
+          timestamp: getCurrentTimestamp(),
+          metadata: { phase: currentPhase, model: modelName },
+        },
+      });
+    }
+
     // Call AI API using unified client
     const responseContent = await generateAIResponse(aiConfig, {
       system: systemPrompt,

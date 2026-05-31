@@ -11,7 +11,7 @@ import type { CCSMethod } from "@/lib/ccs-content";
 import { fetchWithTimeout, retryWithBackoff } from "@/lib/utils";
 import { extractCodeBlocks, generateFileName, getUniqueFileName } from "@/lib/code-extraction";
 import { generateAnnotatedCode } from "@/components/code";
-import { dispatchBrowserDirect, pingOllama, pingAnthropic } from "@/lib/ai/browser-direct";
+import { dispatchBrowserDirect, pingOllama, pingAnthropic, pingOpenAI } from "@/lib/ai/browser-direct";
 
 const CRITIQUE_OPENING =
   "What code would you like to explore? You can paste it directly, upload a file, or describe what you're looking at. I'm curious what drew your attention to this particular piece of software.";
@@ -306,6 +306,15 @@ export function useWorkbenchChat({
           ? (aiSettings.customModelId || "claude-3-5-haiku-20241022")
           : aiSettings.model;
         const result = await pingAnthropic(aiSettings.apiKey || "", modelToTest);
+        if (result.ok) { setConnectionStatus("success"); return true; }
+        setConnectionStatus("error", result.message);
+        return false;
+      }
+      if (aiSettings.provider === "openai") {
+        const modelToTest = aiSettings.model === "custom"
+          ? (aiSettings.customModelId || "gpt-4o-mini")
+          : aiSettings.model;
+        const result = await pingOpenAI(aiSettings.apiKey || "", modelToTest);
         if (result.ok) { setConnectionStatus("success"); return true; }
         setConnectionStatus("error", result.message);
         return false;
