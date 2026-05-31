@@ -461,6 +461,27 @@ Engage with these annotations in your response. They represent the analyst's dev
       });
     }
 
+    if (aiConfig.provider === "google" && aiConfig.apiKey) {
+      return NextResponse.json({
+        browserDirect: true,
+        provider: "google",
+        payload: {
+          provider: "google",
+          apiKey: aiConfig.apiKey,
+          model: aiConfig.model,
+          system: systemPrompt,
+          messages: aiMessages,
+          maxTokens: 1024,
+        },
+        messageTemplate: {
+          id: generateId(),
+          role: "assistant",
+          timestamp: getCurrentTimestamp(),
+          metadata: { phase: currentPhase, model: modelName },
+        },
+      });
+    }
+
     if (
       (aiConfig.provider === "openrouter" ||
         aiConfig.provider === "huggingface" ||

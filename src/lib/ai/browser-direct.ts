@@ -59,9 +59,25 @@ export function shouldBrowserDispatch(provider: AIProvider): boolean {
     provider === "openai" ||
     provider === "openrouter" ||
     provider === "huggingface" ||
-    provider === "openai-compatible"
+    provider === "openai-compatible" ||
+    provider === "google"
   );
 }
+
+// Google's Generative Language API doesn't share the OpenAI Chat shape.
+// Messages are "contents" with role "user" | "model" and `parts` arrays;
+// the system prompt is a top-level systemInstruction; the API key is
+// passed as the `x-goog-api-key` header.
+export interface GooglePayload {
+  apiKey: string;
+  model: string;
+  system: string;
+  messages: Array<{ role: "user" | "assistant"; content: string }>;
+  maxTokens: number;
+  temperature?: number;
+}
+
+const GOOGLE_BASE = "https://generativelanguage.googleapis.com/v1beta";
 
 // Shared payload shape for OpenAI Chat Completions and its many
 // API-compatible cousins (OpenRouter, Hugging Face Router, vLLM, Groq,
@@ -203,6 +219,8 @@ export async function dispatchBrowserDirect(envelope: any): Promise<string> {
       return callHuggingFaceDirect(payload);
     case "openai-compatible":
       return callOpenAICompatibleGenericDirect(payload);
+    case "google":
+      return callGoogleDirect(payload);
     default:
       throw new Error(`dispatchBrowserDirect: provider "${payload.provider}" not yet supported in browser-direct mode.`);
   }
@@ -437,4 +455,94 @@ export function pingOpenAICompatibleGeneric(baseUrl: string, apiKey: string, mod
 }
 export function callOpenAICompatibleGenericDirect(payload: OpenAICompatiblePayload): Promise<string> {
   return callOpenAICompatibleDirect(payload, "OpenAI-Compatible API");
+}
+
+// ---- Google (Gemini) browser-direct dispatch ----
+
+/** Cheap reachability + key validity check via a tiny generateContent. */
+export async function pingGoogle(apiKey: string, model = "gemini-2.5-flash-lite"): Promise<
+  | { ok: true }
+  | { ok: false; kind: "auth" | "network" | "http_error"; status?: number; message: string }
+> {
+  if (!apiKey) return { ok: false, kind: "auth", message: "No Google API key configured." };
+  const url = `${GOOGLE_BASE}/models/${encodeURIComponent(model)}:generateContent`;
+  try {
+    const response = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
+      body: JSON.stringify({
+        contents: [{ role: "user", parts: [{ text: "ping" }] }],
+        generationConfig: { maxOutputTokens: 1 },
+      }),
+      signal: AbortSignal.timeout(10000),
+    });
+    if (response.ok) return { ok: true };
+    if (response.status === 401 || response.status === 403) {
+      return { ok: false, kind: "auth", status: response.status, message: "Authentication failed — check your Google API key." };
+    }
+    const errText = await response.text().catch(() => "");
+    return {
+      ok: false,
+      kind: "http_error",
+      status: response.status,
+      message: `Google responded with HTTP ${response.status}${errText ? `: ${errText.slice(0, 160)}` : ""}`,
+    };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unknown error";
+    return { ok: false, kind: "network", message };
+  }
+}
+
+/**
+ * Call Google's Generative Language API directly from the browser.
+ * Translates the shared (system, role:user/assistant) shape into
+ * Gemini's (systemInstruction, role:user/model, parts) shape and
+ * concatenates text parts from the response.
+ */
+export async function callGoogleDirect(payload: GooglePayload): Promise<string> {
+  if (!payload.apiKey) {
+    throw new Error("Google API key is required for browser-direct dispatch.");
+  }
+  const url = `${GOOGLE_BASE}/models/${encodeURIComponent(payload.model)}:generateContent`;
+
+  const body: Record<string, unknown> = {
+    contents: payload.messages.map((m) => ({
+      role: m.role === "assistant" ? "model" : "user",
+      parts: [{ text: m.content }],
+    })),
+    generationConfig: {
+      maxOutputTokens: payload.maxTokens,
+      ...(payload.temperature !== undefined ? { temperature: payload.temperature } : {}),
+    },
+  };
+  if (payload.system) {
+    body.systemInstruction = { parts: [{ text: payload.system }] };
+  }
+
+  const response = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "x-goog-api-key": payload.apiKey },
+    body: JSON.stringify(body),
+    signal: AbortSignal.timeout(180000), // Gemini thinking models can be slow
+  });
+
+  if (!response.ok) {
+    const errText = await response.text().catch(() => "");
+    if (response.status === 401 || response.status === 403) {
+      throw new Error("Authentication failed for Google. Please check your API key in Settings.");
+    }
+    if (response.status === 429) {
+      throw new Error("Rate limit exceeded for Google. Please wait and try again.");
+    }
+    throw new Error(`Google returned HTTP ${response.status}${errText ? `: ${errText.slice(0, 200)}` : ""}`);
+  }
+
+  const data = await response.json();
+  const parts = data?.candidates?.[0]?.content?.parts;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const text = Array.isArray(parts) ? parts.map((p: any) => p?.text ?? "").join("") : "";
+  if (!text || text.trim() === "") {
+    throw new Error("Google returned an empty response.");
+  }
+  return text;
 }

@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useAISettings } from "@/context/AISettingsContext";
 import { PROVIDER_CONFIGS, getAllProviders, initializeModels, getProviderConfigWithModels } from "@/lib/ai/config";
-import { pingOllama, pingAnthropic, pingOpenAI, pingOpenRouter, pingHuggingFace, pingOpenAICompatibleGeneric, isRemoteOrigin } from "@/lib/ai/browser-direct";
+import { pingOllama, pingAnthropic, pingOpenAI, pingOpenRouter, pingHuggingFace, pingOpenAICompatibleGeneric, pingGoogle, isRemoteOrigin } from "@/lib/ai/browser-direct";
 import type { PingResult } from "@/lib/ai/browser-direct";
 import { OllamaConnectionStatus } from "./OllamaConnectionStatus";
 import type { AIProvider } from "@/types/ai-settings";
@@ -165,6 +165,15 @@ export function AIProviderSettings({ onClose }: AIProviderSettingsProps) {
           ? (settings.customModelId || "meta-llama/Llama-3.1-8B-Instruct")
           : settings.model;
         const result = await pingHuggingFace(settings.apiKey || "", modelToTest);
+        if (result.ok) { setConnectionStatus("success"); } else { setConnectionStatus("error", result.message); }
+        return;
+      }
+
+      if (settings.provider === "google") {
+        const modelToTest = settings.model === "custom"
+          ? (settings.customModelId || "gemini-2.5-flash-lite")
+          : settings.model;
+        const result = await pingGoogle(settings.apiKey || "", modelToTest);
         if (result.ok) { setConnectionStatus("success"); } else { setConnectionStatus("error", result.message); }
         return;
       }
