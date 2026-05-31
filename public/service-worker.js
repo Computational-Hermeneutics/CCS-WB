@@ -10,7 +10,7 @@
 
 // Cache version - increment this when you want to force cache updates
 // Format: ccs-wb-v{major}.{minor}.{patch}
-const CACHE_VERSION = '2.20.2';
+const CACHE_VERSION = '4.1.0';
 const CACHE_NAME = `ccs-wb-v${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
@@ -109,6 +109,23 @@ self.addEventListener('fetch', (event) => {
 
   // Skip chrome-extension and other non-http(s) requests
   if (!url.startsWith('http')) {
+    return;
+  }
+
+  // Skip cross-origin requests entirely. Browser-direct AI dispatch
+  // (Anthropic, OpenAI, Google, Ollama, OpenRouter, Hugging Face,
+  // OpenAI-compatible) and Supabase calls are all cross-origin from
+  // the CCS-WB shell's perspective; the SW has no business in their
+  // cache and was previously masking real network/CORS errors with a
+  // synthetic 503 below, which made every browser-direct provider look
+  // like "Ollama responded with HTTP 503" or similar misleading text.
+  // Letting these fall through to the default browser fetch lets the
+  // page's own catch handlers classify the failure correctly.
+  try {
+    if (new URL(url).origin !== self.location.origin) {
+      return;
+    }
+  } catch {
     return;
   }
 
