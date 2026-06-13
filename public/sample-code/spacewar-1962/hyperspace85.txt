@@ -1,0 +1,213 @@
+HYPERSPACE 85
+
+/A new tape prepared by JMG, 26 Oct 1985
+/from the listing of Hyperspace VIci, 2 May 1962
+
+/Macros privy to Hyperspace
+
+define setx S,K
+	law K		dac S
+terminate
+
+define split
+	scr 9s	sal 9s
+terminate
+
+define pack X,Y,S
+	lac X		lio Y		sar 9s		scl 9s		dac S
+termin
+
+define marvin X1,Y1,X2,Y2,S,SS
+	lac X1		add X2		S		add Y1 		dac Y1
+	sub Y2		SS		cma		add X1		dac X1
+termi
+
+define dismin X,Y,XC,YC
+	lac Y		add YC		swap		lac X		add XC		dpn
+term
+
+define reset S,K
+	lac (K		dac S
+term
+
+define random N
+	lac N		rar 1s		xor (335671			add (335671
+	dac N
+term
+
+dpn=dpy-i
+
+/Symbols privy to SPACEWAR
+
+mh1=2665		mh2=2666		mh3=2667		mx1=1567
+my1=1577		mq1=1642		ml1=1540		mb1=1637
+srt=2343		ran=2654		nnn=4500		not=3573
+scw=2673		oc=337			mco=2254		ot1=2365
+ot2=2402		nb1=3243
+
+///
+
+dimension th1(2),th2(2),th3(2),th4(2),th5(2),th6(2)
+
+/Patch location table
+
+hyp=5240		a3x=1525		a4=5510
+mlx=1456		hml=5530		shx=2341
+srh=5545		mqx=1642		hq1=5570
+
+
+/Patches directly into SPACEWAR
+
+a3x/	jda a4-1
+
+/Hypertable initialization, part 1
+
+a4/	dap a4x
+	lac .-2
+	dac nb1 1	/finish main program business
+	clear th1,th5 1
+	law 4 i
+	dac th1
+	dac th1 1		/counts tries
+	lac (opr
+	dac th4
+	dac th4 1		/recovery switch
+a4x,	jmp .
+
+mlx/	jmp hml
+
+/Hypertable initialization, part 2
+
+hml/	init hp1,th1
+	init hp2,th2
+	init hp3,th3
+	init hp4,th4
+	init hp5,th5
+	init hp6,th6
+	jmp ml1
+
+///
+
+shx/	jmp srh
+
+/Control word inspection sequence
+
+srh/
+
+hp4,	xct .			/th4 table (opr to start)
+	lac scw
+	cma
+	and mco i
+	sma
+	jmp sh1
+	ral 1
+	spa
+	jsp hyp			/go for it
+sh1,	lio scw
+	jmp srt-1
+
+mqx/	jsp hq1
+
+/Main loop table indexing
+
+hq1/	dap hqx
+	idx mx1
+	idx hp1
+	idx hp2
+	idx hp3
+	idx hp4
+	idx hp5
+	idx hp6
+hqx,	jmp .
+
+///
+
+/Hyperspace calculation and Minskytron display
+
+hyp/	dap hxt
+hp1,	isp .			/(th1)OK to jum?
+	jmp hp2-1		/yes
+	dzm hp1 i
+	jmp hxt
+	lio mx1 i
+hp2,	dio .			/(th2)
+	lio my1 i
+hp3,	dio .			/(th3)
+	lac ml1 i
+hp6,	dap .			/(th6)
+	random ran
+	add mx1 i		/diddle ship coordinates
+	dac mx1 i
+	add my1 i
+	dac my1 i
+
+	setx mb1 i,364
+	law 20 i
+hp5,	dac .			/(th5) loop counters
+	move xy1,mh1 i
+	move xy2,mh2 i
+	move xy3,mh3 i
+	init ml1 i,he1
+	jmp he1 3
+
+he1,	dap hxt
+	setx mb1 i,325
+	setx \hcl,4 i		/inner loop count
+	lac mh1 i		/unpack point coordinates
+	split
+	dac \hx1
+	dio \hy1
+	lac mh2 i
+	split
+	dac \hx2
+	dio \hy2
+	lac mh3 i
+	split
+	dac \hx3
+	dio \hy3
+
+
+/Here it is...
+h3,	marvin \hx1,\hy1,\hx2,\hy2,sar 5s,sar 5s
+	marvin \hx2,\hy2,\hx3,\hy3,sar 8s,sar 4s
+	dismin \hx2,\hy2,hp2 i,hp3 i
+	marvin \hx3,\hy3,\hx1,\hy1,sar 1s,sar 6s
+	dismin \hx3,\hy3,hp2 i,hp3 i
+
+///
+
+h3a,	count \hcl,h3
+	pack \hx1,\hy1,mh1 i	/repack coordinates
+	pack \hx2,\hy2,mh2 i
+	pack \hx3,\hy3,mh3 i
+h3b,	count hp5 i,hxt
+	setx hp5 i,100 i	/delay timer
+	init ml1 i,he2		/delay entry
+	setx mb1 i,12
+
+hxt,	jmp .			/BACK TO THE FRAY...
+
+/Delay and recovery time count loops
+
+he2,	dap hxt
+	count hp5 i,hxt
+	lac hp6 i
+	dap ml1 i
+	setx mb1 i,2000
+	reset hp4 i,jmp hyj	/recovery gate
+	setx hp5 i,500 i
+	jmp hxt
+
+hyj,	count hp5 i,sh1
+	reset hp4 i,nop
+	jmp sh1
+
+xy1,	6
+xy2,	10765
+xy3,	767765
+
+
+variables
+constants
+
+start

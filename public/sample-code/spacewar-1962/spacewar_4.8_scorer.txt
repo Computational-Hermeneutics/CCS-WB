@@ -1,0 +1,110 @@
+/scorer display 4.8
+
+/starts immediately after compiled outlines
+4544/
+
+fi1,	law .	/last loc. of compiled putline
+	sub (21
+	dac t1
+fi2,	law .
+	sub (21
+	dac t2
+	lac ( jmpscc 1
+	dac i t1
+	dac i t2	/ set return to scorekeeper
+	dzm ssn
+	jsp i cwg
+	dio t2
+
+s1,	clf 6	/ do large outlineof ss1
+	law not
+	dap scc
+	lio (240000
+	law 1
+	add isc
+scb,	cma
+	dac t1	/number of ships on this line
+	dio sy1	/ y pos
+	lac (540000
+	dac sx1	/ x pos
+	rar 3s
+	dac stx	/ dx to next ship
+	law 3000	/size, large
+	dac scm
+	jmp scg
+
+sch,	lac (30000
+	dac stx
+	rar is
+	szf 6
+	lac (17000
+	add sy1
+	dac sy1
+	law 400	/ size, small
+sce,	sad scm	/ already set up ?
+	jmp scf	/ yes, display ship
+	dac scm
+	law not 1
+	szf 6	/ which outline ?
+	law not
+	dap scc
+	lac scm
+scg,	dac ssc	/ set constants for display
+	dac ssd
+	dac scn
+	dac csm
+	cma
+	dac csn
+scf,	lac sx1
+	lio sy1
+	dpy 700-4000
+scc,	jmp 1 .
+	lac sx1
+	add stx
+	dac sx1	 /x pos. of next ship
+	isp t1	/line done ?
+	jmp scd
+	jsp 1 cwg	/ yes
+	lai
+	sas t2	/ return ?
+
+	jmp a4 3
+	szf 6 	/ no, do another line
+	jmp s1
+s2,	stf 6
+	law not 1
+	dap scc
+	lio (730000
+	law 1
+	add 2sc
+	jmp scb
+
+scd,	add (11	/ are ther 10 or more ships left
+	sma	/ on this line
+	jmp sch
+	dac t1
+	lac (30000
+	szf 6
+	lac (36000
+	add sy1
+	dac sy1
+	lac (40000
+	dac stx
+	law 1000	/ size for 10 wins
+	jmp sce
+
+jpt,	dac not 1	/ patch to get and loc. of outlines
+	dap fi1
+	jda oc 
+	ot2
+	dap fi2
+	jmp a3 3
+
+constants
+
+a3/	jmp jpt		/to setup
+
+a4 2/	jmp fi1		/ game or series over, display score
+
+start 4
+

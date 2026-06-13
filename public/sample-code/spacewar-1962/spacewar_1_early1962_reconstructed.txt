@@ -1,0 +1,1058 @@
+spacewar 1  reconstructed as of early 1962 (nl 2016/2021)
+
+// NOT AN AUTHENTIC PROGRAM
+
+// a reconstrunction of spacewar as of winter 1961/62 (based on sw 2b)
+// including a reconstruction of the outline interpreter,
+// a random starfield for the background,
+// no gravity, rotation by angular momentum only,
+// no sense switch options.
+// norbert landsteiner, april 2016
+// added optional central star and optional background motion, n.l., 2021
+
+// Note on the timeline:
+// The Type 30 display was installed on Dec. 29, 1961, so an early playable
+// version wouldn't have been available before a month or so into 1962.
+// Compare J.M. Graetz in "The Origin of Spacewar":
+// > By February, the first game was operating. It was a barebones model:
+// > just the two ships, a supply of fuel, and a store of "torpedoes"
+
+
+// common macro fio-dec definitions used by the program
+
+    szm=sza sma-szf
+    spq=szm i
+    clc=cma+cla-opr
+    ioh=iot i
+
+define initialize A,B
+    law B
+    dap A
+    term
+
+define index A,B,C
+    idx A
+    sas B
+    jmp C
+    term
+
+define swap
+    rcl 9s
+    rcl 9s
+    term
+
+define load A,B
+    lio (B
+    dio A
+    term
+
+define setup A,B
+    law i B
+    dac A
+    term
+
+define count A,B
+    isp A
+    jmp B
+    term
+
+define move A,B
+	lio A
+	dio B
+	term
+
+define clear A,B
+    init .+2, A
+    dzm
+    index .-1, (dzm B+1, .-1
+    term
+
+///
+// dummy statement for macro1.c to make \ran known
+3/
+	lac \ran		// overwritten by next statement
+
+// spacewar starts here
+
+3/
+	jmp sbf			/ ignore seq. break
+	jmp a
+	jmp a1			/ use test word for control, not iot 11 co
+sbf,	tyi
+	lio 2
+	lac 0
+	lsm
+	jmp i 1			/ enough of that
+
+	define
+xincr X,Y,INS
+	lac Y
+	INS \snn
+	dac Y
+	lac X
+	INS \scn
+	dac X
+	term
+	
+	define
+yincr X,Y,INS
+	lac Y
+	INS \scn
+	dac Y
+	lac X
+	-INS+add+sub \ssn
+	dac X
+	term
+
+	define
+dispatch
+	add (. 3
+	dap . 1
+	jmp .
+	term
+
+	define
+dispt A,Y
+	lio Y
+	dpy-A
+	term
+
+	define
+scale A,B,C
+	lac A
+	sar B
+	dac C
+	term
+
+	define
+diff V,S,SF
+	add i V
+	dac i V
+	xct SF
+	add i S
+	dac i S
+	term
+
+	define
+random N
+	lac N
+	rar 1s
+	xor (335671
+	add (335671
+	dac N
+	term
+
+	define
+ranct N,S,SS,C
+	random N
+	S
+	SS
+	sma
+	cma
+	dac C
+	term
+
+///
+
+/sine-cosine subroutine.Adams associates
+/calling sequence= number in AC, jda sin or jda cos.
+/argument is between .+2 pi, with binary point to right of bit 3.
+/answer has binary point to right of bit 0.  Time = 2.35 ms.
+
+define	mult Z
+	jda mpy
+	lac Z
+	term
+
+cos,	0
+	dap csx
+	lac (62210
+	add cos
+	dac sin
+	jmp .+4
+
+sin,	0
+	dap csx
+	lac sin
+	spa
+si1,	add (311040
+	sub (62210
+	sma
+	jmp si2
+	add (62210
+
+si3,	ral 2s
+	mult (242763
+	dac sin
+	mult sin
+	dac cos
+	mult (756103
+	add (121312
+	mult cos
+	add (532511
+	mult cos
+	add (144417
+	mult sin
+	scl 3s
+	dac cos
+	xor sin
+	sma
+	jmp csx-1
+	lac (377777
+	lio sin
+	spi
+	cma
+	jmp csx
+
+	lac cos
+csx,	jmp .
+
+si2,	cma
+	add (62210
+	sma
+	jmp si3
+	add (62210
+	spa
+	jmp .+3
+	sub (62210
+	jmp si3
+
+	sub (62210
+	jmp si1
+
+///
+
+/BBN multiply subroutine
+/Call. lac one factor, jda mpy or imp, lac other factor.
+
+imp,	0				/returns low 17 bits and sign in ac
+	dap im1
+im1,	xct
+	jda mpy
+	lac imp
+	idx im1
+	rir 1s
+	rcr 9s
+	rcr 9s
+	jmp i im1
+
+mp2,	0
+
+mpy,	0				/returns 34 bits and 2 signs
+	dap mp1
+	lac mpy
+	spa
+	cma
+	rcr 9s
+	rcr 9s
+mp1,	xct
+	spa
+	cma
+	dac mp2
+	cla
+	repeat 21, mus mp2
+	dac mp2
+	xct mp1
+	xor mpy
+	sma
+	jmp mp3
+	lac mp2
+	cma
+	rcr 9s
+	rcr 9s
+	cma
+	rcr 9s
+	rcr 9s
+	dac mp2
+mp3,	idx mp1
+	lac mp2
+	jmp i mp1
+
+///
+
+/integer square root
+/input in ac, binary point to right of bit 17, jda sqt
+/answer in ac with binary point between bits 8 and 9
+/largest input number = 177777
+
+sqt,	0
+	dap sqx
+	law i 23
+	dac sq1
+	dzm sq2
+	lio sqt
+	dzm sqt
+
+sq3,	isp sq1
+	jmp .+3
+	lac sq2
+sqx,	jmp .
+
+	lac sq2
+	sal 1s
+	dac sq2
+	lac sqt
+	rcl 2s
+	sza i
+	jmp sq3
+	dac sqt
+	lac sq2
+	sal 1s
+	add (1
+	sub sqt
+	sma+sza-skip
+	jmp sq3
+	spa
+	cma
+	dac sqt
+	idx sq2
+	jmp sq3
+
+sq1,	0
+sq2,	0
+
+///
+
+/BBN Divide subroutine
+
+/calling sequence. lac hi-dividend, lio lo-dividend, jda dvd, lac divisor
+/returns quot in ac, rem in io.
+
+idv,	0				/integer divide, dividend in ac.
+	dap dv1
+	lac idv
+	scr 9s
+	scr 8s
+	dac dvd
+	jmp dv1
+
+dvd,	0
+	dap dv1
+dv1,	xct
+	spa
+	cma
+	dac idv
+	lac dvd
+	sma
+	jmp dv2
+	cma
+	rcr 9s
+	rcr 9s
+	cma
+	rcr 9s
+	rcr 9s
+dv2,	sub idv
+	sma
+	jmp dve
+	repeat 22, dis idv
+	add idv
+	dio idv
+	cli
+	rcr 1s
+	lio dvd
+	spi
+	cma
+	dac dvd
+	xct dv1
+	xor dvd
+	rcr 9s
+	rcr 9s
+	idx dv1
+dve,	idx dv1
+	lac idv
+	spi
+	cma
+	lio dvd
+	jmp i dv1
+
+///
+
+/ reconstruction of the outline interpreter (n.l. 2016)
+/ based on the outline compiler (oc) by dan edwards
+/ call jda oi, addr. of outline code in ac
+
+define
+	comtab A, B
+	lac \sy1
+	B
+	dac \sy1
+	lac \sx1
+	A
+	jmp oie
+	terminate
+
+oi,	0			/outline interpreter
+	dap oix
+	stf 5			/set flag 5 (first pass)
+	lac \sx1		/backup current coors
+	dac \sxi
+	lio \sy1
+	dio \syi
+
+oik,	clf 6			/start a pass
+	lac oi			/get location of outline table
+	dap oig
+oij,	setup \oic,6		/loop to read 6 times 3 bits (0..7)
+oig,	lio .			/outline table
+oih,	cla
+	rcl 3s			/get next code
+	dio \oii		/store remaining code word
+	dispatch
+	opr			/0 (falls through)
+	jmp oi1			/1 (advance to rear, display a dot)
+	jmp oi2			/2 (advance outwards, display a dot)
+	jmp oi3			/3 (advance to rear and outwards, display a dot)
+	jmp oi4			/4 (advance inwards, display a dot)
+	jmp oi5			/5 (advance to rear and inwards, display a dot)
+	jmp oi6			/6 (store/restore current coors)
+
+	szf i 5			/7 code (end of outline code/pass)
+oix,	jmp .			/return on flag 5 set
+	clf 5			/prepare second pass
+	lac \scm		/invert offsets matrix to draw other side
+	cma
+	dac \scm
+	lac \ssm
+	cma
+	dac \ssm
+	lac \csm
+	lio \ssd
+	dac \ssd
+	dio \csm
+	lac \ssc
+	lio \csn
+	dac \csn
+	dio \ssc
+	lac \sxi		/restore coors to initial starting point
+	dac \sx1
+	lio \syi
+	dio \sy1
+	jmp oik			/jump to start of interpreter loop
+
+oi0,
+oi1,	lac \sy1		/same as "comtab add \ssn, sub \scn"
+	sub \scn		/do first y than x in order to save a swap
+	dac \sy1
+	lac \sx1
+	add \ssn
+oie,	dac \sx1		/"comtab" returns here
+	dispt i, \sy1		/same as "lio sy1 / dpy-i"
+oid,	lio \oii		/end of interpreter loop, load remaining code word
+	count \oic, oih		/any code left to execute? do it.
+	idx oig			/increment pointer to code word
+	jmp oij			/and start over
+
+oi2,	comtab add \scm, add \ssm
+oi3,	comtab add \ssc, sub \csm
+oi4,	comtab sub \scm, sub \ssm
+oi5,	comtab add \csn, sub \ssd
+
+oi6,	szf 6			/did we backup coors previously?
+	jmp oi9			/yes
+	stf 6			/backup \sx1 and \sy1 in \ssa and \ssi repectively
+	lac \sx1
+	dac \ssa
+	lio \sy1
+	dio \ssi
+	jmp oid
+oi9,	clf 6			/restore \sx1 and \sy1 from backup
+	lac \ssa
+	dac \sx1
+	lio \ssi
+	dio \sy1
+	jmp oid
+
+///
+
+/display a star
+
+// note (n.l., 2021):
+// Dan Edwards recounted at the Smithsonian presentation, 2018:
+// > As I looked at the game, essentially it had this star in the middle,
+// > while it had no effect on the gameplay itself. I thought it would be
+// > better to use that to provide the gravity and put something out of
+// > the immediate, direct control of the game player (...)
+//
+// So there had been a central star before gravity!
+// But it been there just for aesthetic reasons! A pure ornament.
+// As this was probably an addition to the basic program, make it optional
+// (ssw 6, as usual, defaults to off)
+// Since the colission check with the central star in later versions is
+// part of the gravity  calculations, we also know that you couldn't collide
+// with the central star ("this star ... had no effect on the gameplay itself").
+
+define
+	starp
+	add \bx
+	swap
+	add \by
+	swap
+	ioh
+	dpy-4000
+	terminate
+
+blp,	dap blx				/star
+	szs i 60			/display only if ssw 6 hi
+	jmp blx
+	random \ran
+	rar 9s
+	and (add 340
+	spa
+	xor (377777
+	dac \bx
+	lac \ran
+	ral 4s
+	and (add 340
+	spa
+	xor (377777
+	dac \by
+	jsp bpt
+	ioh
+blx,	jmp .
+
+bpt,	dap bpx
+	random \ran
+	sar 9s
+	sar 5s
+	spa
+	cma
+	sal 3s
+	add (bds
+	dap bjm
+	cla cli clf 6-opr-opr
+	dpy-4000
+bjm,	jmp .
+bds,	repeat 20, starp
+	szf 6
+bpx,	jmp .
+	stf 6
+	cma
+	swap
+	cma
+	swap
+	jmp bjm
+
+///
+
+/background display
+// display some random stars (n.l., 2016)
+// amendments 2021: it makes sense to add movement to the stars to prevent
+// burn-in, which was urgendly adviced when the Type 30 display was installed.
+// make it the same speed as the slow movement in spacewar2b (there is no need
+// to make the movement noticeable, rather, the background was added to provide
+// points of reference for spaceship movements.
+// put background on/off on ssw 4 (as usual, default on)
+// and movement on/off on ssw 5 (default static).
+
+	define
+bginit
+	jsp bgs
+	termin
+
+	define
+background
+	cla cli-opr			/display a first star at the center
+	dpy-4000
+	jsp bck
+	ioh				/wait for last display command
+	termin
+
+nos=60 	/number of stars
+
+/table of stars coors (nos words, 9 bits x and 9 bits y)
+// rather "dimension btb(nos)", here inlined for macro1.c
+btb,	. nos/
+btc, 	0
+
+/setup nos random coors starting at btb
+
+bgs,	dap bgx
+	init btc, btb			/deposit first addr of mtb in btc
+bgr,	random \ran			/store a random number in addr currently in btc
+	dac i btc
+	index btc, (btb+nos, bgr	/increment btc, repeat at bgr for nos times
+bgx,	jmp .
+
+/display background stars
+
+bck,	dap bcx
+	szs i 40			/skip on ssw 4 not zero
+	isp bcc				/skip each second frame (like sw 3.1)
+bcx,	jmp .
+	law i 2
+	dac bcc
+	init btc, btb			/init btc to stars table
+bcl,	lac i btc			/get coors of next star
+	scr 9s				/low 9 bits in io (y)
+	sal 9s				/high 9 bits in ac (x)
+	add fpr
+	ioh				/wait for scope ready
+	dpy-4000			/and display it
+	index btc, (btb+nos, bcl	/repeat the loop at bcl
+	szs i 50			/skip on ssw 5 not zero (static display)
+	jmp bcx				/return
+
+	isp bkc
+	jmp bcx
+	law i 40
+	dac bkc
+	law i 377
+	add fpr
+	dac fpr
+	jmp bcx
+
+bcc,	0
+bkc,	0
+fpr,	0
+
+
+///
+
+/main control routine for spaceships
+
+nob=30					/total number of colliding objects
+
+ml0,	load \mtc, -4000		/delay for loop
+	init ml1, mtb			/loc of calc routines
+	add (nob
+	dap mx1				/ x
+nx1=mtb nob
+	add (nob
+	dap my1				/ y
+ny1=nx1 nob
+	add (nob
+	dap ma1				/ count for length of explosion or torp
+na1=ny1 nob
+	add (nob
+	dap mb1				/ count of instructions taken by calc routine
+nb1=na1 nob
+	add (nob
+	dac \mdx			/ dx
+ndx=nb1 nob
+	add (nob
+	dac \mdy			/ dy
+ndy=ndx nob
+	add (nob
+	dap mom				/ angular velocity
+nom=ndy nob
+	add (nob
+	dap mth				/ angle
+nth=nom nob
+	add (nob
+	dap mal				/ angular acceleration
+nal=nth nob
+	add (nob
+	dac \mas			/ acceleration scale
+nas=nal nob
+	add (nob
+	dac \mfu			/ fuel
+nfu=nas nob
+	add (nob
+	dac \mtr			/ no torps remaining
+ntr=nfu nob
+	add (nob
+	dap mot				/ outline of spaceship
+not=ntr nob
+	add (nob
+	dap mco				/ old control word
+nco=not nob
+	add (nob			/ hyperspace properties (were they already included?)
+	dac \mh1
+nh1=nco nob
+	add (nob
+	dac \mh2
+nh2=nh1 nob
+	add (nob
+	dac \mh3
+nh3=nh2 nob
+nnn=nh3 nob
+	jmp ml1
+
+///
+
+a1,	law mg2				/ test word control
+	dac \cwg
+	jmp a3
+
+a,	law mg1				/ iot 11 console control
+	dac \cwg
+a3,	clear mtb, nnn-1		/ clear out all tables
+	law ss1				/ set up spaceships
+	dac mtb
+	law ss2
+	dac mtb 1
+	lac (200000
+	dac nx1
+	dac ny1
+	cma
+	dac nx1 1
+	dac ny1 1
+	lac (144420
+	dac nth
+	law ot1				/ setup outlines
+	dac not
+	law ot2
+	dac not 1
+	law 10
+	dac nal
+	dac nal 1
+	law i 40			/ test word control (corr. torpedo count)
+	dac ntr
+	dac ntr 1
+	law 2000
+	dac nb1
+	dac nb1 1
+	bginit				/ setup background
+	jmp ml0
+
+/ control word get routines
+
+mg1,	dap mg3
+	cli
+	iot 11
+mg3,	jmp .
+
+mg2,	dap mg4
+	lat
+	swap
+mg4,	jmp .
+
+///
+
+ml1,	lac .				/ 1st control word
+	sza i				/ zero if not active
+	jmp mq1				/ not active
+	law 1
+	add ml1
+	dap ml2
+	law 1
+	add mx1
+	dap mx2
+	law 1
+	add my1
+	dap my2
+	law 1
+	add ma1
+	dap ma2
+	law 1
+	add mb1
+	dap mb2
+ml2,	lac .				/ 2nd control word
+	sza i				/ active ?
+	jmp mq2				/ no
+mx1,	lac .				/ calc if collision
+mx2,	sub .				/ delta x
+	spa				/ take abs val
+	cma
+	dac \mt1
+	sub me1				/ < EPSILON ?
+	sma
+	jmp mq2				/ no
+my1,	lac .
+my2,	sub .
+	spa
+	cma
+	sub me1				/ < epsilon ?
+	sma
+	jmp mq2				/ no
+	add \mt1
+	sub me2
+	sma
+	jmp mq2
+	lac (mex			/ yes, EXPLODE
+	dac i ml1			/ replace calc routine with explosion
+	dac i ml2
+	lac i mb1			/ duration of explosion
+mb2,	add .
+	cma
+	sar 9s
+	sar
+	add (1
+ma1,	dac .
+ma2,	dac .
+mq2,	idx mx2				/ end of comparison loop
+	idx my2
+	idx ma2
+	idx mb2
+	index ml2, (lac mtb nob, ml2
+
+///
+
+mq4,	lac i ml1			/ routine for calculating spaceship
+	dap . 1				/ or other object and displaying it
+	jsp .
+mb1,	lac .				/ alter count of number of instructions
+	add \mtc
+	dac \mtc
+mq1,	idx mx1				/ end of comparison and display loop
+	idx my1
+	idx ma1
+	idx mb1
+	idx \mdx
+	idx \mdy
+	idx mom
+	idx mth
+	idx mal
+	idx \mas
+	idx \mfu
+	idx \mtr
+	idx mot
+	idx mco
+	idx \mh1
+	idx \mh2
+	idx \mh3
+	index ml1, (lac mtb nob-1, ml1
+	lac i ml1			/ display and compute last point
+	sza i				/ if active
+	jmp mq3
+	dap . 1
+	jsp .
+	lac i mb1
+	add \mtc
+	dac \mtc
+mq3,	background			/ display stars of the heavens
+	jsp blp				/ display massive star
+	count \mtc, .			/ use up rest of time of main loop
+	jmp ml0				/ repeat whole works
+
+///
+
+/ misc calculation routines
+
+	/ crock explosion
+
+mex,	dap mxr
+	cla
+	diff \mdx, mx1, (sar 3s
+	cla
+	diff \mdy, my1, (sar 3s
+	law mst
+	dap msh
+	lac i mb1			/ time involved
+	cma cli-opr
+	sar 2s
+	dac \mxc
+ms1,	sub (500
+	sma
+	idx msh
+mz1,	random \ran
+	scr 9s
+	sir 9s
+msh,	xct .
+	add i my1
+	swap
+	add i mx1
+	dpy-i
+	count \mxc, mz1
+	count i ma1, mxr
+	dzm i ml1
+mxr,	jmp .
+
+mst,	scl 5s
+	scl 2s
+
+/ torpedo calc routine
+
+tcr,	dap trc
+	count i ma1, tc1
+	lac (mex
+	dac i ml1
+	law i 1
+	dac i ma1
+	jmp trc
+
+tc1,	cla
+	diff \mdy, my1, (sar 3s
+	cla
+	diff \mdx, mx1, (sar 3s
+	dispt i, i my1
+trc,	jmp .
+
+///
+
+/ spaceship calc
+
+ss1,	dap srt				/ first spaceship
+	jsp i \cwg
+	dio \scw
+	jmp sr0
+
+ss2,	dap srt				/ second spaceship
+	jsp i \cwg
+	rir 4s
+	dio \scw
+
+sr0,
+
+sc1,	lio \scw			/control word
+	clf 6 cla-opr			/update angle
+	spi
+mal,	add .
+	ril 1s
+	spi
+	sub i mal
+mom,	add .
+	dac i mom
+	ril 1s
+	spi
+	stf 6
+mth,	add .
+	sma
+	sub (311040
+	spa
+	add (311040
+	dac i mth
+	jda sin
+	dac \sn
+	dzm \bx
+	dzm \by
+	lac i mth
+	jda cos
+	dac \cs
+	sar 9s
+	sar 4s
+	szf i 6
+	cla
+	add \by
+	diff \mdy, my1, (sar 3s
+	lac \sn
+	sar 9s
+	sar 4s
+	cma
+	szf i 6
+	cla
+	add \bx
+	diff \mdx, mx1, (sar 3s
+sp1,	scale \sn, 5s, \ssn
+sp2,	scale \cs, 5s, \scn
+	lac i mx1
+	sub \ssn
+	dac \sx1
+	sub \ssn
+	dac \stx
+	lac i my1
+	add \scn
+	dac \sy1
+	add \scn
+	dac \sty
+	scale \sn, 9s, \ssn
+	scale \cs, 9s, \scn
+	lac \ssn
+	dac \ssm
+	add \scn
+	dac \ssc
+	dac \ssd
+	lac \ssn
+	sub \scn
+	dac \csn
+	cma
+	dac \csm
+	lac \scn
+	dac \scm
+	cla cli-opr
+mot,	lac .
+	jda oi
+sq6,	ranct \ran, sar 9s, sar 4s, \src
+	lio i sc1
+	ril 2s
+	spi i				/ not blasting
+	jmp sq9				/ no tail
+sq7,	yincr \sx1, \sy1, sub
+	dispt i, \sy1
+	count \src, sq7
+sq9,	count i ma1, sr5		/ check if torp tube reloaded
+	dzm i ma1			/ prevent count around
+mco,	lac .				/ previous control word
+	cma
+	and \scw			/ present control word
+	ral 3s				/ torpedo bit to bit 0
+	sma
+	jmp sr5				/ no launch
+	count i \mtr, st1		/ check if torpedos exhausted
+	dzm i \mtr				/ prevent count around
+	jmp sr5
+st1,	init sr1, mtb			/ search for unused object
+sr1,	lac .
+	sza i				/ 0 if unused
+	jmp sr2
+	index sr1, (lac mtb nob, sr1
+	hlt				/ no space for new objects
+
+///
+
+sr2,	lac (tcr			/ set up torpedo calc
+	dac i sr1
+	law nob
+	add sr1
+	dap ss3
+	lio \stx
+ss3,	dio .
+	add (nob
+	dap ss4
+	lio \sty
+ss4,	dio .
+	add (nob
+	dap sr6
+	add (nob
+	dap sr7
+	add (nob
+	dap sr3
+	add (nob
+	dap sr4
+	lac \sn
+	sar 5s
+	cma
+	add i \mdx
+sr3,	dac .
+	lac \cs
+	sar 5s
+	add i \mdy
+sr4,	dac .
+	law i 40
+	dac i ma1			/ permit torp tubes to cool
+trf,	law i 300				/ life of torpedo
+sr6,	dac .
+	law 20
+sr7,	dap .				/ length of torp calc.
+sr5,	move \scw, i mco
+
+/ here put more bells and whisles, like hyperspace
+
+srt,	jmp .
+
+///
+
+/ constants, and other cruft
+
+me1,	10000				/ epsilon for collisions
+me2,	4000				/ epsilon over 2
+
+/ outlines of spaceships
+
+ot1,	111131
+	111111
+	111111
+	111163
+	311111
+	146111
+	111114
+	700000
+. 5/
+
+ot2,	013113
+	113111
+	116313
+	131111
+	161151
+	111633
+	365114
+	700000
+. 5/
+
+	constants
+	variables
+p,	. 200/				/ space for patches
+
+mtb,					/ table of objects and their properties 
+	
+start 4

@@ -23,6 +23,7 @@ Each sample project is defined on a single line with the following format:
 
 - flowmatic-1958/flowmatic-1958.ccs: 1958 - FLOW-MATIC | critique | Grace Hopper's business English - first natural language programming | 1950s | 0
 - iplv-1958/iplv-1958.ccs: 1958 - IPL-V | critique | Newell, Shaw, and Simon's list processing - Logic Theorist and General Problem Solver | 1950s | 0
+- spacewar-1962/spacewar-1962.ccs: 1962 - Spacewar! | critique | Every recoverable version of the first true digital video game — MIT PDP-1, Steve Russell et al., 11 game versions v1–v4.8 plus star data and MACRO defs | 1960s | 0
 - eliza/eliza-1965b-CR.ccs: 1965 - ELIZA (Annotated) | critique | Complete critique session with 30+ scholarly annotations | 1960s | 30
 - apollo-11-comanche/comanche055.ccs: 1969 - Apollo 11 Comanche055 | critique | Command Module guidance computer source code | 1960s | 0
 - apollo-11-luminary/luminary099.ccs: 1969 - Apollo 11 Luminary099 | critique | Lunar Module guidance computer source code | 1960s | 0
