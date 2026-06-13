@@ -11,11 +11,11 @@
  */
 
 import { useEffect, useCallback, useRef, useState } from "react";
-import { getSupabaseClient, isSupabaseConfigured, recordSuccessfulRequest, recordFailedRequest } from "@/lib/supabase/client";
-import { useAuth } from "@/context/AuthContext";
-import { useProjects } from "@/context/ProjectsContext";
+import { getSupabaseClient, isSupabaseConfigured, recordSuccessfulRequest, recordFailedRequest } from "@/cloud/lib/supabase/client";
+import { useAuth } from "@/cloud/context/AuthContext";
+import { useProjects } from "@/cloud/context/ProjectsContext";
 import type { RealtimeChannel } from "@supabase/supabase-js";
-import { queueOperation, processQueue, type OperationProcessor } from "@/lib/sync/operation-queue";
+import { queueOperation, processQueue, type OperationProcessor } from "@/cloud/lib/sync/operation-queue";
 
 // Local CodeFile interface for syncing
 interface CodeFile {

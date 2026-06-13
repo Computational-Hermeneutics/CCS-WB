@@ -2,7 +2,7 @@
  * Shared utility functions for project operations
  */
 
-import type { Profile } from "@/lib/supabase/types";
+import type { Profile } from "@/cloud/lib/supabase/types";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 /**

@@ -9,7 +9,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useProjects } from "@/context/ProjectsContext";
+import { useProjects } from "@/cloud/context/ProjectsContext";
 import { useSession } from "@/context/SessionContext";
 import { cn } from "@/lib/utils";
 import {
@@ -36,9 +36,9 @@ import {
   UserX,
   UserPlus,
 } from "lucide-react";
-import { useAuth } from "@/context/AuthContext";
-import { getSupabaseClient } from "@/lib/supabase/client";
-import type { LibraryProject } from "@/lib/supabase/types";
+import { useAuth } from "@/cloud/context/AuthContext";
+import { getSupabaseClient } from "@/cloud/lib/supabase/client";
+import type { LibraryProject } from "@/cloud/lib/supabase/types";
 import type { EntryMode } from "@/types/session";
 
 interface AdminUser {

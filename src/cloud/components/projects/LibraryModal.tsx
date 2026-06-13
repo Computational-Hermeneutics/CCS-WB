@@ -10,7 +10,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useProjects } from "@/context/ProjectsContext";
+import { useProjects } from "@/cloud/context/ProjectsContext";
 import { useSession } from "@/context/SessionContext";
 import { cn } from "@/lib/utils";
 import {
@@ -29,9 +29,9 @@ import {
   ChevronDown,
   ChevronUp,
 } from "lucide-react";
-import type { LibraryProject } from "@/lib/supabase/types";
+import type { LibraryProject } from "@/cloud/lib/supabase/types";
 import type { EntryMode } from "@/types/session";
-import { getSupabaseClient } from "@/lib/supabase/client";
+import { getSupabaseClient } from "@/cloud/lib/supabase/client";
 
 const MODE_LABELS: Record<EntryMode, string> = {
   critique: "Critique",

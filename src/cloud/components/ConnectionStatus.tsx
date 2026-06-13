@@ -7,7 +7,7 @@
 
 import React, { useState } from "react";
 import { Wifi, WifiOff, AlertCircle, RefreshCw, CheckCircle } from "lucide-react";
-import type { ConnectionHealth } from "@/hooks/useConnectionHealth";
+import type { ConnectionHealth } from "@/cloud/hooks/useConnectionHealth";
 
 export interface ConnectionStatusProps {
   health: ConnectionHealth;

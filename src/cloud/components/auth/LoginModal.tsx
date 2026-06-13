@@ -10,7 +10,7 @@
  */
 
 import { useState } from "react";
-import { useAuth, type AuthProvider } from "@/context/AuthContext";
+import { useAuth, type AuthProvider } from "@/cloud/context/AuthContext";
 import { cn } from "@/lib/utils";
 import { X, Loader2, Mail, AlertCircle, CheckCircle } from "lucide-react";
 

@@ -6,7 +6,7 @@
 import { useCallback } from "react";
 import type { SupabaseClient, User } from "@supabase/supabase-js";
 import type { Session } from "@/types/session";
-import type { ProjectWithOwner } from "@/lib/supabase/types";
+import type { ProjectWithOwner } from "@/cloud/lib/supabase/types";
 
 export interface ProjectSaveParams {
   supabase: SupabaseClient | null;

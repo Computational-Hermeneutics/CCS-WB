@@ -8,8 +8,8 @@
  */
 
 import { useState, useRef, useEffect } from "react";
-import { useAuth } from "@/context/AuthContext";
-import { useProjects } from "@/context/ProjectsContext";
+import { useAuth } from "@/cloud/context/AuthContext";
+import { useProjects } from "@/cloud/context/ProjectsContext";
 import { useAppSettings } from "@/context/AppSettingsContext";
 import { cn } from "@/lib/utils";
 import { User, LogOut, Users, Loader2, FolderOpen } from "lucide-react";

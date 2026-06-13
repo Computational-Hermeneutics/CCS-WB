@@ -12,8 +12,8 @@
  */
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { getSupabaseClient } from "@/lib/supabase/client";
-import { getPendingOperationCount } from "@/lib/sync/operation-queue";
+import { getSupabaseClient } from "@/cloud/lib/supabase/client";
+import { getPendingOperationCount } from "@/cloud/lib/sync/operation-queue";
 
 export type ConnectionStatus = "connected" | "reconnecting" | "disconnected" | "degraded";
 

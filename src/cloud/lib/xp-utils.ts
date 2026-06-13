@@ -3,7 +3,7 @@
  * Calculation functions for experience points and level progression
  */
 
-import type { XPActionType } from "./supabase/types";
+import type { XPActionType } from "@/cloud/lib/supabase/types";
 
 // XP rewards for each action type
 export const XP_REWARDS: Record<XPActionType, number> = {

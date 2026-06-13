@@ -19,7 +19,7 @@ import {
   removeSyncOperation,
   pruneOldSyncOperations,
   type SyncOperation,
-} from "../file-system/db";
+} from "@/lib/file-system/db";
 import type { LineAnnotation, AnnotationReplyData, CodeReference } from "@/types";
 
 /**

@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback, useMemo, useImperativeHandle, forwardRef } from "react";
 import { useRouter } from "next/navigation";
-import { useCollaborativeSession } from "@/hooks/useCollaborativeSession";
+import { useCollaborativeSession } from "@/cloud/hooks/useCollaborativeSession";
 import { useAutoSave } from "@/hooks/useAutoSave";
 import { useWorkbenchChat } from "@/hooks/useWorkbenchChat";
 import { useReferenceSearch } from "@/hooks/useReferenceSearch";
@@ -25,14 +25,14 @@ import { CodeEditorPanel, generateAnnotatedCode } from "@/components/code";
 import { WorkbenchChatPanel } from "@/components/chat";
 import { FloatingCCSPanel } from "@/components/ccs";
 import { SaveStatusIndicator } from "@/components/ui/SaveStatusIndicator";
-import { ConnectionStatus } from "@/components/ui/ConnectionStatus";
+import { ConnectionStatus } from "@/cloud/components/ConnectionStatus";
 import { Toast } from "@/components/ui/Toast";
-import { useConnectionHealth } from "@/hooks/useConnectionHealth";
-import { UserMenu } from "@/components/auth/UserMenu";
+import { useConnectionHealth } from "@/cloud/hooks/useConnectionHealth";
+import { UserMenu } from "@/cloud/components/auth/UserMenu";
 import { useAppSettings } from "@/context/AppSettingsContext";
-import { useAuth } from "@/context/AuthContext";
-import { useProjects } from "@/context/ProjectsContext";
-import { useProjectSync } from "@/hooks/useProjectSync";
+import { useAuth } from "@/cloud/context/AuthContext";
+import { useProjects } from "@/cloud/context/ProjectsContext";
+import { useProjectSync } from "@/cloud/hooks/useProjectSync";
 import { FONT_SIZE_MIN, FONT_SIZE_MAX } from "@/types/app-settings";
 import { PROVIDER_CONFIGS } from "@/lib/ai/config";
 

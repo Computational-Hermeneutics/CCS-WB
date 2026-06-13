@@ -10,7 +10,7 @@ import type {
   MemberWithProfile,
   MemberRole,
   Project,
-} from "@/lib/supabase/types";
+} from "@/cloud/lib/supabase/types";
 
 export interface ProjectMembersParams {
   supabase: SupabaseClient | null;

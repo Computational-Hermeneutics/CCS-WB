@@ -6,7 +6,7 @@ import type { Session, EntryMode } from "@/types";
 import { MODE_LABELS } from "@/lib/export";
 import type { UseAutoSaveReturn } from "@/hooks/useAutoSave";
 import { SaveStatusIndicator } from "@/components/ui/SaveStatusIndicator";
-import { UserMenu } from "@/components/auth/UserMenu";
+import { UserMenu } from "@/cloud/components/auth/UserMenu";
 import {
   ChevronDown,
   Cloud,

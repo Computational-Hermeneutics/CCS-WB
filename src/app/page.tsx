@@ -7,7 +7,7 @@ import { useAISettings } from "@/context/AISettingsContext";
 import type { EntryMode } from "@/types";
 import { cn } from "@/lib/utils";
 import { Code, Archive, BookOpen, Sparkles, FolderOpen, Settings, HelpCircle, X, ExternalLink } from "lucide-react";
-import { UserMenu } from "@/components/auth/UserMenu";
+import { UserMenu } from "@/cloud/components/auth/UserMenu";
 import { SettingsModal } from "@/components/settings/SettingsModal";
 import { AISettingsPanel } from "@/components/settings/AISettingsPanel";
 import { PROVIDER_CONFIGS } from "@/lib/ai/config";

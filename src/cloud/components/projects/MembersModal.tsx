@@ -7,8 +7,8 @@
  */
 
 import { useState, useEffect, useCallback } from "react";
-import { useProjects } from "@/context/ProjectsContext";
-import { useAuth } from "@/context/AuthContext";
+import { useProjects } from "@/cloud/context/ProjectsContext";
+import { useAuth } from "@/cloud/context/AuthContext";
 import { cn } from "@/lib/utils";
 import {
   X,
@@ -22,8 +22,8 @@ import {
   Link,
   ChevronDown,
 } from "lucide-react";
-import type { MemberWithProfile, MemberRole } from "@/lib/supabase/types";
-import { ConfirmDialog } from "../shared/ConfirmDialog";
+import type { MemberWithProfile, MemberRole } from "@/cloud/lib/supabase/types";
+import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 
 const ROLE_LABELS: Record<"editor" | "viewer", string> = {
   editor: "Can edit",

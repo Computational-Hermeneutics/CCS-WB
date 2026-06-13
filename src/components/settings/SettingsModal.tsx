@@ -7,15 +7,15 @@ import { AIProviderSettings } from "./AIProviderSettings";
 import { AISetupGuide } from "./AISetupGuide";
 import { useAppSettings } from "@/context/AppSettingsContext";
 import { useSkins } from "@/context/SkinsContext";
-import { useAuth, type AuthProvider } from "@/context/AuthContext";
-import { getSupabaseClient, isSupabaseConfigured, resetSupabaseClient } from "@/lib/supabase/client";
+import { useAuth, type AuthProvider } from "@/cloud/context/AuthContext";
+import { getSupabaseClient, isSupabaseConfigured, resetSupabaseClient } from "@/cloud/lib/supabase/client";
 import {
   getRuntimeSupabaseConfig,
   setRuntimeSupabaseConfig,
   clearRuntimeSupabaseConfig,
   looksLikeSupabaseUrl,
   resolveSupabaseConfig,
-} from "@/lib/supabase/runtime-config";
+} from "@/cloud/lib/supabase/runtime-config";
 import type { UserProfile } from "@/types/app-settings";
 import {
   FONT_SIZE_MIN,

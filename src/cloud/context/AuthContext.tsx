@@ -14,10 +14,10 @@ import React, {
   useEffect,
   useCallback,
 } from "react";
-import { getSupabaseClient, isSupabaseConfigured } from "@/lib/supabase/client";
+import { getSupabaseClient, isSupabaseConfigured } from "@/cloud/lib/supabase/client";
 import { useAppSettings } from "@/context/AppSettingsContext";
 import type { User, Session, AuthError } from "@supabase/supabase-js";
-import type { Database, Profile, ProfileInsert } from "@/lib/supabase/types";
+import type { Database, Profile, ProfileInsert } from "@/cloud/lib/supabase/types";
 
 // Auth provider types
 export type AuthProvider = "google" | "github" | "apple";

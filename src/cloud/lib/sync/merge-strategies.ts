@@ -15,7 +15,7 @@ import type {
   CodeReference,
   AnnotationReplyData,
 } from "@/types";
-import type { SyncOperation } from "../file-system/db";
+import type { SyncOperation } from "@/lib/file-system/db";
 
 /**
  * Conflict detected during merge

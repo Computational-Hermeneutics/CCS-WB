@@ -9,9 +9,9 @@
 
 import { useCallback } from "react";
 import { useRouter, usePathname } from "next/navigation";
-import { useProjectSync } from "@/hooks/useProjectSync";
+import { useProjectSync } from "@/cloud/hooks/useProjectSync";
 import { useSession } from "@/context/SessionContext";
-import { useProjects } from "@/context/ProjectsContext";
+import { useProjects } from "@/cloud/context/ProjectsContext";
 import { cn } from "@/lib/utils";
 import { RefreshCw, X, Users } from "lucide-react";
 

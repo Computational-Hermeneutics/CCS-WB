@@ -9,9 +9,9 @@
  */
 
 import { useEffect, useRef, useCallback, useState } from "react";
-import { getSupabaseClient, isSupabaseConfigured } from "@/lib/supabase/client";
-import { useAuth } from "@/context/AuthContext";
-import { useProjects } from "@/context/ProjectsContext";
+import { getSupabaseClient, isSupabaseConfigured } from "@/cloud/lib/supabase/client";
+import { useAuth } from "@/cloud/context/AuthContext";
+import { useProjects } from "@/cloud/context/ProjectsContext";
 import type { RealtimeChannel } from "@supabase/supabase-js";
 import type { Session } from "@/types/session";
 

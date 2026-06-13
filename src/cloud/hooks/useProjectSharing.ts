@@ -5,7 +5,7 @@
 
 import { useCallback } from "react";
 import type { SupabaseClient, User } from "@supabase/supabase-js";
-import type { Profile, MemberWithProfile, ProjectWithOwner } from "@/lib/supabase/types";
+import type { Profile, MemberWithProfile, ProjectWithOwner } from "@/cloud/lib/supabase/types";
 
 export interface ProjectSharingParams {
   supabase: SupabaseClient | null;

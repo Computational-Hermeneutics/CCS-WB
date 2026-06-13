@@ -5,7 +5,7 @@
 
 import { useState, useCallback } from "react";
 import type { SupabaseClient, User } from "@supabase/supabase-js";
-import type { ProjectWithOwner } from "@/lib/supabase/types";
+import type { ProjectWithOwner } from "@/cloud/lib/supabase/types";
 import { sanitizeProjectName } from "@/lib/projects-utils";
 
 export interface ProjectTrashParams {

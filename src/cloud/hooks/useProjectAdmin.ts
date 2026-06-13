@@ -13,7 +13,7 @@ import type {
   Annotation,
   AccessionStatus,
   AnnotationType,
-} from "@/lib/supabase/types";
+} from "@/cloud/lib/supabase/types";
 import { fetchProfilesByIds, handleProjectError } from "@/lib/projects-utils";
 
 export interface ProjectAdminParams {

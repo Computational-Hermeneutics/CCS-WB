@@ -8,7 +8,7 @@
  */
 
 import React, { createContext, useContext, useCallback } from "react";
-import { getSupabaseClient, isSupabaseConfigured } from "@/lib/supabase/client";
+import { getSupabaseClient, isSupabaseConfigured } from "@/cloud/lib/supabase/client";
 import { useAuth } from "./AuthContext";
 import type {
   Project,
@@ -16,18 +16,18 @@ import type {
   MemberWithProfile,
   MemberRole,
   LibraryProject,
-} from "@/lib/supabase/types";
+} from "@/cloud/lib/supabase/types";
 import type { Session, EntryMode } from "@/types/session";
 
 // Import all domain hooks
-import { useProjectCRUD } from "@/hooks/useProjectCRUD";
-import { useProjectSave } from "@/hooks/useProjectSave";
-import { useProjectSharing } from "@/hooks/useProjectSharing";
-import { useProjectTrash } from "@/hooks/useProjectTrash";
-import { useProjectMembers } from "@/hooks/useProjectMembers";
-import { useProjectLibrary } from "@/hooks/useProjectLibrary";
-import { useProjectAdmin } from "@/hooks/useProjectAdmin";
-import { useProjectModals } from "@/hooks/useProjectModals";
+import { useProjectCRUD } from "@/cloud/hooks/useProjectCRUD";
+import { useProjectSave } from "@/cloud/hooks/useProjectSave";
+import { useProjectSharing } from "@/cloud/hooks/useProjectSharing";
+import { useProjectTrash } from "@/cloud/hooks/useProjectTrash";
+import { useProjectMembers } from "@/cloud/hooks/useProjectMembers";
+import { useProjectLibrary } from "@/cloud/hooks/useProjectLibrary";
+import { useProjectAdmin } from "@/cloud/hooks/useProjectAdmin";
+import { useProjectModals } from "@/cloud/hooks/useProjectModals";
 
 interface ProjectsContextValue {
   // State

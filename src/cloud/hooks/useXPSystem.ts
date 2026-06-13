@@ -5,8 +5,8 @@
 
 import { useCallback } from "react";
 import type { SupabaseClient, User } from "@supabase/supabase-js";
-import type { Profile, XPTransaction, XPActionType } from "@/lib/supabase/types";
-import { XP_REWARDS, calculateLevel } from "@/lib/xp-utils";
+import type { Profile, XPTransaction, XPActionType } from "@/cloud/lib/supabase/types";
+import { XP_REWARDS, calculateLevel } from "@/cloud/lib/xp-utils";
 import { handleProjectError } from "@/lib/projects-utils";
 
 export interface XPSystemParams {

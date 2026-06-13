@@ -8,8 +8,8 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useProjects } from "@/context/ProjectsContext";
-import { useAuth } from "@/context/AuthContext";
+import { useProjects } from "@/cloud/context/ProjectsContext";
+import { useAuth } from "@/cloud/context/AuthContext";
 import { useSession } from "@/context/SessionContext";
 import { cn } from "@/lib/utils";
 import {
@@ -34,9 +34,9 @@ import {
   RotateCcw,
   AlertTriangle,
 } from "lucide-react";
-import type { ProjectWithOwner, MemberWithProfile } from "@/lib/supabase/types";
+import type { ProjectWithOwner, MemberWithProfile } from "@/cloud/lib/supabase/types";
 import type { EntryMode, Session } from "@/types/session";
-import { ConfirmDialog } from "../shared/ConfirmDialog";
+import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 
 const MODE_LABELS: Record<EntryMode, string> = {
   critique: "Critique",

@@ -5,7 +5,7 @@
 
 import { useState, useCallback } from "react";
 import type { SupabaseClient, User } from "@supabase/supabase-js";
-import type { Profile, LibraryProject, Project } from "@/lib/supabase/types";
+import type { Profile, LibraryProject, Project } from "@/cloud/lib/supabase/types";
 import type { Session } from "@/types/session";
 import { fetchProfilesByIds, remapIds, handleProjectError } from "@/lib/projects-utils";
 

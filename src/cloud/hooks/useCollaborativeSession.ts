@@ -9,8 +9,8 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useSession } from "@/context/SessionContext";
-import { useProjects } from "@/context/ProjectsContext";
-import { useAuth } from "@/context/AuthContext";
+import { useProjects } from "@/cloud/context/ProjectsContext";
+import { useAuth } from "@/cloud/context/AuthContext";
 import { useAppSettings } from "@/context/AppSettingsContext";
 import { useAnnotationsSync } from "./useAnnotationsSync";
 import { useCodeFilesSync, type TrashedCodeFile } from "./useCodeFilesSync";
@@ -828,7 +828,7 @@ export function useCollaborativeSession() {
       console.log(`refreshFromCloud: Fetched ${remoteFiles.length} remote files`);
 
       // Get pending operations from queue
-      const { getPendingOperations } = await import("@/lib/sync/operation-queue");
+      const { getPendingOperations } = await import("@/cloud/lib/sync/operation-queue");
       const pendingOps = await getPendingOperations(currentProjectId);
       console.log(`refreshFromCloud: Found ${pendingOps.length} pending operations`);
 
@@ -853,7 +853,7 @@ export function useCollaborativeSession() {
       const localAnnotations = sessionContext.session.lineAnnotations;
 
       // Merge annotations (additive strategy - no conflicts)
-      const { mergeAnnotations, mergeFiles, mergeReplies } = await import("@/lib/sync/merge-strategies");
+      const { mergeAnnotations, mergeFiles, mergeReplies } = await import("@/cloud/lib/sync/merge-strategies");
 
       const annotationsResult = mergeAnnotations(
         remoteAnnotations,

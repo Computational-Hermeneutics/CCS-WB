@@ -11,7 +11,7 @@ import type {
   Profile,
   Annotation as AnnotationType,
   CodeFile,
-} from "@/lib/supabase/types";
+} from "@/cloud/lib/supabase/types";
 import type { Session, EntryMode } from "@/types/session";
 import { DEFAULT_DISPLAY_SETTINGS } from "@/types/session";
 import { isSessionExpiredError } from "@/lib/projects-utils";

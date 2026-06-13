@@ -11,12 +11,12 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter, useParams } from "next/navigation";
-import { useAuth } from "@/context/AuthContext";
-import { useProjects } from "@/context/ProjectsContext";
+import { useAuth } from "@/cloud/context/AuthContext";
+import { useProjects } from "@/cloud/context/ProjectsContext";
 import { useSession } from "@/context/SessionContext";
 import { cn } from "@/lib/utils";
 import { Users, Loader2, AlertCircle, LogIn, CheckCircle } from "lucide-react";
-import { LoginModal } from "@/components/auth/LoginModal";
+import { LoginModal } from "@/cloud/components/auth/LoginModal";
 
 type InviteStatus = "loading" | "needs_auth" | "joining" | "success" | "error" | "already_member";
 
