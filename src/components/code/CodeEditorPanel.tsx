@@ -1768,6 +1768,20 @@ export function CodeEditorPanel({
                                 Move to folder…
                               </button>
                             )}
+                            {onMoveFileToFolder && file.folder && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setFileMenuOpen(null);
+                                  onMoveFileToFolder(file.id, "");
+                                }}
+                                className="w-full flex items-center gap-2 px-3 py-1.5 text-[10px] text-slate hover:bg-cream"
+                                title={`Move "${file.name}" out of "${file.folder}" to the top level`}
+                              >
+                                <ChevronUp className="h-3 w-3" strokeWidth={1.5} />
+                                Move to root
+                              </button>
+                            )}
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
