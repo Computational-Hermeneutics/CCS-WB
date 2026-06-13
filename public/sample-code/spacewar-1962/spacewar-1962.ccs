@@ -2,7 +2,7 @@
   "id": "spacewar-1962-sample",
   "name": "Spacewar! (1962) — MIT PDP-1",
   "mode": "critique",
-  "description": "Complete masswerk + bitsavers Spacewar! corpus: every recoverable game version (v1 → v4.8 plus Landsteiner's 2016 modernised 2B-m and 2015 new program), the MACRO assembler defs, Peter Samson's actual star catalogue, the 1985 hyperspace patch, sense-switch documentation, patches, the sibling Snowflake graphics program, and three scholarly disassemblies of paper-tape binaries. 25 files in total.",
+  "description": "Complete masswerk + bitsavers Spacewar! corpus: every recoverable game version (v1 → v4.8 plus Landsteiner's 2016 modernised 2B-m and 2015 new program), the MACRO assembler defs, Peter Samson's actual star catalogue, the 1985 hyperspace patch, sense-switch documentation, patches, the sibling Snowflake graphics program, and three scholarly disassemblies of paper-tape binaries. Organised into root (game source) + supporting / docs / disassemblies subfolders.",
   "messages": [],
   "codeFiles": [
     {
@@ -139,7 +139,8 @@
       "language": "pdp1-macro",
       "source": "shared",
       "size": 561,
-      "uploadedAt": "2026-05-31T00:00:00.000Z"
+      "uploadedAt": "2026-05-31T00:00:00.000Z",
+      "folder": "supporting"
     },
     {
       "id": "sw-stars-prs",
@@ -147,7 +148,8 @@
       "language": "pdp1-macro",
       "source": "shared",
       "size": 12084,
-      "uploadedAt": "2026-05-31T00:00:00.000Z"
+      "uploadedAt": "2026-05-31T00:00:00.000Z",
+      "folder": "supporting"
     },
     {
       "id": "sw-hyperspace85",
@@ -155,7 +157,8 @@
       "language": "pdp1-macro",
       "source": "shared",
       "size": 3066,
-      "uploadedAt": "2026-05-31T00:00:00.000Z"
+      "uploadedAt": "2026-05-31T00:00:00.000Z",
+      "folder": "supporting"
     },
     {
       "id": "sw-snowflake",
@@ -163,7 +166,8 @@
       "language": "pdp1-macro",
       "source": "shared",
       "size": 2881,
-      "uploadedAt": "2026-05-31T00:00:00.000Z"
+      "uploadedAt": "2026-05-31T00:00:00.000Z",
+      "folder": "supporting"
     },
     {
       "id": "sw-senseswitches",
@@ -171,7 +175,8 @@
       "language": "text",
       "source": "shared",
       "size": 15723,
-      "uploadedAt": "2026-05-31T00:00:00.000Z"
+      "uploadedAt": "2026-05-31T00:00:00.000Z",
+      "folder": "docs"
     },
     {
       "id": "sw-restart-patch",
@@ -179,7 +184,8 @@
       "language": "pdp1-macro",
       "source": "shared",
       "size": 1350,
-      "uploadedAt": "2026-05-31T00:00:00.000Z"
+      "uploadedAt": "2026-05-31T00:00:00.000Z",
+      "folder": "docs"
     },
     {
       "id": "sw-minskytron-howto",
@@ -187,7 +193,8 @@
       "language": "text",
       "source": "shared",
       "size": 6283,
-      "uploadedAt": "2026-05-31T00:00:00.000Z"
+      "uploadedAt": "2026-05-31T00:00:00.000Z",
+      "folder": "docs"
     },
     {
       "id": "sw-2b-disasm",
@@ -195,7 +202,8 @@
       "language": "pdp1-macro",
       "source": "shared",
       "size": 140423,
-      "uploadedAt": "2026-05-31T00:00:00.000Z"
+      "uploadedAt": "2026-05-31T00:00:00.000Z",
+      "folder": "disassemblies"
     },
     {
       "id": "sw-hyperspace85-disasm",
@@ -203,7 +211,8 @@
       "language": "pdp1-macro",
       "source": "shared",
       "size": 14330,
-      "uploadedAt": "2026-05-31T00:00:00.000Z"
+      "uploadedAt": "2026-05-31T00:00:00.000Z",
+      "folder": "disassemblies"
     },
     {
       "id": "sw-restart-disasm",
@@ -211,7 +220,8 @@
       "language": "pdp1-macro",
       "source": "shared",
       "size": 1678,
-      "uploadedAt": "2026-05-31T00:00:00.000Z"
+      "uploadedAt": "2026-05-31T00:00:00.000Z",
+      "folder": "disassemblies"
     }
   ],
   "codeContents": {

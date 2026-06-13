@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useCallback, useEffect, useRef } from "react";
+import React, { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { useSession } from "@/context/SessionContext";
 import { cn } from "@/lib/utils";
 import {
@@ -35,6 +35,7 @@ import {
   Cloud,
   FilePlus,
   HardDrive,
+  Folder,
 } from "lucide-react";
 import { fetchSampleProject, fetchSampleProjectsManifest, type SampleProject } from "@/data/sample-projects";
 import type {
@@ -862,19 +863,63 @@ export function CodeEditorPanel({
     return redoStack[redoStack.length - 1]?.fileId === selectedFileId;
   }, [selectedFileId, redoStack]);
 
-  // Sort files based on current sort order
+  // Sort files based on current sort order.
+  //
+  // Folder grouping: files with a `folder` field are grouped under that
+  // folder in the sidebar; files without one render at the root. Within
+  // each group (and at the root), any README file is pinned to the top
+  // regardless of sort order; the rest sort by the chosen mode.
+  // Manual mode preserves the explicit order but still groups by folder
+  // visually — root files first, then each folder in first-appearance
+  // order, then folder files in their stored sequence.
   const sortedFiles = useMemo(() => {
-    if (fileSortOrder === "manual") return codeFiles;
-    const sorted = [...codeFiles].sort((a, b) => {
-      const nameA = a.name.toLowerCase();
-      const nameB = b.name.toLowerCase();
-      if (fileSortOrder === "az") {
-        return nameA.localeCompare(nameB);
+    const folderOf = (f: typeof codeFiles[number]) => (f.folder || "").trim();
+    const isReadme = (f: typeof codeFiles[number]) => /^readme(\.[a-z0-9]+)?$/i.test(f.name);
+
+    // Group by folder, preserving first-appearance order of folders
+    // (this matters in manual mode and for stable rendering).
+    const rootFiles: typeof codeFiles = [];
+    const folderOrder: string[] = [];
+    const byFolder = new Map<string, typeof codeFiles>();
+    for (const f of codeFiles) {
+      const folder = folderOf(f);
+      if (!folder) {
+        rootFiles.push(f);
       } else {
-        return nameB.localeCompare(nameA);
+        if (!byFolder.has(folder)) {
+          byFolder.set(folder, []);
+          folderOrder.push(folder);
+        }
+        byFolder.get(folder)!.push(f);
       }
-    });
-    return sorted;
+    }
+
+    const sortWithinGroup = (group: typeof codeFiles) => {
+      if (fileSortOrder === "manual") return group;
+      const sorted = [...group].sort((a, b) => {
+        // README always wins
+        const aR = isReadme(a), bR = isReadme(b);
+        if (aR && !bR) return -1;
+        if (bR && !aR) return 1;
+        const cmp = a.name.toLowerCase().localeCompare(b.name.toLowerCase());
+        return fileSortOrder === "az" ? cmp : -cmp;
+      });
+      return sorted;
+    };
+
+    // For manual mode, still pin README to the top of its group — David
+    // requested README always-on-top regardless of sort order.
+    const sortManualWithReadmeFirst = (group: typeof codeFiles) => {
+      if (fileSortOrder !== "manual") return sortWithinGroup(group);
+      const readme = group.filter(isReadme);
+      const rest = group.filter((f) => !isReadme(f));
+      return [...readme, ...rest];
+    };
+
+    return [
+      ...sortManualWithReadmeFirst(rootFiles),
+      ...folderOrder.flatMap((folder) => sortManualWithReadmeFirst(byFolder.get(folder)!)),
+    ];
   }, [codeFiles, fileSortOrder]);
 
   // Move file up/down in the list
@@ -1555,8 +1600,24 @@ export function CodeEditorPanel({
             </p>
           ) : (
             <ul className="space-y-0">
-              {sortedFiles.map((file, index) => (
-                <li key={file.id} className="group relative">
+              {sortedFiles.map((file, index) => {
+                // Show a folder header above the first file of each
+                // folder. Folder header = visual divider with a folder
+                // icon and the folder name; subsequent files in the
+                // same folder get a small left-margin indent applied
+                // via the file row's className below.
+                const thisFolder = (file.folder || "").trim();
+                const prevFolder = index === 0 ? null : (sortedFiles[index - 1].folder || "").trim();
+                const showFolderHeader = thisFolder && thisFolder !== prevFolder;
+                return (
+                <React.Fragment key={file.id}>
+                {showFolderHeader && (
+                  <li className="px-2 pt-2 pb-1 font-sans text-[9px] uppercase tracking-widest text-slate-muted flex items-center gap-1.5 select-none">
+                    <Folder className="h-3 w-3" strokeWidth={1.5} />
+                    {thisFolder}
+                  </li>
+                )}
+                <li className={cn("group relative", thisFolder && "pl-2")}>
                   {renamingFileId === file.id ? (
                     <div className="px-2 py-1">
                       <input
@@ -1782,7 +1843,9 @@ export function CodeEditorPanel({
                     </div>
                   )}
                 </li>
-              ))}
+                </React.Fragment>
+                );
+              })}
             </ul>
           )}
           </div>

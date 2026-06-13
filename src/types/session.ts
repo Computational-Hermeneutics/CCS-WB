@@ -63,6 +63,10 @@ export interface CodeReference {
   size: number;
   uploadedAt: string;
   summary?: string;
+  // Optional folder for files-pane grouping. Empty / undefined = root.
+  // Forward-slash separated for future nesting, but the current UI
+  // renders a single level of grouping under a folder header.
+  folder?: string;
   // Historical context metadata
   author?: string;
   date?: string;          // When code was written (if known)
