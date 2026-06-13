@@ -991,6 +991,22 @@ export const WorkbenchLayout = forwardRef<WorkbenchLayoutRef, WorkbenchLayoutPro
               // README.md will be auto-selected by CodeEditorPanel's useEffect
             }}
             onAddNewFile={() => {
+              // Ask which folder to create the file in. Defaults to
+              // the currently-selected file's folder, with the list of
+              // existing folders shown as a hint. Cancel aborts.
+              const existingFolders = [...new Set(session.codeFiles.map(f => (f.folder || "").trim()).filter(Boolean))];
+              const currentFile = session.codeFiles.find(f => f.id === selectedFileId);
+              const defaultFolder = currentFile?.folder ?? "";
+              const folderHint = existingFolders.length
+                ? `Existing folders: ${existingFolders.join(", ")}`
+                : "No existing folders yet.";
+              const folderInput = window.prompt(
+                `Create new file in which folder? (leave empty for root)\n${folderHint}`,
+                defaultFolder
+              );
+              if (folderInput === null) return; // cancelled
+              const folder = folderInput.trim();
+
               // Generate unique filename (untitled.md, untitled-2.md, etc.)
               const existingNames = new Set(session.codeFiles.map(f => f.name.toLowerCase()));
               let filename = "untitled.md";
@@ -1005,6 +1021,7 @@ export const WorkbenchLayout = forwardRef<WorkbenchLayoutRef, WorkbenchLayoutPro
                 language: "markdown",
                 source: "created",
                 size: 0,
+                ...(folder ? { folder } : {}),
               });
               // Set empty content
               setCodeContent(fileId, "");
@@ -1012,6 +1029,7 @@ export const WorkbenchLayout = forwardRef<WorkbenchLayoutRef, WorkbenchLayoutPro
             }}
             onReorderFiles={reorderCodeFiles}
             onUpdateFileLanguage={(fileId, language) => updateCode(fileId, { language })}
+            onMoveFileToFolder={(fileId, folder) => updateCode(fileId, { folder: folder || undefined })}
             onSelectedFileChange={setSelectedFileId}
             isFullScreen={annotationFullScreen}
             onToggleFullScreen={() => setAnnotationFullScreen(!annotationFullScreen)}

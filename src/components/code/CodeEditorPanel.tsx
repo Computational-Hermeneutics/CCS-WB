@@ -77,6 +77,7 @@ interface CodeEditorPanelProps {
   onAddNewFile?: () => void; // Create a new blank file
   onReorderFiles?: (fileIds: string[]) => void; // Reorder files by new order
   onUpdateFileLanguage?: (fileId: string, language: string | undefined) => void; // Update file's language
+  onMoveFileToFolder?: (fileId: string, folder: string) => void; // Update file's folder (empty string = root)
   onSelectedFileChange?: (fileId: string | null) => void; // Callback when selected file changes
   isFullScreen?: boolean; // Whether annotation pane is in full screen mode
   onToggleFullScreen?: () => void; // Callback to toggle full screen mode
@@ -392,6 +393,7 @@ export function CodeEditorPanel({
   onAddNewFile,
   onReorderFiles,
   onUpdateFileLanguage,
+  onMoveFileToFolder,
   onSelectedFileChange,
   isFullScreen = false,
   onToggleFullScreen,
@@ -563,6 +565,30 @@ export function CodeEditorPanel({
   const [displaySettings, setDisplaySettings] = useState<DisplaySettings>(DEFAULT_DISPLAY_SETTINGS);
   // annotationDisplaySettings is now from session.displaySettings.annotations (defined above)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+
+  // Collapsed folder names. Folders default to expanded; clicking the
+  // folder header toggles. Persisted to localStorage so the collapse
+  // state survives reloads / project switches.
+  const [collapsedFolders, setCollapsedFolders] = useState<Set<string>>(() => {
+    if (typeof window === "undefined") return new Set();
+    try {
+      const raw = window.localStorage.getItem("ccs-collapsed-folders");
+      return raw ? new Set(JSON.parse(raw)) : new Set();
+    } catch { return new Set(); }
+  });
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      window.localStorage.setItem("ccs-collapsed-folders", JSON.stringify([...collapsedFolders]));
+    } catch { /* ignore */ }
+  }, [collapsedFolders]);
+  const toggleFolderCollapse = useCallback((folder: string) => {
+    setCollapsedFolders(prev => {
+      const next = new Set(prev);
+      if (next.has(folder)) next.delete(folder); else next.add(folder);
+      return next;
+    });
+  }, []);
   const [sidebarWidth, setSidebarWidth] = useState(144); // Default width in pixels (w-36 = 9rem = 144px)
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false); // Mobile overlay sidebar state
   const [isDraggingSidebar, setIsDraggingSidebar] = useState(false);
@@ -1602,21 +1628,36 @@ export function CodeEditorPanel({
             <ul className="space-y-0">
               {sortedFiles.map((file, index) => {
                 // Show a folder header above the first file of each
-                // folder. Folder header = visual divider with a folder
-                // icon and the folder name; subsequent files in the
-                // same folder get a small left-margin indent applied
-                // via the file row's className below.
+                // folder. Folder header is a clickable row with a
+                // chevron + folder icon — clicking toggles collapse
+                // for that folder. Files inside a collapsed folder
+                // are not rendered.
                 const thisFolder = (file.folder || "").trim();
                 const prevFolder = index === 0 ? null : (sortedFiles[index - 1].folder || "").trim();
                 const showFolderHeader = thisFolder && thisFolder !== prevFolder;
+                const isInCollapsedFolder = thisFolder && collapsedFolders.has(thisFolder);
                 return (
                 <React.Fragment key={file.id}>
                 {showFolderHeader && (
-                  <li className="px-2 pt-2 pb-1 font-sans text-[9px] uppercase tracking-widest text-slate-muted flex items-center gap-1.5 select-none">
-                    <Folder className="h-3 w-3" strokeWidth={1.5} />
-                    {thisFolder}
+                  <li>
+                    <button
+                      onClick={() => toggleFolderCollapse(thisFolder)}
+                      className="w-full flex items-center gap-1 px-2 pt-2 pb-1 font-sans text-[9px] uppercase tracking-widest text-slate-muted hover:text-ink transition-colors text-left select-none"
+                      aria-expanded={!collapsedFolders.has(thisFolder)}
+                    >
+                      <ChevronRight
+                        className={cn(
+                          "h-3 w-3 transition-transform shrink-0",
+                          !collapsedFolders.has(thisFolder) && "rotate-90"
+                        )}
+                        strokeWidth={1.5}
+                      />
+                      <Folder className="h-3 w-3 shrink-0" strokeWidth={1.5} />
+                      <span>{thisFolder}</span>
+                    </button>
                   </li>
                 )}
+                {isInCollapsedFolder ? null : (
                 <li className={cn("group relative", thisFolder && "pl-2")}>
                   {renamingFileId === file.id ? (
                     <div className="px-2 py-1">
@@ -1703,6 +1744,30 @@ export function CodeEditorPanel({
                               <Pencil className="h-3 w-3" strokeWidth={1.5} />
                               Rename
                             </button>
+                            {onMoveFileToFolder && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setFileMenuOpen(null);
+                                  // Existing folders (excluding empty/root)
+                                  // listed in the prompt as a hint.
+                                  const existing = [...new Set(codeFiles.map(f => (f.folder || "").trim()).filter(Boolean))];
+                                  const hint = existing.length
+                                    ? `Existing folders: ${existing.join(", ")}`
+                                    : "No existing folders yet.";
+                                  const next = window.prompt(
+                                    `Move "${file.name}" to which folder? (leave empty for root)\n${hint}`,
+                                    file.folder ?? ""
+                                  );
+                                  if (next === null) return;
+                                  onMoveFileToFolder(file.id, next.trim());
+                                }}
+                                className="w-full flex items-center gap-2 px-3 py-1.5 text-[10px] text-slate hover:bg-cream"
+                              >
+                                <Folder className="h-3 w-3" strokeWidth={1.5} />
+                                Move to folder…
+                              </button>
+                            )}
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
@@ -1843,6 +1908,7 @@ export function CodeEditorPanel({
                     </div>
                   )}
                 </li>
+                )}
                 </React.Fragment>
                 );
               })}

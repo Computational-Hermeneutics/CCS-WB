@@ -146,11 +146,15 @@ export function useWorkbenchFileManagement({
             const { metadata, code } = parsed;
             const originalName = metadata.filename || file.name.replace(/-annotated\.md$/, "");
 
+            // Inherit the currently-selected file's folder so uploaded
+            // files land alongside the file you were just looking at.
+            const inheritedFolder = session.codeFiles.find(f => f.id === selectedFileId)?.folder;
             const fileId = addCode({
               name: originalName,
               language: metadata.language || undefined,
               source: "upload",
               size: code.length,
+              ...(inheritedFolder ? { folder: inheritedFolder } : {}),
             });
 
             setCodeContent(fileId, code);
@@ -189,11 +193,13 @@ export function useWorkbenchFileManagement({
 
         const language = languageMap[extension] || "";
 
+        const inheritedFolder = session.codeFiles.find(f => f.id === selectedFileId)?.folder;
         const fileId = addCode({
           name: file.name,
           language: language || undefined,
           source: "upload",
           size: text.length,
+          ...(inheritedFolder ? { folder: inheritedFolder } : {}),
         });
 
         setCodeContent(fileId, text);
