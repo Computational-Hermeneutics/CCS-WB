@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { AIProviderSettings } from "./AIProviderSettings";
 import { AISetupGuide } from "./AISetupGuide";
 import { useAppSettings } from "@/context/AppSettingsContext";
+import { CLOUD_ENABLED } from "@/cloud/config";
 import { useSkins } from "@/context/SkinsContext";
 import { useAuth, type AuthProvider } from "@/cloud/context/AuthContext";
 import { getSupabaseClient, isSupabaseConfigured, resetSupabaseClient } from "@/cloud/lib/supabase/client";
@@ -192,12 +193,18 @@ export function SettingsModal({
     setCollabLoading(null);
   };
 
+  // The Cloud tab only appears when the build-time CLOUD_ENABLED flag
+  // is on. When off (cloud.config.json -> enabled: false), the entire
+  // cloud subtree is inert and the tab would have nothing useful to
+  // show — hide it from the tablist rather than render a null state.
   const tabs: { id: SettingsTab; label: string; icon: React.ReactNode }[] = [
     { id: "profile", label: "Profile", icon: <User className="h-4 w-4" /> },
     { id: "code", label: "Code", icon: <Code className="h-4 w-4" /> },
     { id: "appearance", label: "Appearance", icon: <Palette className="h-4 w-4" /> },
     { id: "ai", label: "AI", icon: <Bot className="h-4 w-4" /> },
-    { id: "cloud", label: "Cloud", icon: <Cloud className="h-4 w-4" /> },
+    ...(CLOUD_ENABLED
+      ? [{ id: "cloud" as SettingsTab, label: "Cloud", icon: <Cloud className="h-4 w-4" /> }]
+      : []),
     { id: "about", label: "About", icon: <Info className="h-4 w-4" /> },
   ];
 
@@ -252,7 +259,10 @@ export function SettingsModal({
               {/* Breadcrumb: cloud sign-in / backend config moved to its
                   own Cloud tab in v4.1 so the considerable explanation
                   it warrants has room to breathe. Profile is now just
-                  the user's own identity (name, initials, etc.). */}
+                  the user's own identity (name, initials, etc.). The
+                  breadcrumb itself is hidden when CLOUD_ENABLED is off,
+                  since there's nowhere useful to point. */}
+              {CLOUD_ENABLED && (
               <div className="pb-3 border-b border-parchment">
                 <p className="font-sans text-[10px] text-slate-muted">
                   Looking for sign-in or shared cloud projects? Cloud
@@ -266,6 +276,7 @@ export function SettingsModal({
                   .
                 </p>
               </div>
+              )}
 
               {/* Profile fields - Name, Initials, Affiliation on one row */}
               <div className="flex gap-2">

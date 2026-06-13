@@ -7,6 +7,7 @@ import { MODE_LABELS } from "@/lib/export";
 import type { UseAutoSaveReturn } from "@/hooks/useAutoSave";
 import { SaveStatusIndicator } from "@/components/ui/SaveStatusIndicator";
 import { UserMenu } from "@/cloud/components/auth/UserMenu";
+import { CLOUD_ENABLED } from "@/cloud/config";
 import {
   ChevronDown,
   Cloud,
@@ -755,7 +756,8 @@ export const WorkbenchHeader = memo(function WorkbenchHeader(props: WorkbenchHea
         <button onClick={() => setShowExportModal(true)} className="p-2 md:p-1.5 text-slate hover:text-ink" title="Export session log">
           <Download className="h-4 w-4" strokeWidth={1.5} />
         </button>
-        {/* Cloud projects button */}
+        {/* Cloud projects button — hidden when CLOUD_ENABLED is off */}
+        {CLOUD_ENABLED && (
         <div className="relative" data-dropdown>
           <button
             onClick={() => {
@@ -1138,6 +1140,7 @@ export const WorkbenchHeader = memo(function WorkbenchHeader(props: WorkbenchHea
             </div>
           )}
         </div>
+        )}
         <div className="hidden sm:block w-px h-4 bg-parchment mx-1" />
         {/* Help button - opens help popover (hidden on narrow screens) */}
         <div className="relative hidden sm:block">
@@ -1244,14 +1247,17 @@ export const WorkbenchHeader = memo(function WorkbenchHeader(props: WorkbenchHea
         >
           <Settings className="h-4 w-4" strokeWidth={1.5} />
         </button>
-        {/* User menu - shows avatar dropdown when logged in */}
-        <UserMenu
-          className="ml-1"
-          onProfileClick={() => {
-            setSettingsTab("profile");
-            setShowSettingsModal(true);
-          }}
-        />
+        {/* User menu - shows avatar dropdown when logged in.
+            Hidden when cloud is disabled at build time. */}
+        {CLOUD_ENABLED && (
+          <UserMenu
+            className="ml-1"
+            onProfileClick={() => {
+              setSettingsTab("profile");
+              setShowSettingsModal(true);
+            }}
+          />
+        )}
       </div>
     </header>
   );
