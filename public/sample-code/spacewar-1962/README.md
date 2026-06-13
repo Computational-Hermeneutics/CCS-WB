@@ -55,6 +55,22 @@ for which a text listing survives. Versions for which only paper-tape
 binaries or no copy at all exist are noted in the "Versions not included
 here" section below.
 
+## How the files are organised in the workbench
+
+The 26 files are split across the **root** and three subfolders so
+the files pane stays navigable. You can collapse any subfolder by
+clicking its header (state is remembered across reloads):
+
+| Level | What lives there | Files |
+|---|---|---|
+| **root** | This README + every real Spacewar! game source listing, chronological from v1 to v4.8 (15 sources). The root is the canonical reading list. | README.md, the 11 game versions, the three v4.8 paper-tape segments |
+| **`supporting/`** | Source files the game itself depends on or relates to but which aren't game versions: the MACRO assembler definitions, Peter Samson's actual star catalogue data, a later hyperspace patch, the sibling Snowflake program. | 4 files |
+| **`docs/`** | Patches and documentation describing how to use or modify the program — sense-switch settings, the auto-restart patch, the Minskytron hyperspace how-to. | 3 files |
+| **`disassemblies/`** | Scholarly recovery from paper-tape binaries for which no text source survives. Reading these *alongside* the corresponding game-version listings shows what disassembly recovers and what it cannot — comments, names, authorial intent. | 3 files |
+
+This layout follows a simple rule used across the sample library:
+**real source code at the root, supporting material in subfolders.**
+
 ### `spacewar_1_early1962_reconstructed.txt` — Version 1 (early 1962)
 
 The first playable iteration: two ships, a supply of torpedoes, a random
