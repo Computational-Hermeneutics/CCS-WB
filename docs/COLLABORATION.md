@@ -93,7 +93,7 @@ plug it in:
 - **At runtime, from the UI (recommended).** Settings → Cloud →
   **Cloud Backend (Supabase)** takes a URL + anon key, persists them to
   browser localStorage, and reloads. No fork, no rebuild, no env vars.
-  See `src/lib/supabase/runtime-config.ts`.
+  See `src/cloud/lib/supabase/runtime-config.ts`.
 - **At build time, via env vars.** For self-hosters running their own
   CCS-WB build: set `NEXT_PUBLIC_SUPABASE_URL` and
   `NEXT_PUBLIC_SUPABASE_ANON_KEY`. The runtime-UI value takes
@@ -101,6 +101,18 @@ plug it in:
 
 Full setup (project provisioning, RLS, schema) lives in
 `docs/SUPABASE_SETUP.md`.
+
+**Cloud is physically ring-fenced in the codebase (v5.0+).** All
+cloud-only code lives in `src/cloud/`. A single JSON flag at the repo
+root — `cloud.config.json` → `enabled` — gates the entire subtree:
+when off, no Supabase client is ever instantiated, the cloud UI is
+hidden, and the cloud tab in Settings shows the null state regardless
+of env vars or runtime config. Maintainers who want to remove cloud
+entirely from a fork can delete `src/cloud/`, fix a small enumerated
+list of cloud-using files (the type checker reports them), and Local
+keeps working unchanged. See `docs/CLOUD-RINGFENCE.md` for the
+maintainer guide and `src/cloud/README.md` for the technical
+file-by-file reference.
 
 ## AI provider dispatch is local-first too (v4.0+)
 
