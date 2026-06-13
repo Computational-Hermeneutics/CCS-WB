@@ -1,0 +1,5 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema#",
+  "$comment": "Build-time master switch for CCS-WB's optional Supabase cloud collaboration. See src/cloud/config.ts for the read-side and docs/COLLABORATION.md for the model. Setting `enabled` to false neutralises the entire cloud subtree regardless of env vars or user toggles — useful when you want to ship a CCS-WB build that has the cloud code present but inert (e.g. an installer for a user who never wants Supabase) without surgically deleting it.",
+  "enabled": true
+}

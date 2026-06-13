@@ -64,6 +64,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // and no Supabase client is created so no requests are made (the
   // Supabase free tier auto-pauses when unused — this keeps it unused).
   const { settings: appSettings } = useAppSettings();
+  // Three-layer gate. isSupabaseConfigured() already folds in the
+  // build-time CLOUD_ENABLED flag (see src/lib/supabase/client.ts
+  // and src/cloud/config.ts) and the deploy-time URL+key check, so
+  // we only AND with the per-user toggle here.
   const isSupabaseEnabled =
     isSupabaseConfigured() && appSettings.collaborationEnabled;
   const supabase = isSupabaseEnabled ? getSupabaseClient() : null;

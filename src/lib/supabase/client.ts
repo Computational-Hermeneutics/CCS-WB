@@ -8,6 +8,7 @@
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "./types";
 import { resolveSupabaseConfig } from "./runtime-config";
+import { CLOUD_ENABLED } from "@/cloud/config";
 
 // Lazy singleton pattern - client is created on first use
 let supabaseClient: SupabaseClient<Database> | null = null;
@@ -56,10 +57,18 @@ export function getSupabaseClient(): SupabaseClient<Database> | null {
 }
 
 /**
- * Check if Supabase is configured (via runtime override OR env vars).
- * Use this to conditionally show collaborative features.
+ * Check whether Supabase is actually available in this build — i.e.
+ * the build-time CLOUD_ENABLED flag is on AND either env vars or
+ * runtime config supply the URL+key. Use this to conditionally show
+ * collaborative features; consumers do not need to also check
+ * CLOUD_ENABLED separately.
+ *
+ * Setting `cloud.config.json -> enabled: false` collapses this to
+ * always-false regardless of env vars or runtime config — the cloud
+ * subtree then ships in the bundle but never activates.
  */
 export function isSupabaseConfigured(): boolean {
+  if (!CLOUD_ENABLED) return false;
   return resolveSupabaseConfig() !== null;
 }
 

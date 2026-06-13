@@ -59,10 +59,21 @@ export function clearRuntimeSupabaseConfig(): void {
 }
 
 /**
- * Resolve the effective Supabase config from runtime override first, env
- * vars second. Returns null when neither source has it.
+ * Resolve the effective Supabase config from runtime override first,
+ * env vars second. Returns null when neither source has it OR when
+ * the build-time CLOUD_ENABLED flag is off — in the off case the
+ * cloud subtree is inert by design, so config resolution must report
+ * "no backend available" regardless of what's in localStorage or env
+ * vars (otherwise downstream UI gets contradictory state: "backend
+ * configured" + "toggle hidden").
  */
 export function resolveSupabaseConfig(): { url: string; anonKey: string; source: "runtime" | "env" } | null {
+  // Lazy-import to avoid a circular dep at module load (this file is
+  // loaded from src/lib/supabase, src/cloud/config is loaded by
+  // src/lib/supabase/client which imports this file).
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { CLOUD_ENABLED } = require("@/cloud/config") as { CLOUD_ENABLED: boolean };
+  if (!CLOUD_ENABLED) return null;
   const runtime = getRuntimeSupabaseConfig();
   if (runtime) return { url: runtime.url, anonKey: runtime.anonKey, source: "runtime" };
   const envUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
