@@ -186,7 +186,10 @@ export const DEFAULT_APP_SETTINGS: AppSettings = {
   defaultLanguage: "",
   theme: "light",
   accentColour: "burgundy",
-  collaborationEnabled: true,
+  // Cloud collaboration starts OFF — CCS-WB ships as a local-first
+  // workbench. Users who configure a Supabase backend opt in via
+  // Settings → Cloud → Enable Cloud Collaboration.
+  collaborationEnabled: false,
   modeOverrides: {},
 };
 
