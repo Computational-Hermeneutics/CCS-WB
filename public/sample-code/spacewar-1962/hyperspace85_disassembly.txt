@@ -1,0 +1,384 @@
+hyperspace85  .  jmg 62
+
+/ NOTE: the original source has been discovered since this disassembly was made.
+/ Please refer to http://www.masswerk.at/sources/hyperspace85.txt
+
+/ disassembly of the patch "hyperspace85.bin"
+/ http://bitsavers.org/bits/DEC/pdp1/papertapeImages/20031202/InsidePDP1_80s_box3/hyperspace85.bin
+/
+/ (disassembly by N. Landsteiner, June 2014, www.masswerk.at)
+/ any addresses smaller than 5240 (start of patch) are referring to spacewar 2b
+/ (the symbols and locations of variables are matching perfectly)
+/ all symbols used inside the patch are generic and without meaning
+/ (jumps to return addresses are using labels ending in "x").
+/ productions of the macro assembler are prefixed by "*".
+
+/ symbols of spacewar 2b used by the patch
+ml1=1540
+mb1=1637
+mx1=1567
+my1=1577
+mco=2254
+mh1=2665		/ \mh1 (variable)
+mh2=2666		/ \mh2 (variable)
+mh3=2667		/ \mh3 (variable)
+scw=2673		/ \scw (variable)
+sr5=2341
+ran=2654		/ \ran (variable)
+nb1=3243
+
+/ macros used
+
+	define initialize A,B
+	law B
+	dap A
+	term
+
+	define index A,B,C
+	idx A
+	sas B
+	jmp C
+	term
+
+	define swap
+	rcl 9s
+	rcl 9s
+	term
+
+	define setup A,B
+	law i B
+	dac A
+	term
+
+	define count A,B
+	isp A
+	jmp B
+	term
+
+/ macro random using constants like spacewar 2b, but local to the patch
+
+	define hrandom
+	lac ran		/\ran
+	rar 1s
+	xor hc6		/(335671
+	add hc6		/(335671
+	dac ran		/\ran
+	term
+
+
+/ patched locations
+
+1456/                                                   / a1-1
+01456     605530     jmp 5530        jmp hq4
+
+1525/                                                   / mg1-2
+01525     175507     jda 5507        jda hq5
+
+1642/                                                   / mq1
+01642     625570     jsp 5570        jsp hti
+
+2341/                                                   / sr5
+02341     605545     jmp 5545        jmp hq3
+
+
+
+/ start of minskytron hyperspace patch
+/ hyperspace85 by j.m. graetz 1962 for spacewar 2b
+
+	5240/
+
+05240     265432     dap 5432        hp1,	dap hpx		/ count up
+                                     hr1, count ., hp2
+* 05241     465241     isp 5241        hr1,	isp .
+* 05242     605245     jmp 5245        jmp hp2
+05243     355241     dzm i 5241      dzm i hr1
+05244     605432     jmp 5432        jmp hpx
+
+05245     231567     lio i 1567      hp2,	lio i mx1	/ pos x
+05246     325246     dio 5246        hr3,	dio .
+05247     231577     lio i 1577      lio i my1			/ pos y
+05250     325250     dio 5250        hr2,	dio .
+05251     211540     lac i 1540      lac i ml1			/ 1st control word
+05252     265252     dap 5252        hr5,	dap .		/ save a copy
+                                     hrandom
+* 05253     202654     lac 2654        lac ran			/ macro random as in 2b
+* 05254     671001     rar 1s          rar 1s
+* 05255     065504     xor 5504        xor hc6			/ hc6 is constant (335671
+* 05256     405504     add 5504        add hc6			/ local to the patch
+* 05257     242654     dac 2654        dac ran          	/ \ran
+
+05260     411567     add i 1567      add i mx1			/ add x to ran and save
+05261     251567     dac i 1567      dac i mx1
+05262     411577     add i 1577      add i my1			/ add y to ran + x and save
+05263     251577     dac i 1577      dac i my1
+05264     700364     law 364         law 364
+05265     251637     dac i 1637      dac i mb1			/ count of instructions
+05266     710020     law i 20        law i 20
+05267     245267     dac 5267        hr4,	dac .
+05270     225454     lio 5454        lio hc1
+05271     332665     dio i 2665      dio i mh1			/ \mh1
+05272     225455     lio 5455        lio hc2
+05273     332666     dio i 2666      dio i mh2			/ \mh2
+05274     225456     lio 5456        lio hc3
+05275     332667     dio i 2667      dio i mh3			/ \mh3
+                                     initialize i ml1, hp3
+* 05276     705301     law 5301        law hp3
+* 05277     271540     dap i 1540      dap i ml1		/ 1st control word
+05300     605304     jmp 5304        jmp hp4
+
+/ this was presumingly a macro
+/ this macro loads the contents of the address provided in A,
+/ and deposits the lower 9 bits (9..17) bits in B
+/ and the higher 9 bits (0..9) in B+1
+
+	define
+split A,B
+	lac i A
+	scr 9s
+	sal 9s
+	dac B
+	dio B 1
+	term
+
+05301     265432     dap 5432        hp3,	dap hpx
+05302     700325     law 325         law 325
+05303     251637     dac i 1637      dac i mb1			/ count of instructions
+                                     hp4,	setup hn6, 4
+* 05304     710004     law i 4         hp4,	law i 4
+* 05305     245473     dac 5473        dac hn6
+                                     split mh1, hs1		/ \mh1
+* 05306     212665     lac i 2665      lac i mh1
+* 05307     677777     scr 9s          scr 9s
+* 05310     665777     sal 9s          sal 9s
+* 05311     245474     dac 5474        dac hs1
+* 05312     325475     dio 5475        dio hs1 1
+                                     split mh2, hs2		/ \mh2
+* 05313     212666     lac i 2666      lac i mh2
+* 05314     677777     scr 9s          scr 9s
+* 05315     665777     sal 9s          sal 9s
+* 05316     245476     dac 5476        dac hs2
+* 05317     325477     dio 5477        dio hs2 1
+                                     split mh3, hs3		/ \mh3
+* 05320     212667     lac i 2667      lac i mh3
+* 05321     677777     scr 9s          scr 9s
+* 05322     665777     sal 9s          sal 9s
+* 05323     245500     dac 5500        dac hs3
+* 05324     325501     dio 5501        dio hs3 1
+
+/ calc and display arcs
+05325     205474     lac 5474        hp5,	lac hs1
+05326     405476     add 5476        add hs2
+05327     675037     sar 5s          sar 5s
+05330     405475     add 5475        add hs1 1
+05331     245475     dac 5475        dac hs1 1
+05332     425477     sub 5477        sub hs2 1
+05333     675037     sar 5s          sar 5s
+05334     761000     cma             cma
+05335     405474     add 5474        add hs1
+05336     245474     dac 5474        dac hs1
+05337     205476     lac 5476        lac hs2
+05340     405500     add 5500        add hs3
+05341     675377     sar 8s          sar 8s
+05342     405477     add 5477        add hs2 1
+05343     245477     dac 5477        dac hs2 1
+05344     425501     sub 5501        sub hs3 1
+05345     675017     sar 4s          sar 4s
+05346     761000     cma             cma
+05347     405476     add 5476        add hs2
+05350     245476     dac 5476        dac hs2
+05351     205477     lac 5477        lac hs2 1
+05352     415250     add i 5250      add i hr2
+                                     swap
+* 05353     663777     rcl 9s          rcl 9s
+* 05354     663777     rcl 9s          rcl 9s
+05355     205476     lac 5476        lac hs2
+05356     415246     add i 5246      add i hr3
+05357     720007     iot 7           dpy-i
+
+05360     205500     lac 5500        lac hs3
+05361     405474     add 5474        add hs1
+05362     675001     sar 1s          sar 1s
+05363     405501     add 5501        add hs3 1
+05364     245501     dac 5501        dac hs3 1
+05365     425475     sub 5475        sub hs1 1
+05366     675077     sar 6s          sar 6s
+05367     761000     cma             cma
+05370     405500     add 5500        add hs3
+05371     245500     dac 5500        dac hs3
+05372     205501     lac 5501        lac hs3 1
+05373     415250     add i 5250      add i hr2
+                                     swap
+* 05374     663777     rcl 9s          rcl 9s
+* 05375     663777     rcl 9s          rcl 9s
+05376     205500     lac 5500        lac hs3
+05377     415246     add i 5246      add i hr3
+05400     720007     iot 7           dpy-i
+
+                                     count hn6, hp5
+* 05401     465473     isp 5473        isp hn6
+* 05402     605325     jmp 5325        jmp hp5
+05403     205474     lac 5474        lac hs1
+05404     225475     lio 5475        lio hs1 1
+05405     675777     sar 9s          sar 9s
+05406     667777     scl 9s          scl 9s
+05407     252665     dac i 2665      dac i mh1			/ \mh1
+05410     205476     lac 5476        lac hs2
+05411     225477     lio 5477        lio hs2 1
+05412     675777     sar 9s          sar 9s
+05413     667777     scl 9s          scl 9s
+05414     252666     dac i 2666      dac i mh2			/ \mh2
+05415     205500     lac 5500        lac hs3
+05416     225501     lio 5501        lio hs3 1
+05417     675777     sar 9s          sar 9s
+05420     667777     scl 9s          scl 9s
+05421     252667     dac i 2667      dac i mh3			/ \mh3
+                                     count i hr4, hpx
+* 05422     475267     isp i 5267      isp i hr4
+* 05423     605432     jmp 5432        jmp hpx
+                                     setup i hr4, 100
+* 05424     710100     law i 100       law i 100
+* 05425     255267     dac i 5267      dac i hr4
+                                     initialize i ml1, hr6
+* 05426     705433     law 5433        law hr6
+* 05427     271540     dap i 1540      dap i ml1
+05430     700012     law 12          law 12
+05431     251637     dac i 1637      dac i mb1
+05432     605432     jmp 5432        hpx,	jmp .
+
+05433     265432     dap 5432        hr6,	dap hpx
+                                     count i hr4, hpx
+* 05434     475267     isp i 5267      isp i hr4
+* 05435     605432     jmp 5432        jmp hpx
+05436     215252     lac i 5252      lac i hr5
+05437     271540     dap i 1540      dap i ml1
+05440     702000     law 2000        law 2000
+05441     251637     dac i 1637      dac i mb1
+05442     205505     lac 5505        lac hc7			/hc7 is "(jmp hp6"
+05443     255545     dac i 5545      dac i hq3
+05444     710500     law i 500       law i 500
+05445     255267     dac i 5267      dac i hr4
+05446     605432     jmp 5432        jmp hpx
+
+                                     hp6, count i hr4, hq1
+* 05447     475267     isp i 5267      hp6, isp i hr4
+* 05450     605556     jmp 5556        jmp hq1
+05451     205503     lac 5503        lac hc5			/hc5 is "(opr" or "(760000"
+05452     255545     dac i 5545      dac i hq3
+05453     605556     jmp 5556        jmp hq1
+
+05454     000006     000006          hc1,	6
+05455     010765     010765          hc2,	10765
+05456     767765     767765          hc3,	767765		/-10012
+
+/ table of objects
+
+htb,	0
+. 22/
+
+* 05457     000000                   / htb
+* 05460     000000                   / htb 1
+* 05461     000000                   / hn1
+* 05462     000000                   / hn1 1
+* 05463     000000                   / hn2
+* 05464     000000                   / hn2 1
+* 05465     000000                   / hn3
+* 05466     000000                   / hn3 1
+* 05467     000000                   / hn4
+* 05470     000000                   / hn4 1
+* 05471     000000                   / hn5
+* 05472     000000                   / hn5 1
+* 05473     000000                   / hn6
+* 05474     000000                   / hs1
+* 05475     000000                   / hs1 1
+* 05476     000000                   / hs2
+* 05477     000000                   / hs2 1
+* 05500     000000                   / hs3
+* 05501     000000                   / hs3 1
+
+/ this might have been produced by a "cconstants" pseudo instruction,
+/ but does not work in macro1.c (since "hc5" is used after the "constants"
+05502     345471                     hc4,	dzm hn5		/(dzm hn5
+05503     760000                     hc5,	opr		/(opr
+05504     335671                     hc6,	335671		/(335671 for random
+05505     605447                     hc7,	jmp hp6		/(jmp hp6
+05506     000000                     0
+
+05507     000000                     hq5,	0
+05510     265527     dap 5527        hq6,	dap hqx
+05511     205507     lac 5507        lac hq5
+05512     243244     dac 3244        dac nb1 1
+                                     initialize hq7, htb
+* 05513     705457     law 5457        law htb
+* 05514     265515     dap 5515        dap hq7
+05515     340000     dzm             hq7,	dzm
+                                     index hq7, hc4, hq7
+* 05516     445515     idx 5515        idx hq7
+* 05517     525502     sas 5502        sas hc4			/hc4 is "(dzm hn5"
+* 05520     605515     jmp 5515        jmp hq7
+                                     setup htb, 4
+* 05521     710004     law i 4         law i 4
+* 05522     245457     dac 5457        dac htb
+05523     245460     dac 5460        dac htb 1
+05524     205503     lac 5503        lac hc5			/hc5 is "(opr" or "(760000"
+05525     245465     dac 5465        dac hn3
+05526     245466     dac 5466        dac hn3 1
+05527     605527     jmp 5527        hqx,	jmp .		/ return
+
+/ init table of objects
+05530     705457     law 5457        hq4,	law htb
+05531     265241     dap 5241        dap hr1
+hn1=htb 2
+05532     705461     law 5461        law hn1
+05533     265246     dap 5246        dap hr3
+hn2=hn1 2
+05534     705463     law 5463        law hn2
+05535     265250     dap 5250        dap hr2
+hn3=hn2 2
+05536     705465     law 5465        law hn3
+05537     265545     dap 5545        dap hq3
+hn4=hn3 2
+05540     705467     law 5467        law hn4
+05541     265267     dap 5267        dap hr4
+hn5=hn4 2
+05542     705471     law 5471        law hn5
+05543     265252     dap 5252        dap hr5
+hn6=hn5 2
+hs1=hn6 1
+hs2=hs1 2
+hs3=hs2 2
+05544     601540     jmp 1540        jmp ml1			/ resume main
+
+05545     105545     xct 5545        hq3,	xct .		/ check for hyperbutton active
+05546     202673     lac 2673        lac scw			/ \scw
+05547     761000     cma             cma
+05550     032254     and i 2254      and i mco
+05551     640400     sma             sma
+05552     605556     jmp 5556        jmp hq1
+05553     661001     ral 1s          ral 1s
+05554     640200     spa             spa
+05555     625240     jsp 5240        jsp hp1
+05556     222673     lio 2673        hq1,	lio scw		/ \scw
+05557     602342     jmp 2342        jmp sr5+1			/ return to main
+
+	. 10/		/space for patches(?)
+
+* 05560     000000
+* 05561     000000
+* 05562     000000
+* 05563     000000
+* 05564     000000
+* 05565     000000
+* 05566     000000
+* 05567     000000
+
+05570     265600     dap 5600        hti,	dap htx		/ here from end of comparison and display loop
+05571     441567     idx 1567        idx mx1
+05572     445241     idx 5241        idx hr1
+05573     445246     idx 5246        idx hr3
+05574     445250     idx 5250        idx hr2
+05575     445545     idx 5545        idx hq3
+05576     445267     idx 5267        idx hr4
+05577     445252     idx 5252        idx hr5
+05600     605600     jmp 5600        htx, jmp .			/ return
+
+	start

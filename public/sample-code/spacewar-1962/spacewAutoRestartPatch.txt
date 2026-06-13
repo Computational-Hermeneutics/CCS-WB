@@ -1,0 +1,51 @@
+spacewar 2b auto-restart patch
+/ requires the hyperspace 85 patch
+/ based on a disassembly of the binary tape files
+/ http://textfiles.com/bitsavers/bits/DEC/pdp1/papertapeImages/20031202/InsidePDP1_80s_box3/spacewAutoRestartPatch.bin
+/ http://textfiles.com/bitsavers/bits/DEC/pdp1/papertapeImages/20030408/spaceWarRstrt.bin
+/ compare the disassembly at
+/ http://www.masswerk.at/spacewar/sources/spaceWarRstrt_disassembly.txt
+
+/ locations in spacewar 2b
+
+a=1462		/ setup for test word controls
+ml1=1540	/ property linking to an object's handling routine
+mtb=3103	/ start address of the objects table
+ntr=3543	/ property for the number of torpsedos remaining
+
+/ locations in hyperspace85 (Hyperspace VIci, 2 May 1962)
+
+hml=5530
+hmx=hml+14	/ (5544)
+
+/ patches into hyperspace85
+
+hmx/
+
+jmp rs0			/ replaces "jmp ml1"
+
+/ start of patch
+
+5610/
+
+rs0,	lac mtb		/ control word of first spaceship
+	sza i		/ is it not empty?
+	jmp rs1		/ empty, restart
+	lac mtb 1	/ check second spaceship
+	sza i
+	jmp rs1
+	lac ntr		/ add number of remaining torpedoes
+	add ntr 1	/ sum them up
+	sza i		/ any left?
+	jmp rs1		/ no, restart
+	scr 2s		/ operand is 440, 2 high bits
+	dac rsc		/ reset rsc to torps remaining / 4
+	jmp ml1		/ return to main
+
+rs1,	isp rsc		/ count up on rsc
+	jmp ml1		/ jump to ml1, if still counting
+	jmp a		/ finished, start a new game
+
+rsc,	0
+
+	start 0

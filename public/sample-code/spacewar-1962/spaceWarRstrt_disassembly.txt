@@ -1,0 +1,48 @@
+/ disassembly of "spaceWarRstrt.bin" / "spacewAutoRestartPatch.bin"
+/ http://bitsavers.org/bits/DEC/pdp1/papertapeImages/20030408/spaceWarRstrt.bin
+/ http://bitsavers.org/bits/DEC/pdp1/papertapeImages/20031202/InsidePDP1_80s_box3/spacewAutoRestartPatch.bin
+/
+/ (disassembly by N. Landsteiner, June 2014, www.masswerk.at)
+/ locations match those of spacewar 2b patched by hyperspace85.bin
+/ the patch will restart with a game for control boxes (label "a").
+
+/ locations in spacewar 2b
+
+a=1462		/ setup for test word controls
+ml1=1540	/ property linking to an object's handling routine
+mtb=3103	/ start address of the objects table
+ntr=3543	/ property for the number of torpsedos remaining
+
+/ locations in hyperspace85 (Hyperspace VIci, 2 May 1962)
+
+hml=5530
+hmx=hml+14	/ (5544)
+
+/ patches into hyperspace85
+
+	hmx/
+05544     605610     jmp 5610      jmp rs0		/ replaces "jmp ml1"
+
+/ start of patch
+
+	5610/
+
+05610     203103     lac 3103      rs0,  lac mtb
+05611     650100     sza i         sza i
+05612     605625     jmp 5625      jmp rs1
+05613     203104     lac 3104      lac mtb 1
+05614     650100     sza i         sza i
+05615     605625     jmp 5625      jmp rs1
+05616     203543     lac 3543      lac ntr
+05617     403544     add 3544      add ntr 1
+05620     650100     sza i         sza i
+05621     605625     jmp 5625      jmp rs1
+05622     677440     scr 440       scr 2s		/ (?) 440 has 2 hi-bits
+05623     245630     dac 5630      dac rsc
+05624     601540     jmp 1540      jmp ml1
+05625     465630     isp 5630      rs1,  isp rsc
+05626     601540     jmp 1540      jmp ml1
+05627     601462     jmp 1462      jmp a
+05630     000000                   rsc,  0
+
+	start 0

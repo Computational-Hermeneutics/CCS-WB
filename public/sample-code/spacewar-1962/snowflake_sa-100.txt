@@ -1,0 +1,294 @@
+snowflake sa-100
+
+0/	opr
+	opr
+	opr
+	jmp beg
+
+/ disassembly (n.l., 2019) of snowflake_sa-100.bin
+/ http://bitsavers.org/bits/DEC/pdp1/papertapeImages/20031202/InsidePDP1_80s_box3/
+
+/ ssw 2 for 8-dots display (drawn from lower left corner)
+/ ssw 1 + ssw 2 for single dot (as above)
+
+100/
+
+beg,	lac t1a
+	dac p1
+	lac t2a
+	dac p2
+
+b1,	jda cxy
+	dac i p1
+	dio i p2
+	idx p1
+	idx p2
+	sas t2d
+	jmp b1
+	lac k1		/ (777737
+	dac c1
+
+b2,	lac i p1
+	dac t1
+	lac i p2
+	dac t2
+
+b3,	lac p1
+	sub k2		/ (1
+	dac p1
+	lac p2
+	sub k2		/ (1
+	dac p2
+	sad t2a
+	jmp b4
+	jda dxy
+	dac i p1
+	dio i p2
+	jmp b3
+
+b4,	lac i p1
+	dac t1
+	lac i p2
+	dac t2
+
+b5,	idx p1
+	idx p2
+	sad t2e
+	jmp b6
+	jda dxy
+	dac i p1
+	dio i p2
+	jmp b5
+
+b6,	isp c1
+	jmp b8
+	jda cxy
+	dac i t1a
+	dio i t2a
+	jda cxy
+	dac i t1e
+	dio i t2e
+	jmp b7
+
+cxx,	0
+
+cxy,	0
+	dap cxx
+	lac x
+	mul k3		/ (342643
+	rir 1s
+	dio x
+	lac y
+	mul k3		/ (342643
+	rir 1s
+	dio y
+	add x
+	dac x
+	rcl 4s
+	jmp i cxx
+
+b7,	jda cxy
+	dac i t1m
+	dio i t2m
+	jmp b9
+
+b8,	lac x
+	dac i t1m
+	lac y
+	dac i t2m
+	jmp b2
+
+b9,	and kc		/ (74
+	cma
+	dac c1
+	jmp b2
+
+kc,	74
+
+/ .+1/
+
+dxx,	0
+
+dxy,	0
+	dap dxx
+	szo
+	cla
+	lac i p2
+	add t2
+	szo
+	jmp dx1
+	sar 1s
+	jmp dx2
+
+dx1,	xor k4		/ (377777
+	sar 1s
+	xor k5		/ (577777
+
+dx2,	dac t2
+	lac i p1
+	add t1
+	szo
+	jmp dx3
+	sar 1s
+	jmp dx4
+
+dx3,	xor k4		/ (377777
+	sar 1s
+	xor k5 		/ (577777
+
+dx4,	dac t1
+	jmp dy1		/ patch
+
+/ 8 dots display
+dx5,	dpy-1000		/ no wait, req. compl. pulse, origin lower left
+	szs 10		/ sense switch 1 for single dot
+	jmp i dxx
+	iot i		/ ioh
+	cma
+	dpy 3000		/ wait, origin lower left
+	rcl 9s
+	rcl 9s
+	dpy 3000
+	cma
+	dpy 3000
+	rcl 9s
+	rcl 9s
+	dpy 3000
+	cma
+	dpy 3000
+	rcl 9s
+	rcl 9s
+	dpy 3000
+	lac t2
+	lio t1
+	dpy 3000
+
+dx6,	lac t1
+	lio t2
+	jmp i dxx
+
+/ 376/
+
+t1m,	lt1 +23	/440
+t2m,	lt2 +33	/2456
+t1,	0
+t2,	0
+k1,	777737
+c1,	0
+k2,	1
+x,	520063
+y,	350735
+k3,	342643
+k4,	377777
+k5,	577777
+t1e,	et2-1	/504
+t1a,	lt1	/415
+p1,	0
+
+/ 415/
+
+lt1,
+.+70/	et2,
+
+/ 505/
+
+/ 12 dots display
+dy1,	lio t2
+	szs 20		/ sense switch 2 for 8-dots
+	jmp dx5
+	dac z1
+	dio z2
+	sar 1s
+	dac t3		/ t1 x sin(30)
+	lac z2
+	sar 1s
+	dac t4		/ t1 x sin(30)
+	lac z1
+	mul k6		/ (335546
+	dac q1		/ t1 x cos(30)
+	lac z2
+	mul k6		/ (335546
+	dac q2		/ t1 x cos(30)
+	lac q1
+	sub t4
+	dac r1		/ t1 x cos(30) - t1 x sin(30)
+	cma
+	dac r2		/ -r1
+	lac q1
+	add t4
+	dac r3		/ t1 x cos(30) + t1 x sin(30)
+	cma
+	dac r4		/ -r3
+	lac q2
+	sub t3
+	lio r3		/ t1 x cos(30) - t1 x sin(30)
+	jmp dy2		/ patched
+
+/ .+2/
+
+dy3,	lac t3
+	add q2		/ x: t1 x sin(30) + t1 x cos(30)
+	jmp dy4
+
+/ 560/
+
+r2,	0
+r1,	0
+q2,	0
+t3,	0
+r4,	0
+r3,	0
+t4,	0
+q1,	0
+k6,	335546
+z2,	0
+z1,	0
+
+/ .+11
+
+dy2,	dpy 300
+	cma
+	dpy 300
+	cma
+	lio r4
+	dpy 300
+	cma
+	dpy 300
+	jmp dy3		/ patch
+
+dy4,	lio r1
+	dpy 300
+	cma
+	dpy 300
+	lio r2
+	dpy 300
+	cma
+	dpy 300
+	lac z2
+	cma
+	rcl 9s
+	rcl 9s
+	lac z1
+	dpy 300
+	cma
+	dpy 300
+	lio z2
+	dpy 300
+	cma
+	dpy 300
+	jmp dx6
+
+
+/ 2417/
+
+t2d,	et1
+t2e,	et1-1
+t2a,	lt2
+p2,	0
+
+
+lt2,
+.+70/	et1,
+
+
+start beg

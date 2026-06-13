@@ -1,0 +1,295 @@
+Adding the "Minskytron Hyperspace Signature" to Spacewar 4.1
+
+
+Notes:
+The original hyperspace patch (hyperspac85.bin / Hyperspace VIci, 2 May 1962)
+uses not only the 3 predefined hyperspace properties of the original program's
+objects table, but also uses an extra objects table of its own for some more.
+Rather than following this approach, we expand the main objects table by some
+additional properties, nh5, nh6, nh7, and define the additional pointers \mh5,
+\mh6, \mh7.
+Thus, the code will assemble using macro1.c which is lacking the "dimension"
+pseudo instruction required by the original code.
+
+For the original code see:
+http://www.masswerk.at/spacewar/sources/hyperspace85.txt
+and http://www.masswerk.at/spacewar/sources/hyperspace85.pdf
+
+Moreover, we will use just the animation, leaving everything else as is.
+The animation is triggered at label sr5 and hands over to the standard
+hyperspace routine at hp1.
+
+
+For more information on the original hyperspace routine as a patch to
+Spacewar 2b as seen at the MIT Science Open House in May 1962, see
+"The Origin of Spacewar" by J. M. Graetz:
+Creative Computing, August 1981 (Volume 7, Number 8)
+and The Computer Museum Report, Fall 1983; pp. 6-12
+http://www.masswerk.at/spacewar/SpacewarOrigin.html
+
+See also:
+J. M. Graetz, "Spacewar! Real-Time Capability of the PDP-1",
+DECUS Proceedings 1962: Papers and Presentations of the Digital Equipment
+Computer Users Society, (Maynard, Massachusetts, 1962), 37-39
+http://www.textfiles.com/bitsavers/pdf/dec/decus/confProceedings/DECUS_1962.pdf
+HTML-transcript: http://www.masswerk.at/spacewar/decus1962/
+
+A discussion of the code may be found at:
+http://www.masswerk.at/spacewar/inside/insidespacewar-pt8-hyperspace.html#hyperspace_patch
+
+
+In the code below, any comments starting with a double slash are my own (N.L.)
+while single-slash-comments are those in the original code.
+
+
+
+
+1) Define some additional properties for hyperspace
+
+
+/main control routine for spaceships
+
+nob=30			/total number of colliding objects
+
+ml0,	setup \mtc, 5000	/delay for loop
+	init ml1, mtb	/loc of calc routines
+	add (nob
+	dap mx1		/ x
+nx1=mtb nob
+...
+nh4=nh3 2
+
+// replace
+nnn=nh4 2
+
+// by
+
+	add (2		// additional hyperspace properties
+	dac \mh5	// packed minskytron coordinates hx1 hy1
+nh5=nh4 2
+	add (2
+	dac \mh6	// packed minskytron coordinates hx2 hy2
+nh6=nh5 2
+	add (2
+	dac \mh7	// packed minskytron coordinates hx3 hy3
+nh7=nh6 2
+nnn=nh7 2
+
+
+
+2) Increment additional pointers (\mh5..\mh7) at end of main loop
+
+
+idl,	idx mth
+	idx \mfu
+	idx \mtr
+	idx mco
+	idx mot
+	idx mom
+	idx \mh1
+	idx \mh2
+	idx \mh3
+	idx \mh4
+	idx \mh5	// additional hyperspace properties
+	idx \mh6
+	idx \mh7	// end of additional hyperspace properties
+
+
+
+3) Patch hyperspace trigger to jump to the initialization of the minskytron signature ("jmp hyp"):
+
+
+sr5,	lac \scw
+	dac i mco
+	count i mh3, mb1
+	dzm i \mh3
+	lac i \mh2
+	sza i
+	jmp mb1
+	lac \scw
+	and (600000
+	xor (600000
+	sza
+	jmp mb1
+	jmp hyp		// minskytron hyperspace
+
+
+Note: "jmp hyp" replaces the following instructions of Spacewar 4.1:
+
+	lac i ml1
+	dac i \mh1
+	lac (hp1 400000
+	dac i  ml1
+	xct hd1
+	dac i ma1
+	law 2
+	dac i mb1
+	jmp mb1
+
+
+Alternatively, we could use sense switch 3 (normally salvoes/single-shot) to
+switch the animation off (default) or on (deployed):
+
+sr5,	lac \scw
+	dac i mco
+	count i mh3, mb1
+	dzm i \mh3
+	lac i \mh2
+	sza i
+	jmp mb1
+	lac \scw
+	and (600000
+	xor (600000
+	sza
+	jmp mb1
+	szs 30		// skip on sense switch 3 zero (normal operation)
+	jmp hyp		// minskytron hyperspace
+	lac i ml1
+	dac i \mh1
+	lac (hp1 400000
+	dac i  ml1
+	xct hd1
+	dac i ma1
+	law 2
+	dac i mb1
+	jmp mb1
+
+
+and disable the switch's use in the torpedo trigger:
+
+mco,	lac .		/ previous control word
+	cma
+//	szs i 30
+	clc
+
+
+
+4) This is the actual code for the "Minskytron Hyperspace Signature",
+from here to normal operations at label hp1.
+(Since we do not "diddle ship coordinates" prior to the animation, we're using
+the standard pointers mx1 and my1 for the ship coordinates, while the original
+introduces private properties for them. Similarly we use ma1 as the step
+counter/duration rather than introducing another private property.
+Moreover, we're using rather instructions than the macro "setx" -- which is
+just law ... dac ... -- and doesn't really add to clarity.)
+
+
+// Hyperspace calculation and Minskytron display
+// from hyperspace patch for spacewar 2b,
+// hyperspace85, being "Hyperspace VIci, 2 May 1962" retyped by JMG 26 Oct 1985
+// minor modifications (no extra object table), breakout as in version 3/4
+
+/Macros privy to Hyperspace
+
+define split
+	scr 9s
+	sal 9s
+terminate
+
+define pack X,Y,S
+	lac X
+	lio Y
+	sar 9s
+	scl 9s
+	dac S
+terminate
+
+define dismin X,Y,XC,YC
+	lac Y
+	add YC
+	swap
+	lac X
+	add XC
+	dpy-i 100
+terminate
+
+define marvin X1,Y1,X2,Y2,S,SS
+	lac X1
+	add X2
+	S
+	add Y1
+	dac Y1
+	sub Y2
+	SS
+	cma
+	add X1
+	dac X1
+termiate
+
+
+hyp, lac i ml1
+	dac i \mh1
+	law i 20
+	dac i ma1				/ loop counter
+	move xy1,i \mh5
+	move xy2,i \mh6
+	move xy3,i \mh7
+	lac (he1 400000
+	dac i ml1
+	jmp mb1
+
+he1,	law 325
+	dac i mb1
+
+	law i 4			/inner loop count
+	dac \hpt
+	lac i \mh5		/unpack point coordinates
+	split
+	dac \hx1
+	dio \hy1
+	lac i \mh6
+	split
+	dac \hx2
+	dio \hy2
+	lac i \mh7
+	split
+	dac \hx3
+	dio \hy3
+
+/Here it is...
+h3,	marvin \hx1,\hy1,\hx2,\hy2,sar 5s,sar 5s
+	marvin \hx2,\hy2,\hx3,\hy3,sar 8s,sar 4s
+	dismin \hx2,\hy2,i mx1,i my1
+	marvin \hx3,\hy3,\hx1,\hy1,sar 1s,sar 6s
+	dismin \hx3,\hy3,i mx1,i my1
+
+h3a,	count \hpt,h3
+	pack \hx1,\hy1,i \mh5	/repack coordinates
+	pack \hx2,\hy2,i \mh6
+	pack \hx3,\hy3,i \mh7
+h3b,	count i ma1,mb1
+	lac (hp1 400000			// continue with standard routine at hp1
+	dac i ml1
+	xct hd1
+	dac i ma1
+	law 3
+	dac i mb1
+	jmp mb1
+
+xy1,	6
+xy2,	10765
+xy3,	767765
+
+
+***
+
+Note: Personally, I feel that the animation as is doesn't blend well with
+Spacewar 4.x, for the higher torpedo speed used (as compared to Spacewar 2b) and
+the resulting overall impression of pace. We may adjust for this (while
+deviating from the original code) by skipping the last 3 steps of the animation
+which are just adding a bit of an hook to the top of the vertical arc.
+The resulting graph may be perceived to be a bit more dynamic, too.
+
+This may be accomplished by replacing the instruction at hyp + 2
+
+	law i 20
+
+by
+
+	law i 15
+
+***
+
+
+Norbert Landsteiner
+2015-05-06

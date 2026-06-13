@@ -1,0 +1,457 @@
+*** Spacewar! 3.1 / 4.x Sense Switch Settings Demystified ***
+
+
+
+There's some mystery about the actual workings of the sense switch controls in
+Spacewar! -- and more rumors than actual information. This is an attempt to
+clarify these based on the actual source code of Spacewar!. (Please note that
+Spacewar 2B used other settings, see
+<http://www.masswerk.at/spacewar/sources/spacewar_2b.txt>.)
+
+This is an extensive survey of all the occurrences of the "szs" instruction,
+which was the only way to access the current state of the sense switches of the
+PDP-1 in code.
+
+
+1) Short Version
+
+In short, the sense switches have the following effect, if flipped to on:
+
+	1: rotation using angular momentum
+	2: low gravity
+	3: torpedo salvos off (single shots)
+	4: background starfield off
+	5: gravitational star kills
+	6: gravitational star off
+
+
+
+2) Long Version -- A Closer Look Into the Source Code
+
+
+2.01) The "skip on zero sense switch" Instruction
+
+The "szs" instruction had the (octal) format 06400s0, where the "s" would give
+the number of the sense switch. If the bit representing the switch was zero (low
+state), the next instruction would be skipped. The presence of bit 5 (counting
+from 0 at the very left), notated by the addition of "i" in the code, would
+invert the condition (now skipping the next instruction, if the switch was set).
+
+
+2.02) PDP-1 Instructions and Assembler Notation
+
+The instructions for the Macro assembler are quite easy to read: All the values
+in a line were summed up to give the instruction. A symbol followed by a comma
+at the very beginning of a line would designate a label. A dot (.) indicates the
+current memory position.
+
+PDP-1 instructions are generally formed by a processing part at the highest 2
+3-bit nibbles (first two octal numbers) and an address/value part at bits 6-17
+(lower 4 octal numbers, giving an address space of 07777 or decimal 4096 18-bit
+words). Symbols representing the operation like "szs" were directly translated
+to numbers by the assembler (like 0640000 for "zs", or 0010000 for "i") and a
+line of code like "szs i 20" would sum up to the instruction 0650020.
+
+(Bit 5, "i", commonly known as the defer bit, had a different meaning with most
+of the instructions, causing the contents of the location to be used for another
+look-up, in potentially infinite recursion. So "dac i mom" means: Look up the
+memory location labled "mom", take this value as the actual address and look this
+one up. Now, if there is not another i-bit, deposit the contents of the accumula-
+tor as the new contents of this address.)
+
+A leading back-slash character indicates an upper stroke (not available in
+standard ASCII), instructing the assmembler to use a variable for this symbol.
+An opening bracket instructs the assembler to insert a constant for this value.
+Any characters following a slash (/) are comments and skipped by the assembler.
+
+
+
+2.1) The Code
+
+
+* Sense switch 1 -- angular momentum
+
+The location labeled "mom" points to the address containing the momentum of the
+current object. If sense switch 1 is set, the next instruction, a jump to label
+"sr8", is skipped (condition inverted by "i").
+If not set, the momentum is set to zero and the Accumulator (holding the value
+of the current momentum) is shifted to the left by 7 bits, effectively clearing
+the address part of it. "sr8" labels the next instruction, following immediately
+to this. So, if switch 1 is set and the clearing is skipped, the momentum will
+keep building up.
+
+
+	mom,	add .
+		dac i mom
+		szs 10
+		jmp sr8
+		dzm i mom
+		ral 7s
+	sr8,	ril 1s
+
+		...
+
+
+* Sense switch 2 -- low gravity
+
+Inside the code following label "mth" (part of updating a ships position), the
+"szs" instruction is skipped if sense switch 2 is set (the "i" effectively
+inverts the condition). "scr 2s" shifts the accumulator right by 2 bits,
+dividing its value by 4. (So low gravity is a fourth of the normal amount.)
+
+
+	mth,
+		...
+
+		szs i 20		/ switch 2 for light star
+		scr 2s
+
+
+* Sense switch 3 -- torpedo salvos off (single shots)
+
+The code loads the previous control word into the accumulator. (The actual
+address of this being set in an other part of the program.) The acummulator
+is then complemented (bits flipped) by the "cma" instruction". If sense switch
+3 is set (condition inverted by the "i"), the next instruction ("clc") is
+skipped. The "clc" instruction clears and complements the value in the accumu-
+ator (now 0777777 or minus zero). The "ral" instruction rotates the value in
+the accumulator 3 bits to the left, so that the bit indicating a launch of a
+torpedo would now be in the sign-bit position (first bit from the left).
+
+If the sign-bit is set, the "no launch"-jump is skipped ("sma" instruction).
+So the torpedo will only be launched, if the sign-bit is set.
+Thus the "clc" instruction effects in a continous fire operation, since it
+flips all bits to hi, including what will be then the sign-bit, indicating a
+negative value. This will be skipped by the "szs i 30" and the torpedo-flag
+will be only set, if there was actually a control input.
+
+
+	mco,	lac .		/ previous control word
+		cma
+		szs i 30
+		clc
+		ral 3s		/ torpedo bit to bit 0
+		sma
+		jmp sr5		/ no launch
+
+
+Note: Spacewar 3.1 misses to ever store the value of the control word in the
+location "mco" is pointing to, leaving this without effect.
+Spacewar 4.x fixes this by the following instructions at label "sr5" (the value
+in "scw" being the current control word):
+
+	sr5,	lac \scw
+		dac i mco
+
+For this salvos are permanently on in Spacewar 3.1 and sense switch 3 is without
+effect. (Since the location "mco" is pointing to will be zero, the first "cma"
+will be effecting in the same as the skipped "clc" -- clear and complement AC.)
+
+
+* Sense switch 4 -- background starfield off
+
+The code labled "bck" causes the code to exit early, effictively skipping the
+"isp" instruction (index and skip) following the "jmp" to the return address,
+wich was deposited in the address part of the location labeled "bcx" by the
+first "dap" instruction.
+As can bee seen from the macro "background", the label "bck" is the entry to the
+entire background display sub-routine.
+
+
+	/background display _  3/13/62, prs.
+
+		define 
+	background
+		jsp bck
+		termin
+
+	bck,	dap bcx
+		szs 40
+		jmp bcx
+		isp bcc
+	bcx,	jmp .
+
+
+* Sense switch 5 -- gravitational star kills
+
+The routine labeled "pof" handles a ship colliding with the gravitational star.
+The first two instructions are just resetting the x and y positions to zero,
+putting the ship in the very center of the screen. If sense switch 5 is not set,
+the instruction causing a jump to the code initializing the explosion is skipped.
+Instead, the value 0377777 (indicating the extreme position of the internal map)
+is loaded into the accumulator, and the ship is set to the anti-pode by
+depositing this as the current coordinates of the ship.
+
+
+	/ spaceship in star
+
+	pof,	dzm i \mdx
+		dzm i \mdy
+		szs 50
+		jmp po1
+		lac (377777
+		dac i mx1
+		dac i my1
+		lac i mb1
+		dac \ssn
+		count \ssn, .
+		jmp mb1
+
+	po1,	lac (mex 400000	/ now go bang
+
+
+* Sense switch 6 -- gravitational star off
+
+The code at label "blp" deposits the return address in the address part of
+the location labeled "blx". Sense switch 6 set will result in an immediate
+return, skipping the entire sub-routine.
+
+	/display a star
+
+		...
+
+	blp,	dap blx		/star
+		szs 60
+		jmp blx
+
+		...
+
+	blx,	jmp .
+
+Moreover, sense switch 6 is also checked in the main loop, skipping the jump to
+the code labeled "bsg", if not set. The code following to this is the code for
+calculating the influence of gravity on the ships and the code handling any
+colissions with the sun. The code labeled "bsg" picks up the updating process of
+the ships by updating the amount of fuel left.
+If there is no gravitaional star, there's also no gravity.
+
+	mth,
+		...
+		szs 60
+		jmp bsg
+
+
+
+
+3) Modifications: Sense Switch 2 in Spacewar! 4.3 and 4.4 -- "Twin Star Mode"
+
+There is only a single deviation from this scheme, to be found in listings of
+Spacewar 4.3 and Spacewar 4.4. These are introducing a special twin-star-mode
+featuring a visual displacement of the display locations. This relocation is
+done in a routine labled "kcb", commented "relocate for center display".
+This relocated mode is controlled by sense switch 2, so there is no option for
+low gravity. Sense switch 2 is checked multiple times in these versions of
+Spacewar, once for every object displayed.
+
+The first time we encounter this in a macro definition used to activate a single
+location of the display, like a single blip. The "repeat" pseudo instruction is
+executed in the Macro assembler only and is not effecting in any code.
+Instead, a value of B multiplied by 6 (or shifted 6 bits to the left) will be
+inserted in the code produced by it. The "szs" instruction will skip the "jda"
+instruction, which jumps to the sub-routine doing the relocation (see below).
+
+("jda" means: deposit the contents of the accumulator in the location given in
+the address part of the instruction and jump-sub to the location immediately
+following this address.)
+
+So, if sense switch 2 is not set, the "dpy" addressing the display instruction
+is executed normally, with the x and y coordinates unchanged in the accumulator
+and the IO register. If sense switch 1 is set, the coordinates will be relocated
+by the jump to the sub-routine at "kcb".
+
+		define
+	dispt A,Y,B
+		repeat 6, B=B+B
+		lio Y
+		szs 20
+		jda kcb
+		dpy-A+B
+		term
+
+The same scheme occurs in the code for the background display (starfield):
+
+	fyn,	lio	/lio Y
+		szs 20
+		jda kcb
+		dpy-i
+
+and in the code generating the visuals of the explosions:
+
+	/ explosion
+		...
+		szs 20
+		jda kcb
+		dpy-i 300
+		...
+
+Last but not least, sense switch 2 is checked in the the code setting up the
+locations of the outlines of the spaceships.
+
+Here, the internal values representing the x and y positions of the first
+spaceship (held in nx1 and ny1 respectively) are subtracted from the current
+values, if sense switch 2 is set. Thus the display locations will be relocated
+in a way that spaceship 1 (the "needle") will be tied to the center and
+spaceship 2 (the "wedge") will be displaced by the same amount (starting at the
+lower left corner of the display).
+
+The third and final occurence in this part of the code follows the usual scheme
+described above.
+
+	bsg,
+		...
+		szs 20
+		sub nx1
+		...
+		szs 20
+		sub ny1
+		...
+		szs 20
+		jda kcb
+		dpy-4000
+
+
+A closer look at sub-routine "kcb" reveals, how the relocation is done.
+First, the address part of the contents of the accumulator holding the return
+address is dumped into the location labled "kc1".
+The "swap" macro (two "rcl 9s" instructions) swaps the contents of the
+accumulator and the IO register. Then the y-position of the first spaceship (in
+the location given by "nx1") is subtracted from this. Another swap moves the
+result back into the IO register. The "lac" instruction restores the original
+contents of the acummulator (previously stored at "kcb" by the "jda" instruction
+triggering the jump). Now the x-coordinate of the first spaceship is subtracted
+from the accumulator, followed by a jump to the return address.
+
+
+		kcb,	0		/relocate for center display
+			dap kc1
+			swap
+			sub ny1
+			swap
+			lac kcb
+			sub nx1
+		kc1,	jmp .
+
+
+This effects in the origin of the display (at the center of the scope) being
+relocated to the position of spaceship 1. Rather than moving on the display, the
+"needle", being tied to the origin, will push the whole universe by its movement.
+
+In order to make room for the "needle", the central gravitational star has to
+move from the origin. In order to do so, the central star is duplicated to the
+very left and right of the origin, when in twin-star-mode.
+
+Interestingly the sense switch is not checked for this by the use of the "szs"
+instruction, but by the use of the "szf" instruction meant for a conditional
+skip based on the state of a program falg. Anyway, this results in an identical
+binary instruction (since "szs" and "szf" are using the same instruction code and
+only differ in the position of the value indicating the switch or flag).
+If sense switch 2 is not zero, the jump to the location "bjm-1", the "dpy"
+instruction, is skipped. If the switch is set, the coordinates of spaceship 1 (in
+the locations stored in nx1 and nx2) are subtracted and the star is relocated
+before displayed. (The instruction "dpy-4000" effects in 0724007, a display
+command in effect pretty much like a bare "dpy" -- we won't bother with the
+subtleties in this context.)
+
+	bpt,
+		...
+		szf i 20
+		jmp bjm-1
+		sub ny1
+		swap
+		sub nx1
+		dpy-4000
+	bjm,	jmp .
+
+
+But why is the star duplicated by this?
+Let's have another look at the whole construct:
+
+	define
+		starp
+		add \bx
+		swap
+		add \by
+		swap
+		ioh
+		dpy-4000
+		terminate
+
+		...
+	
+	bpt,	dap bpx
+		random
+		sar 9s
+		sar 6s
+		spa
+		cma
+		sal 3s
+		add (bds
+		dap bjm
+		cla cli clf 6-opr-opr
+		szf i 20
+		jmp bjm-1
+		sub ny1
+		swap
+		sub nx1
+		dpy-4000
+	bjm,	jmp .
+	bds,	repeat 10, starp
+		szf 6
+	bpx,	jmp .
+		stf 6
+		cma
+		swap
+		cma
+		swap
+		jmp bjm
+		
+The sub-routine "bpt" displays the star as a single, rotating line.
+The insertion of the macro "random" puts an updated random value in the
+accumulator. "sar 9s" and "sar 6s" shift this 15 bits to the right. "spa" skips
+the next step, if the accumulator is plus (sign-bit not set). "cma" complements
+the accumulator guaranteeing a positive value in the accumulator.
+
+"sal 3s" shifts the random value 3 bits to the left (multiplying it by 8) and
+"add (bds" adds the location of label "bds" to it. This is then deposited in the
+address part of location "bjm".
+The location "bjm" is now holding a jump instruction to "bds" with a random
+offset. The label "bds" is the start of a sequence of decimal 8 macro
+instructions inserting code to display a dot by adding a random x/y offset (set
+up previously). Incidentally the macro "starp" inserts a code of 8 instructions,
+giving the explanation for the "sal 3s" above. ("bds" will jump to exactly the
+start of any of the 8 incarnations of "starp". Since the shift by 15 bits to the
+right of the random value limited the offset to 2 bits, the resulting line will
+be 5-8 dots -- or rather: iterations of dx/dy -- long.)
+
+The construct "cla cli clf 6-opr-opr" clears the accumulator and the IO register
+and the program flag 6 in a single step. So the line will start at the origin
+(with displacement by nx1 and ny1, if sense switch 2 is set) and will iterate
+over \bx and \by to draw a line of a length resulting from the operations
+above. At the end of this sequence, the "szf 6" instruction will skip the next
+instruction, if program flag 6 is zero. Since the flag was cleared before,
+the next instruction, a jump to the return address, is skipped.
+
+The next instructions sets program flag 6, now making this the final run, and
+complements the values in the accumulator and the IO registers. Since these
+are providing the values for the x and y coordinates of the dpy instruction,
+the second run, started by the final jump to "bds", will draw the line in the
+opposite direction from the outside in.
+
+If the star is positioned in the origin, as normal, this will result in the line
+being extended to the other side of the origin. But if the star was displaced by
+an offset, this will also result in inverting the offset, now drawing the second
+half of the line at the opposite side of the origin, resulting in a second
+incarnation of the gravitational star. (For this, the two stars will be animated
+by a rotating line merley reaching out to one side from the center, and one
+will be the mirror image of the other, flipped by the x and y axes.)
+
+
+
+
+-- finis --
+
+
+
+Norbert Landsteiner,
+Vienna, 2014-05-13
+http://www.masswerk.at

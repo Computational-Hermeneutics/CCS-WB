@@ -1,0 +1,3974 @@
+// Spacewar 2b (2 apr 62) disassembly
+// by Norbert Landsteiner 2014 (http://www.masswerk.at/spacewar)
+//
+// based on a binary image of the paper-tape 'spacewar2B_2apr62.bin'
+// http://bitsavers.org/bits/DEC/pdp1/papertapeImages/20050823/spacewar2B_2apr62.bin
+//
+// the resulting source code (see below) has been proven to produce identical results.
+//
+// this is a code for a DEC PDP-1 without the automatic multiply/divide option
+// using the instructions 'mus' (multiply step) and 'dis' (divide step)
+//
+// symbols and macros are as in Spacewar 3.1
+// comments with single slashes as in Spacewar 3.1
+// comments with double slashes by me (N.L.)
+// note on the notation:
+// - variables are marked-up by a trailing back-slash
+// - all values are octal
+// - lines produced by macros or pseudo-instructions are prefixed by '*'
+// - two or more white-space characters equal a tab (unless in a parameter list)
+//
+// the program consists of 4 parts
+// - common macro fio-dec declarations
+// - spacewar 2b pt. 1
+// - spacewar 2b pt. 2 (the separation in two parts follows Spacewar 3.1)
+// - stars by prs for s/w 2b (star-map data)
+//
+// the first line of each part gives the title (printed at the head of listings).
+// each part/program is ended by start, followed by an optional starting position.
+//
+// sense switches are used as follows
+//   SSW 1 UP: INERTIAL ROTATION
+//         DOWN: BERGENHOLM ROTATION
+//   SSW 2 UP: LIGHT GRAVITY
+//         DOWN: HEAVY GRAVITY
+//   SSW 3,4
+//         00: MOVING STARS, NORMAL
+//         01: MOVING STARS, FAST
+//         10: STATIONARY STARS
+//         11: NO STARS
+//   SSW 5 UP: HEAVY START TRAP
+//         DOWN: HEAVY STAR TO ANTIPOINT
+//   SSW 6 UP: NO HEAVY STAR
+//         DOWN: HEAVY STAR ON
+//
+// (common versions of Spacewar 3.1 used a different set-up.)
+//
+// Spacewar! was conceived in 1961 by Martin Graetz, Stephen Russell, and Wayne
+// Wiitanen. It was first realized on the PDP-1 in 1962 by Stephen Russell,
+// Peter Samson, Dan Edwards, and Martin Graetz, together with Alan Kotok, Steve
+// Piner, and Robert A Saunders. -- Spacewar! is in the public domain, but this
+// credit paragraph must accompany all distributed versions of the program.
+//
+// related files, macro source at
+// http://www.masswerk.at/spacewar/sources/spacewar_2b_2apr62.txt
+
+// Spacewar 2b 25 mar 62 (original source code) at
+// http://www.masswerk.at/spacewar/sources/spacewar_2b_25mar62.txt
+
+
+macro fio-dec
+
+    // common definitions for new instructions
+    szm=sza sma-szf    // szm = 640500, skip on zero AC (sza) or on minus AC (sma)
+    spq=szm i          // spq = 650500, not szm (inverted)
+    clc=cma+cla-opr    // clc = 761200, clear and complement AC
+    ioh=iot i          // ioh = 730000, wait for i/o completion pulse
+
+define initialize A,B
+    law B
+    dap A
+    term
+
+define index A,B,C
+    idx A
+    sas B
+    jmp C
+    term
+
+define swap
+    rcl 9s
+    rcl 9s
+    term
+
+define load A,B
+    lio (B
+    dio A
+    term
+
+define setup A,B
+    law i B
+    dac A
+    term
+
+define count A,B
+    isp A
+    jmp B
+    term
+
+define move A,B
+	lio A
+	dio B
+	term
+
+define clear A,B
+    init .+2, A
+    dzm
+    index .-1, (dzm B+1, .-1
+    term
+
+start
+
+
+spacewar 2b   2 apr 62   pt. 1
+
+3/
+* 00000     000000
+* 00001     000000
+* 00002     000000
+
+00003     600006     jmp 6           jmp sbf
+00004     601462     jmp 1462        jmp a
+00005     601457     jmp 1457        jmp a1
+
+/ routine to flush sequence breaks, if they occur.
+00006     720004     tyi             sbf,  tyi
+00007     220002     lio 2           lio 2
+00010     200000     lac 0           lac 0
+00011     720054     lsm 0           lsm
+00012     610001     jmp i 1         jmp i 1
+
+	define
+yincr X,Y,INS
+	lac Y
+	INS \scn
+	dac Y
+	lac X
+	-INS+add+sub \ssn
+	dac X
+	term
+
+    define
+dispatch
+    add (. 3
+    dap . 1
+    jmp .
+    term
+
+	define
+dispt A,Y,B
+	repeat 6, B=B+B
+	lio Y
+	dpy-A+B
+	term
+
+    define
+scale A,B,C
+    lac A
+    sar B
+    dac C
+    term
+
+    define
+diff V,S,SF
+    add i V
+    dac i V
+    xct SF
+    add i S
+    dac i S
+    term
+
+    define
+random N
+    lac N          // loc ran in sw 3.1
+    rar 1s
+    xor (335671    // sw 3.1 is xor (355670
+    add (335671    // sw 3.1 is add (355670
+    dac N
+    term
+
+    define
+ranct N,S,SS,C
+    random N
+    S
+    SS
+    sma
+    cma
+    dac C
+    term
+
+/sine-cosine subroutine. Adams associates
+/calling sequence= number in AC, jda sin or jdacos.
+/argument is between .+2 pi, with binary point to right of bit 3.
+/answer has binary point to right of bit 0.  Time = 2.35 ms.
+
+define    mult Z
+    jda mpy
+    lac Z
+    term
+
+00013     000000                     cos,  0
+00014     260067     dap 67          dap csx
+00015     202417     lac 2417        lac (62210
+00016     400013     add 13          add cos
+00017     240021     dac 21          dac sin
+00020     600024     jmp 24          jmp .+4
+
+00021     000000                     sin,  0
+00022     260067     dap 67          dap csx
+00023     200021     lac 21          lac sin
+00024     640200     spa             spa
+00025     402420     add 2420        si1,  add (311040
+00026     422417     sub 2417        sub (62210
+00027     640400     sma             sma
+00030     600070     jmp 70          jmp si2
+00031     402417     add 2417        add (62210
+
+00032     661003     ral 3           si3,  ral 2s
+00033                                mult (242763
+* 00033     170116     jda 116
+* 00034     202421     lac 2421
+
+00035     240021     dac 21          dac sin
+00036                                mult sin
+* 00036     170116     jda 116
+* 00037     200021     lac 21
+00040     240013     dac 13          dac cos
+00041                                mult (756103
+* 00041     170116     jda 116
+* 00042     202422     lac 2422
+00043     402423     add 2423        add (121312
+00044                                mult cos
+* 00044     170116     jda 116
+* 00045     200013     lac 13
+00046     402424     add 2424        add (532511
+00047                                mult cos
+* 00047     170116     jda 116
+* 00050     200013     lac 13
+00051     402425     add 2425        add (144417
+00052                                mult sin
+* 00052     170116     jda 116
+* 00053     200021     lac 21
+00054     667007     scl 7           scl 3s
+00055     240013     dac 13          dac cos
+00056     060021     xor 21          xor sin
+00057     640400     sma             sma
+
+00060     600066     jmp 66          jmp csx-1
+00061     202426     lac 2426        lac (377777
+00062     220021     lio 21          lio sin
+00063     642000     spi             spi
+00064     761000     cma             cma
+00065     600067     jmp 67          jmp csx
+00066     200013     lac 13          lac cos
+00067     600067     jmp 67          csx,  jmp .
+
+00070     761000     cma             si2,  cma
+00071     402417     add 2417        add (62210
+00072     640400     sma             sma
+00073     600032     jmp 32          jmp si3
+00074     402417     add 2417        add (62210
+00075     640200     spa             spa
+00076     600101     jmp 101         jmp .+3
+00077     422417     sub 2417        sub (62210
+00100     600032     jmp 32          jmp si3
+00101     422417     sub 2417        sub (62210
+00102     600025     jmp 25          jmp si1
+
+/BBN multiply subroutine
+/Call.. lac one factor, jda mpy or imp, lac other factor.
+
+00103     000000                     imp,  0    /returns low 17 bits and sign in ac
+00104     260105     dap 105         dap im1
+00105     100000     xct 0           im1,  xct
+00106     170116     jda 116         jda mpy
+00107     200103     lac 103         lac imp
+00110     440105     idx 105         idx im1
+00111     672001     rir 1           rir 1s
+00112     673777     rcr 777         rcr 9s
+00113     673777     rcr 777         rcr 9s
+00114     610105     jmp i 105       jmp i im1
+
+00115     000000                     mp2,  0
+
+00116     000000                     mpy,  0    /returns 34 bits and 2 signs
+00117     260125     dap 125         dap mp1
+00120     200116     lac 116         lac mpy
+00121     640200     spa             spa
+00122     761000     cma             cma
+00123     673777     rcr 777         rcr 9s
+00124     673777     rcr 777         rcr 9s
+00125     100000     xct 0           mp1,  xct
+00126     640200     spa             spa
+00127     761000     cma             cma
+00130     240115     dac 115         dac mp2
+00131     760200     cla             cla
+00132                                repeat 21, mus mp2
+* 00132     540115     mus 115
+* 00133     540115     mus 115
+* 00134     540115     mus 115
+* 00135     540115     mus 115
+* 00136     540115     mus 115
+* 00137     540115     mus 115
+* 00140     540115     mus 115
+* 00141     540115     mus 115
+* 00142     540115     mus 115
+* 00143     540115     mus 115
+* 00144     540115     mus 115
+* 00145     540115     mus 115
+* 00146     540115     mus 115
+* 00147     540115     mus 115
+* 00150     540115     mus 115
+* 00151     540115     mus 115
+* 00152     540115     mus 115
+00153     240115     dac 115         dac mp2
+00154     100125     xct 125         xct mp1
+00155     060116     xor 116         xor mpy
+00156     640400     sma             sma
+00157     600170     jmp 170         jmp mp3
+00160     200115     lac 115         lac mp2
+00161     761000     cma             cma
+00162     673777     rcr 777         rcr 9s
+00163     673777     rcr 777         rcr 9s
+00164     761000     cma             cma
+00165     673777     rcr 777         rcr 9s
+00166     673777     rcr 777         rcr 9s
+00167     240115     dac 115         dac mp2
+00170     440125     idx 125         mp3,  idx mp1
+00171     200115     lac 115         lac mp2
+00172     610125     jmp i 125       jmp i mp1
+
+/integer square root
+/input in ac, binary point to right of bit 17, jda sqt
+/answer in ac with binary point between bits 8 and 9
+/largest input number = 177777
+
+00173     000000                     sqt,  0
+00174     260205     dap 205         dap sqx
+00175     710023     law i 23        law i 23
+00176     240231     dac 231         dac sq1
+00177     340232     dzm 232         dzm sq2
+00200     220173     lio 173         lio sqt
+00201     340173     dzm 173         dzm sqt
+
+00202     460231     isp 231         sq3,  isp sq1
+00203     600206     jmp 206         jmp .+3
+00204     200232     lac 232         lac sq2
+00205     600205     jmp 205         sqx,  jmp .
+
+00206     200232     lac 232         lac sq2
+00207     665001     sal 1           sal 1s
+00210     240232     dac 232         dac sq2
+00211     200173     lac 173         lac sqt
+00212     663003     rcl 3           rcl 2s
+00213     650100     sza i           sza i
+00214     600202     jmp 202         jmp sq3
+00215     240173     dac 173         dac sqt
+00216     200232     lac 232         lac sq2
+00217     665001     sal 1           sal 1s
+00220     402427     add 2427        add (1
+00221     420173     sub 173         sub sqt
+00222     640500     szm             sma+sza-skip  //szm
+00223     600202     jmp 202         jmp sq3
+00224     640200     spa             spa
+00225     761000     cma             cma
+00226     240173     dac 173         dac sqt
+00227     440232     idx 232         idx sq2
+00230     600202     jmp 202         jmp sq3
+00231     000000                     sq1,  0
+00232     000000                     sq2,  0
+
+/BBN Divide subroutine
+/calling sequence.. lac hi-dividend, lio lo-dividend, jda dvd, lac divisor.
+/returns quot in ac, rem in io.
+
+00233     000000                     idv,  0      /integer divide, dividend in ac.
+00234     260244     dap 244         dap dv1
+00235     200233     lac 233         lac idv
+00236     677777     scr 777         scr 9s
+00237     677377     scr 377         scr 8s
+00240     240242     dac 242         dac dvd
+00241     600244     jmp 244         jmp dv1
+
+00242     000000                     dvd,  0
+00243     260244     dap 244         dap dv1
+00244     100000     xct 0           dv1,  xct
+00245     640200     spa             spa
+00246     761000     cma             cma
+00247     240233     dac 233         dac idv
+00250     200242     lac 242         lac dvd
+00251     640400     sma             sma
+00252     600261     jmp 261         jmp dv2
+00253     761000     cma             cma
+00254     673777     rcr 777         rcr 9s
+00255     673777     rcr 777         rcr 9s
+00256     761000     cma             cma
+00257     673777     rcr 777         rcr 9s
+00260     673777     rcr 777         rcr 9s
+00261     420233     sub 233         dv2,  sub idv
+00262     640400     sma             sma
+00263     600323     jmp 323         jmp dve
+00264                                repeat 22, dis idv
+* 00264     560233     dis 233
+* 00265     560233     dis 233
+* 00266     560233     dis 233
+* 00267     560233     dis 233
+* 00270     560233     dis 233
+* 00271     560233     dis 233
+* 00272     560233     dis 233
+* 00273     560233     dis 233
+* 00274     560233     dis 233
+* 00275     560233     dis 233
+* 00276     560233     dis 233
+* 00277     560233     dis 233
+* 00300     560233     dis 233
+* 00301     560233     dis 233
+* 00302     560233     dis 233
+* 00303     560233     dis 233
+* 00304     560233     dis 233
+* 00305     560233     dis 233
+00306     400233     add 233         add idv
+00307     320233     dio 233         dio idv
+00310     764000     cli             cli
+00311     673001     rcr 1           rcr 1s
+00312     220242     lio 242         lio dvd
+00313     642000     spi             spi
+00314     761000     cma             cma
+00315     240242     dac 242         dac dvd
+00316     100244     xct 244         xct dv1
+00317     060242     xor 242         xor dvd
+00320     673777     rcr 777         rcr 9s
+00321     673777     rcr 777         rcr 9s
+00322     440244     idx 244         idx dv1
+00323     440244     idx 244         dve,  idx dv1
+00324     200233     lac 233         lac idv
+00325     642000     spi             spi
+00326     761000     cma             cma
+00327     220242     lio 242         lio dvd
+00330     610244     jmp i 244       jmp i dv1
+
+/outline compiler
+/ac=where to compile to, call   jda oc
+/ot=address of outline table
+
+define
+    plinst A
+    lac A
+    dac i oc
+    idx oc
+    terminate
+
+define
+    comtab A, B
+    plinst A
+    jsp ocs
+    lac B
+    jmp oce
+    terminate
+
+00331     260336     dap 336         ocs,  dap ocz     /puts in swap
+00332     330337     dio i 337       dio i oc
+00333     440337     idx 337         idx oc
+00334     330337     dio i 337       dio i oc
+00335     440337     idx 337         idx oc
+00336     600336     jmp 336         ocz,  jmp .
+
+00337     000000                     oc,  0            /outline compiler proper
+00340     260501     dap 501         dap ocx
+00341     210501     lac i 501       lac i ocx
+00342     260361     dap 361         dap ocg
+00343                                plinst (stf 5
+* 00343     202430     lac 2430
+* 00344     250337     dac i 337
+* 00345     440337     idx 337
+00346     260502     dap 502         dap ocm
+00347     440501     idx 501         idx ocx
+00350                                ock,  plinst (lac \sx1
+* 00350     202431     lac 2431
+* 00351     250337     dac i 337
+* 00352     440337     idx 337
+00353                                plinst (lio \sy1
+* 00353     202432     lac 2432
+* 00354     250337     dac i 337
+* 00355     440337     idx 337
+00356     760006     clf 6           clf 6
+00357                                ocj,  setup \occ,6
+* 00357     710006     law i 6
+* 00360     242640     dac 2640
+00361     220361     lio 361         ocg,  lio .     /outline table
+00362     760200     cla             och,  cla
+00363     663007     rcl 7           rcl 3s
+00364     322641     dio 2641        dio \oci
+00365     222433     lio 2433        lio (rcl 9s
+00366                                dispatch
+* 00366     402434     add 2434
+* 00367     260370     dap 370
+* 00370     600370     jmp 370
+00371     760000     nop             opr
+00372     600504     jmp 504         jmp oc1
+00373     600527     jmp 527         oco,  jmp oc2
+00374     600535     jmp 535         ocq,  jmp oc3
+00375     600543     jmp 543         ocp,  jmp oc4
+00376     600551     jmp 551         ocr,  jmp oc5
+00377     600557     jmp 557         jmp oc6
+00400                                plinst (szf 5    / code
+* 00400     202435     lac 2435
+* 00401     250337     dac i 337
+* 00402     440337     idx 337
+00403     402436     add 2436        add (4
+00404     260503     dap 503         dap ocn
+00405                                plinst ocn
+* 00405     200503     lac 503
+* 00406     250337     dac i 337
+* 00407     440337     idx 337
+00407                                plinst (dac \sx1
+* 00410     202437     lac 2437
+* 00411     250337     dac i 337
+* 00412     440337     idx 337
+00413                                plinst (dio \sy1
+* 00413     202440     lac 2440
+* 00414     250337     dac i 337
+* 00415     440337     idx 337
+00416                                plinst (jmp sq6
+* 00416     202441     lac 2441
+* 00417     250337     dac i 337
+* 00420     440337     idx 337
+00421                                plinst (clf 5
+* 00421     202442     lac 2442
+* 00422     250337     dac i 337
+* 00423     440337     idx 337
+00424                                plinst (lac \scm
+* 00424     202443     lac 2443
+* 00425     250337     dac i 337
+* 00426     440337     idx 337
+00427                                plinst (cma
+* 00427     202444     lac 2444
+* 00430     250337     dac i 337
+* 00431     440337     idx 337
+00432                                plinst (dac \scm
+* 00432     202445     lac 2445
+* 00433     250337     dac i 337
+* 00434     440337     idx 337
+00435                                plinst (lac \ssm
+* 00435     202446     lac 2446
+* 00436     250337     dac i 337
+* 00437     440337     idx 337
+00440                                plinst (cma
+* 00440     202444     lac 2444
+* 00441     250337     dac i 337
+* 00442     440337     idx 337
+00443                                plinst (dac \ssm
+* 00443     202447     lac 2447
+* 00444     250337     dac i 337
+* 00445     440337     idx 337
+00446                                plinst (lac \csm
+* 00446     202450     lac 2450
+* 00447     250337     dac i 337
+* 00450     440337     idx 337
+00451                                plinst (lio \ssd
+* 00451     202451     lac 2451
+* 00452     250337     dac i 337
+* 00453     440337     idx 337
+00454                                plinst (dac \ssd
+* 00454     202452     lac 2452
+* 00455     250337     dac i 337
+* 00456     440337     idx 337
+00457                                plinst (dio \csm
+* 00457     202453     lac 2453
+* 00460     250337     dac i 337
+* 00461     440337     idx 337
+00462                                plinst (lac \ssc
+* 00462     202454     lac 2454
+* 00463     250337     dac i 337
+* 00464     440337     idx 337
+00465                                plinst (lio \csn
+* 00465     202455     lac 2455
+* 00466     250337     dac i 337
+* 00467     440337     idx 337
+00470                                plinst (dac \csn
+* 00470     202456     lac 2456
+* 00471     250337     dac i 337
+* 00472     440337     idx 337
+00473                                plinst (dio \ssc
+* 00473     202457     lac 2457
+* 00474     250337     dac i 337
+* 00475     440337     idx 337
+00476                                plinst ocm
+* 00476     200502     lac 502
+* 00477     250337     dac i 337
+* 00500     440337     idx 337
+00501     600501     jmp 501         ocx,  jmp .
+00502     600502     jmp 502         ocm,  jmp .
+00503     600503     jmp 503         ocn,  jmp .
+00504                                oc1,  plinst (add \ssn
+* 00504     202460     lac 2460
+* 00505     250337     dac i 337
+* 00506     440337     idx 337
+00507     620331     jsp 331         jsp ocs
+00510     202461     lac 2461        lac (sub \scn
+00511     250337     dac i 337       oce,  dac i oc
+00512     440337     idx 337         idx oc
+00513     620331     jsp 331         jsp ocs
+00514                                plinst (ioh
+* 00514     202462     lac 2462
+* 00515     250337     dac i 337
+* 00516     440337     idx 337
+00517     202463     lac 2463        lac (dpy-4000
+00520     250337     dac i 337       ocd,  dac i oc
+00521     440337     idx 337         idx oc
+00522     222641     lio 2641        lio \oci
+00523                                count \occ, och
+* 00523     462640     isp 2640
+* 00524     600362     jmp 362
+00525     440361     idx 361         idx ocg
+00526     600357     jmp 357         jmp ocj
+00527                                oc2,  comtab (add \scm, (add \ssm
+* 00527     202464     lac 2464
+* 00530     250337     dac i 337
+* 00531     440337     idx 337
+* 00532     620331     jsp 331
+* 00533     202465     lac 2465
+* 00534     600511     jmp 511
+00535                                oc3,  comtab (add \ssc, (sub \csm
+* 00535     202466     lac 2466
+* 00536     250337     dac i 337
+* 00537     440337     idx 337
+* 00540     620331     jsp 331
+* 00541     202467     lac 2467
+* 00542     600511     jmp 511
+00543                                oc4,  comtab (sub \scm, (sub \ssm
+* 00543     202470     lac 2470
+* 00544     250337     dac i 337
+* 00545     440337     idx 337
+* 00546     620331     jsp 331
+* 00547     202471     lac 2471
+* 00550     600511     jmp 511
+00551                                oc5,  comtab (add \csn, (sub \ssd
+* 00551     202472     lac 2472
+* 00552     250337     dac i 337
+* 00553     440337     idx 337
+* 00554     620331     jsp 331
+* 00555     202473     lac 2473
+* 00556     600511     jmp 511
+00557     640006     szf 6           oc6,  szf 6
+00560     600567     jmp 567         jmp oc9
+00561     760016     stf 6           stf 6
+00562                                plinst (dac \ssa
+* 00562     202474     lac 2474
+* 00563     250337     dac i 337
+* 00564     440337     idx 337
+00565     202475     lac 2475        lac (dio \ssi
+00566     600520     jmp 520         jmp ocd
+00567     760006     clf 6           oc9,  clf 6
+00570                                plinst (lac \ssa
+* 00570     202476     lac 2476
+* 00571     250337     dac i 337
+* 00572     440337     idx 337
+00573     202477     lac 2477        lac (lio \ssi
+00574     600520     jmp 520         jmp ocd
+
+/display a star
+
+define
+    starp
+    add \bx
+    swap
+    add \by
+    swap
+    ioh
+    dpy-4000
+    terminate
+
+00575     260622     dap 622         blp,  dap blx    /star
+00576     640060     szs 60          szs 60           //skip on ss 6 zero
+00577     600622     jmp 622         jmp blx
+00600                                random \ran
+* 00600     202654     lac 2654
+* 00601     671001     rar 1
+* 00602     062500     xor 2500
+* 00603     402500     add 2500
+* 00604     242654     dac 2654
+00605     671777     rar 777         rar 9s
+00606     022501     and 2501        and (add 340
+00607     640200     spa             spa
+00610     062426     xor 2426        xor (377777
+00611     242652     dac 2652        dac \bx
+00612     202654     lac 2654        lac \ran
+00613     661017     ral 17          ral 4s
+00614     022501     and 2501        and (add 340
+00615     640200     spa             spa
+00616     062426     xor 2426        xor (377777
+00617     242653     dac 2653        dac \by
+00620     620623     jsp 623         jsp bpt
+00621     730000     ioh             ioh
+00622     600622     jmp 622         blx,  jmp .
+00623     261044     dap 1044        bpt,  dap bpx
+00624                                random \ran
+* 00624     202654     lac 2654
+* 00625     671001     rar 1
+* 00626     062500     xor 2500
+* 00627     402500     add 2500
+* 00630     242654     dac 2654
+00631     675777     sar 777         sar 9s
+00632     675037     sar 37          sar 5s
+00633     640200     spa             spa
+00634     761000     cma             cma
+00635     665007     sal 7           sal 3s
+00636     402502     add 2502        add (bds
+00637     260642     dap 642         dap bjm
+00640     764206     opr 4206        cla cli clf 6-opr-opr
+00641     724007     iot 4007        dpy-4000
+00642     600642     jmp 642         bjm,  jmp .
+00643                                bds,  repeat 20, starp
+* 00643     402652     add 2652
+* 00644     663777     rcl 777
+* 00645     663777     rcl 777
+* 00646     402653     add 2653
+* 00647     663777     rcl 777
+* 00650     663777     rcl 777
+* 00651     730000     ioh
+* 00652     724007     iot 4007
+* 00653     402652     add 2652
+* 00654     663777     rcl 777
+* 00655     663777     rcl 777
+* 00656     402653     add 2653
+* 00657     663777     rcl 777
+* 00660     663777     rcl 777
+* 00661     730000     ioh
+* 00662     724007     iot 4007
+* 00663     402652     add 2652
+* 00664     663777     rcl 777
+* 00665     663777     rcl 777
+* 00666     402653     add 2653
+* 00667     663777     rcl 777
+* 00670     663777     rcl 777
+* 00671     730000     ioh
+* 00672     724007     iot 4007
+* 00673     402652     add 2652
+* 00674     663777     rcl 777
+* 00675     663777     rcl 777
+* 00676     402653     add 2653
+* 00677     663777     rcl 777
+* 00700     663777     rcl 777
+* 00701     730000     ioh
+* 00702     724007     iot 4007
+* 00703     402652     add 2652
+* 00704     663777     rcl 777
+* 00705     663777     rcl 777
+* 00706     402653     add 2653
+* 00707     663777     rcl 777
+* 00710     663777     rcl 777
+* 00711     730000     ioh
+* 00712     724007     iot 4007
+* 00713     402652     add 2652
+* 00714     663777     rcl 777
+* 00715     663777     rcl 777
+* 00716     402653     add 2653
+* 00717     663777     rcl 777
+* 00720     663777     rcl 777
+* 00721     730000     ioh
+* 00722     724007     iot 4007
+* 00723     402652     add 2652
+* 00724     663777     rcl 777
+* 00725     663777     rcl 777
+* 00726     402653     add 2653
+* 00727     663777     rcl 777
+* 00730     663777     rcl 777
+* 00731     730000     ioh
+* 00732     724007     iot 4007
+* 00733     402652     add 2652
+* 00734     663777     rcl 777
+* 00735     663777     rcl 777
+* 00736     402653     add 2653
+* 00737     663777     rcl 777
+* 00740     663777     rcl 777
+* 00741     730000     ioh
+* 00742     724007     iot 4007
+* 00743     402652     add 2652
+* 00744     663777     rcl 777
+* 00745     663777     rcl 777
+* 00746     402653     add 2653
+* 00747     663777     rcl 777
+* 00750     663777     rcl 777
+* 00751     730000     ioh
+* 00752     724007     iot 4007
+* 00753     402652     add 2652
+* 00754     663777     rcl 777
+* 00755     663777     rcl 777
+* 00756     402653     add 2653
+* 00757     663777     rcl 777
+* 00760     663777     rcl 777
+* 00761     730000     ioh
+* 00762     724007     iot 4007
+* 00763     402652     add 2652
+* 00764     663777     rcl 777
+* 00765     663777     rcl 777
+* 00766     402653     add 2653
+* 00767     663777     rcl 777
+* 00770     663777     rcl 777
+* 00771     730000     ioh
+* 00772     724007     iot 4007
+* 00773     402652     add 2652
+* 00774     663777     rcl 777
+* 00775     663777     rcl 777
+* 00776     402653     add 2653
+* 00777     663777     rcl 777
+* 01000     663777     rcl 777
+* 01001     730000     ioh
+* 01002     724007     iot 4007
+* 01003     402652     add 2652
+* 01004     663777     rcl 777
+* 01005     663777     rcl 777
+* 01006     402653     add 2653
+* 01007     663777     rcl 777
+* 01010     663777     rcl 777
+* 01011     730000     ioh
+* 01012     724007     iot 4007
+* 01013     402652     add 2652
+* 01014     663777     rcl 777
+* 01015     663777     rcl 777
+* 01016     402653     add 2653
+* 01017     663777     rcl 777
+* 01020     663777     rcl 777
+* 01021     730000     ioh
+* 01022     724007     iot 4007
+* 01023     402652     add 2652
+* 01024     663777     rcl 777
+* 01025     663777     rcl 777
+* 01026     402653     add 2653
+* 01027     663777     rcl 777
+* 01030     663777     rcl 777
+* 01031     730000     ioh
+* 01032     724007     iot 4007
+* 01033     402652     add 2652
+* 01034     663777     rcl 777
+* 01035     663777     rcl 777
+* 01036     402653     add 2653
+* 01037     663777     rcl 777
+* 01040     663777     rcl 777
+* 01041     730000     ioh
+* 01042     724007     iot 4007
+01043     640006     szf 6           szf 6
+01044     601044     jmp 1044        bpx,  jmp .
+01045     760016     stf 6           stf 6
+01046     761000     cma             cma
+01047                                swap
+* 01047     663777     rcl 777
+* 01050     663777     rcl 777
+01051     761000     cma             cma
+01052                                swap
+* 01052     663777     rcl 777
+* 01053     663777     rcl 777
+01054     600642     jmp 642         jmp bjm
+
+
+
+/background display .  3/13/62, prs.
+
+      define
+dislis J, Q             // sw 3.1 uses a third parameter B for brightness
+      dap fx+R          // return address, called as a subroutine, not in sw 3.1
+      clf 5
+      lac flo+R
+      dap fpo+R
+fs,   dap fin+R
+      dap fyn+R
+      idx fyn+R
+
+fin,  lac               /lac X
+      sub fpr           /right margin
+      sma
+      jmp fgr+R
+      add (2000
+frr,  spq
+fou,  jmp fuu+R
+fie,  sub (1000
+      sal 8s
+fyn,  lio                /lio Y
+      dpy-i              // sw 3.1 is dpy-i+B
+      stf 5
+fid,  idx fyn+R
+      sad (lio Q+2
+      jmp flp+R
+      sad fpo+R
+      jmp fx+R
+      dap fin+R
+      idx fyn+R
+      jmp fin+R
+
+fgr,  add (-20000+2000
+      jmp frr+R
+
+fuu,  szf 5
+fx,   jmp                /return  (sw 3.1 is jmp flo+R+1)
+      idx flo+R
+      idx flo+R
+      sas (Q+2
+      jmp fid+R
+      law J
+      dac flo+R
+      jmp fid+R
+
+flp,  lac (lio J
+      sad fpo+R
+      jmp fx+R
+      dap fin+R
+      law J+1
+      dap fyn+R
+      jmp fin+R
+
+fpo,  lio
+flo,  J
+      terminate
+
+      define
+background
+      jsp bck
+      termin
+
+
+01055     261076     dap 1076        bck,  dap bcx
+01056     640030     szs 30          szs 30          // skip on ssw 3 zero
+01057     650040     szs i 40        szs i 40        // skip on ssw 4 set
+01060     601062     jmp 1062        jmp bcs
+01061     601076     jmp 1076        jmp bcx
+01062     621113     jsp 1113        bcs,  jsp b1m   // first dislis
+01063     442655     idx 2655        idx \bcc
+01064     022427     and 2427        and (1
+01065     640100     sza             sza
+01066     621251     jsp 1251        jsp b3m         // third dislis
+01067     621172     jsp 1172        jsp b2m         // second dislis
+01070     202655     lac 2655        lac \bcc
+01071     022503     and 2503        and (3
+01072     650100     sza i           sza i
+01073     621330     jsp 1330        jsp b4m         // forth dislis
+01074     621113     jsp 1113        jsp b1m         // first dislis
+01075     640030     szs 30          szs 30          // skip on ssw 3 zero
+01076     600000     jmp             bcx,  jmp
+01077     462656     isp 2656        isp \bkc
+01100     601076     jmp 1076        jmp bcx
+01101     710040     law i 40        law i 40
+01102     640040     szs 40          szs 40          // skip on ssw 4 zero
+01103     710005     law i 5         law i 5
+01104     242656     dac 2656        dac \bkc
+01105     710001     law i 1         law i 1
+01106     401407     add 1407        add fpr
+01107     640200     spa             spa
+01110     402504     add 2504        add (20000
+01111     241407     dac 1407        dac fpr
+01112     601076     jmp 1076        jmp bcx
+01113                                b1m,  dislis 1j,1q
+* 01113     261151     dap 1151        / dap fx
+* 01114     760005     clf 5           / clf 5
+* 01115     201171     lac 1171        / lac flo+R
+* 01116     261170     dap 1170        / dap fpo+R
+* 01117     261122     dap 1122        / fs,  dap fin+R
+* 01120     261133     dap 1133        / dap fyn+R
+* 01121     441133     idx 1133        / idx fyn+R
+* 01122     200000     lac 0           / fin,  lac
+* 01123     421407     sub 1407        / sub fpr    /right margin
+* 01124     640400     sma             / sma
+* 01125     601146     jmp 1146        / jmp fgr+R
+* 01126     402505     add 2505        / add (2000
+* 01127     650500     spq             / frr,  spq
+* 01130     601150     jmp 1150        / fou,  jmp fuu+R
+* 01131     422506     sub 2506        / fie,  sub (1000
+* 01132     665377     sal 377         / sal 8s
+* 01133     220000     lio 0           / fyn,  lio    /lio Y
+* 01134     720007     iot 7           / dpy-i
+* 01135     760015     stf 5           / stf 5
+* 01136     441133     idx 1133        / fid,  idx fyn+R
+* 01137     502507     sad 2507        / sad (lio Q+2
+* 01140     601161     jmp 1161        / jmp flp+R
+* 01141     501170     sad 1170        / sad fpo+R
+* 01142     601151     jmp 1151        / jmp fx+R
+* 01143     261122     dap 1122        / dap fin+R
+* 01144     441133     idx 1133        / idx fyn+R
+* 01145     601122     jmp 1122        / jmp fin+R
+* 01146     402510     add 2510        / fgr,  add (-20000+2000
+* 01147     601127     jmp 1127        / jmp ffr+R
+* 01150     640005     szf 5           / fuu,  szf 5
+* 01151     600000     jmp 0           / fx,  jmp   / return
+* 01152     441171     idx 1171        / idx flo+R
+* 01153     441171     idx 1171        / idx flo+R
+* 01154     522511     sas 2511        / sas (Q+2
+* 01155     601136     jmp 1136        / jmp fid+R
+* 01156     706077     law 6077        / law J
+* 01157     241171     dac 1171        / dac flo+R
+* 01160     601136     jmp 1136        / jmp fid+R
+* 01161     202512     lac 2512        / flp,  lac (lio J
+* 01162     501170     sad 1170        / sad fpo+R
+* 01163     601151     jmp 1151        / jmp fx+R
+* 01164     261122     dap 1122        / dap fin+R
+* 01165     706100     law 6100        / law J+1
+* 01166     261133     dap 1133        / dap fyn+R
+* 01167     601122     jmp 1122        / jmp fin+R
+* 01170     220000     lio 0           / fpo,  lio
+* 01171     006077     6s 6000         / flo,  J
+01172                                b2m,  dislis 2j,2q
+* 01172     261230     dap 1230
+* 01173     760005     clf 5
+* 01174     201250     lac 1250
+* 01175     261247     dap 1247
+* 01176     261201     dap 1201
+* 01177     261212     dap 1212
+* 01200     441212     idx 1212
+* 01201     200000     lac 0
+* 01202     421407     sub 1407
+* 01203     640400     sma
+* 01204     601225     jmp 1225
+* 01205     402505     add 2505
+* 01206     650500     spq
+* 01207     601227     jmp 1227
+* 01210     422506     sub 2506
+* 01211     665377     sal 377
+* 01212     220000     lio 0
+* 01213     720007     iot 7
+* 01214     760015     stf 5
+* 01215     441212     idx 1212
+* 01216     502513     sad 2513
+* 01217     601240     jmp 1240
+* 01220     501247     sad 1247
+* 01221     601230     jmp 1230
+* 01222     261201     dap 1201
+* 01223     441212     idx 1212
+* 01224     601201     jmp 1201
+* 01225     402510     add 2510
+* 01226     601206     jmp 1206
+* 01227     640005     szf 5
+* 01230     600000     jmp 0
+* 01231     441250     idx 1250
+* 01232     441250     idx 1250
+* 01233     522514     sas 2514
+* 01234     601215     jmp 1215
+* 01235     706121     law 6121
+* 01236     241250     dac 1250
+* 01237     601215     jmp 1215
+* 01240     202507     lac 2507
+* 01241     501247     sad 1247
+* 01242     601230     jmp 1230
+* 01243     261201     dap 1201
+* 01244     706122     law 6122
+* 01245     261212     dap 1212
+* 01246     601201     jmp 1201
+* 01247     220000     lio 0
+* 01250     006121     006121
+01251                                b3m,  dislis 3j,3q
+* 01251     261307     dap 1307
+* 01252     760005     clf 5
+* 01253     201327     lac 1327
+* 01254     261326     dap 1326
+* 01255     261260     dap 1260
+* 01256     261271     dap 1271
+* 01257     441271     idx 1271
+* 01260     200000     lac 0
+* 01261     421407     sub 1407
+* 01262     640400     sma
+* 01263     601304     jmp 1304
+* 01264     402505     add 2505
+* 01265     650500     spq
+* 01266     601306     jmp 1306
+* 01267     422506     sub 2506
+* 01270     665377     sal 377
+* 01271     220000     lio 0
+* 01272     720007     iot 7
+* 01273     760015     stf 5
+* 01274     441271     idx 1271
+* 01275     502515     sad 2515
+* 01276     601317     jmp 1317
+* 01277     501326     sad 1326
+* 01300     601307     jmp 1307
+* 01301     261260     dap 1260
+* 01302     441271     idx 1271
+* 01303     601260     jmp 1260
+* 01304     402510     add 2510
+* 01305     601265     jmp 1265
+* 01306     640005     szf 5
+* 01307     600000     jmp 0
+* 01310     441327     idx 1327
+* 01311     441327     idx 1327
+* 01312     522516     sas 2516
+* 01313     601274     jmp 1274
+* 01314     706143     law 6143
+* 01315     241327     dac 1327
+* 01316     601274     jmp 1274
+* 01317     202513     lac 2513
+* 01320     501326     sad 1326
+* 01321     601307     jmp 1307
+* 01322     261260     dap 1260
+* 01323     706144     law 6144
+* 01324     261271     dap 1271
+* 01325     601260     jmp 1260
+* 01326     220000     lio 0
+* 01327     006143     006143
+01330                                b4m,  dislis 4j,4q
+* 01330     261366     dap 1366
+* 01331     760005     clf 5
+* 01332     201406     lac 1406
+* 01333     261405     dap 1405
+* 01334     261337     dap 1337
+* 01335     261350     dap 1350
+* 01336     441350     idx 1350
+* 01337     200000     lac 0
+* 01340     421407     sub 1407
+* 01341     640400     sma
+* 01342     601363     jmp 1363
+* 01343     402505     add 2505
+* 01344     650500     spq
+* 01345     601365     jmp 1365
+* 01346     422506     sub 2506
+* 01347     665377     sal 377
+* 01350     220000     lio 0
+* 01351     720007     iot 7
+* 01352     760015     stf 5
+* 01353     441350     idx 1350
+* 01354     502517     sad 2517
+* 01355     601376     jmp 1376
+* 01356     501405     sad 1405
+* 01357     601366     jmp 1366
+* 01360     261337     dap 1337
+* 01361     441350     idx 1350
+* 01362     601337     jmp 1337
+* 01363     402510     add 2510
+* 01364     601344     jmp 1344
+* 01365     640005     szf 5
+* 01366     600000     jmp 0
+* 01367     441406     idx 1406
+* 01370     441406     idx 1406
+* 01371     522520     sas 2520
+* 01372     601353     jmp 1353
+* 01373     706405     law 6405
+* 01374     241406     dac 1406
+* 01375     601353     jmp 1353
+* 01376     202515     lac 2515
+* 01377     501405     sad 1405
+* 01400     601366     jmp 1366
+* 01401     261337     dap 1337
+* 01402     706406     law 6406
+* 01403     261350     dap 1350
+* 01404     601337     jmp 1337
+* 01405     220000     lio 0
+* 01406     006405     006405
+01407     000000                     fpr,  0   // start at left margin (sw 3.1 is 10000)
+
+start
+
+spacewar 2b   2 apr 62   pt. 2
+
+/main control routine for spaceships
+
+nob=30            /total number of colliding objects
+
+01410                                ml0,  load \mtc, -4000    /delay for loop
+* 01410     222521     lio 2521
+* 01411     322657     dio 2657
+01412                                init ml1, mtb    /loc of calc routines
+* 01412     703103     law 3103
+* 01413     261540     dap 1540
+01414     402522     add 2522        add (nob
+01415     261567     dap 1567        dap mx1        / x
+                                     nx1=mtb nob    // mtb=3103, nx1=3133
+01416     402522     add 2522        add (nob
+01417     261577     dap 1577        dap my1        / y
+                                     ny1=nx1 nob    // ny1=3163
+01420     402522     add 2522        add (nob
+01421     261623     dap 1623        dap ma1        / count for length of explosion or torp
+                                     na1=ny1 nob    // na1=3213 (symbol unused)
+01422     402522     add 2522        add (nob
+01423     261637     dap 1637        dap mb1        / count of instructions taken by calc routine
+                                     nb1=na1 nob    // nb1=3243
+01424     402522     add 2522        add (nob
+01425     242660     dac 2660        dac \mdx       / dx
+                                     ndx=nb1 nob    // ndx=3273 (symbol unused)
+01426     402522     add 2522        add (nob
+01427     242661     dac 2661        dac \mdy       / dy
+                                     ndy=ndx nob    // ndy=3323 (symbol unused)
+01430     402522     add 2522        add (nob
+01431     262024     dap 2024        dap mom        / angular velocity
+                                     nom=ndy nob    // nom=3353 (symbol unused)
+01432     402522     add 2522        add (nob
+01433     262035     dap 2035        dap mth        / angle
+                                     nth=nom nob    // nth=3403
+01434     402522     add 2522        add (nob
+01435     262020     dap 2020        dap ma1        // angular acceleration ?
+                                     naa=nth nob    // naa=3433
+01436     402522     add 2522        add (nob
+01437     242662     dac 2662        dac \mas       // (not used -- same in sw 3.1)
+                                     nas=naa nob    // nas=3463 (symbol unused)
+01440     402522     add 2522        add (nob
+01441     242663     dac 2663        dac \mfu       / fuel
+                                     nfu=nas nob    // nfu=3513 (symbol unused)
+01442     402522     add 2522        add (nob
+01443     242664     dac 2664        dac \mtr       / no torps remaining
+                                     ntr=nfu nob    // ntr=3543
+01444     402522     add 2522        add (nob
+01445     261562     dap 1562        dap mot        / outline of spaceship
+                                     not=ntr nob    // not=3573
+01446     402522     add 2522        add (nob
+01447     262254     dap 2254        dap mco        / old control word
+                                     nco=not nob    // nco=3623 (symbol unused)
+01450     402522     add 2522        add (nob
+01451     242665     dac 2665        dac \mh1       // (unused, in sw 3.1 hyperspace counter)
+                                     nh1=nco nob    // nh1=3653 (symbol unused)
+01452     402522     add 2522        add (nob
+01453     242666     dac 2666        dac \mh2       // (unused, in sw 3.1 hyperspace counter)
+                                     nh2=nh1 nob    // nh2=3703 (symbol unused)
+01454     402522     add 2522        add (nob
+01455     242667     dac 2667        dac \mh3       // (unused, in sw 3.1 hyperspace counter)
+                                     nh3=nh2 nob    // nh3=3733 (symbol unused)
+                                     nnn=nh3 nob    // nnn=3763
+01456     601540     jmp 1540        jmp ml1
+
+
+01457     701533     law 1533        a1,  law mg2    / test word control
+01460     242670     dac 2670        dac \cwg
+01461     601464     jmp 1464        jmp a3
+01462     701527     law 1527        a,  law mg1   / here from start at 4
+01463     242670     dac 2670        dac \cwg
+01464                                a3,  clear mtb, nnn-1   / clear out all tables
+* 01464     703103     law 3103
+* 01465     261466     dap 1466
+* 01466     340000     dzm 0
+* 01467     441466     idx 1466
+* 01470     522523     sas 2523
+* 01471     601466     jmp 1466
+01472     702005     law 2005        law ss1
+01473     243103     dac 3103        dac mtb
+01474     702011     law 2011        law ss2
+01475     243104     dac 3104        dac mtb 1
+01476     202524     lac 2524        lac (200000
+01477     243133     dac 3133        dac nx1
+01500     243163     dac 3163        dac ny1
+01501     761000     cma             cma
+01502     243134     dac 3134        dac nx1 1
+01503     243164     dac 3164        dac ny1 1
+01504     202525     lac 2525        lac (144420
+01505     243403     dac 3403        dac nth
+
+01506     703763     law 3763        law nnn         / start of outline program
+01507     243573     dac 3573        dac not
+01510     170337     jda 337         jda oc           / compile outline
+01511     002365     002365          ot1
+01512     243574     dac 3574        dac not 1
+01513     170337     jda 337         jda oc
+01514     002402     002402          ot2
+01515     700010     law 10          law 10
+01516     243433     dac 3433        dac naa
+01517     243434     dac 3434        dac naa 1
+01520     710040     law i 40        law i 40
+01521     243543     dac 3543        dac ntr
+01522     243544     dac 3544        dac ntr 1
+01523     702000     law 2000        law 2000
+01524     243243     dac 3243        dac nb1
+01525     243244     dac 3244        dac nb1 1
+01526     601410     jmp 1410        jmp ml0
+
+/ control word get routines
+
+01527     261532     dap 1532        mg1,  dap mg3
+01530     764000     cli             cli
+01531     720011     iot 11          iot 11
+01532     601532     jmp 1532        mg3,  jmp .
+
+01533     261537     dap 1537        mg2,  dap mg4
+01534     762200     lat 0           lat
+01535                                swap
+* 01535     663777     rcl 777
+* 01536     663777     rcl 777
+01537     601537     jmp 1537        mg4,  jmp .
+
+
+01540     201540     lac 1540        ml1,  lac .    / 1st control word
+01541     650100     sza i           sza i          / zero if not active
+01542     601642     jmp 1642        jmp mq1        / not active
+01543     700001     law 1           law 1
+01544     401540     add 1540        add ml1
+01545     261564     dap 1564        dap ml2
+01546     700001     law 1           law 1
+01547     401567     add 1567        add mx1
+01550     261570     dap 1570        dap mx2
+01551     700001     law 1           law 1
+01552     401577     add 1577        add my1
+01553     261600     dap 1600        dap my2
+01554     700001     law 1           law 1
+01555     401623     add 1623        add ma1
+01556     261624     dap 1624        dap ma2
+01557     700001     law 1           law 1
+01560     401637     add 1637        add mb1
+01561     261616     dap 1616        dap mb2
+01562     201562     lac 1562        mot,  lac .
+01563     262217     dap 2217        dap sp5
+01564     201564     lac 1564        ml2,  lac .     / 2nd control word
+01565     650100     sza i           sza i
+01566     601625     jmp 1625        jmp mq2
+01567     201567     lac 1567        mx1,  lac .     / calc if collision
+01570     421570     sub 1570        mx2,  sub .     / delta x
+01571     640200     spa             spa             / take abs val
+01572     761000     cma             cma
+01573     242671     dac 2671        dac \mt1
+01574     422363     sub 2363        sub me1         / < EPSILON ?
+01575     640400     sma             sma
+01576     601625     jmp 1625        jmp mq2         / no
+01577     201577     lac 1577        my1,  lac .
+01600     421600     sub 1600        my2,  sub .
+01601     640200     spa 0           spa
+01602     761000     cma 0           cma
+01603     422363     sub 2363        sub me1         / < epsilon ?
+01604     640400     sma             sma
+01605     601625     jmp 1625        jmp mq2         / no
+01606     402671     add 2671        add \mt1
+01607     422364     sub 2364        sub me2
+01610     640400     sma             sma
+01611     601625     jmp 1625        jmp mq2
+01612     202526     lac 2526        lac (mex        / yes, EXPLODE
+01613     251540     dac i 1540      dac i ml1       / replace calc routine with explosion
+01614     251564     dac i 1564      dac i ml2
+01615     211637     lac i 1637      lac i mb1       / duration of explosion
+01616     401616     add 1616        mb2,  add .
+01617     761000     cma             cma
+01620     675777     sar 777         sar 9s
+01621     675000     sar 0           sar
+01622     402427     add 2427        add (1
+01623     241623     dac 1623        ma1,  dac .
+01624     241624     dac 1624        ma2,  dac .
+01625     441570     idx 1570        mq2,  idx mx2   / end of comparison loop
+01626     441600     idx 1600        idx my2
+01627     441624     idx 1624        idx ma2
+01630     441616     idx 1616        idx mb2
+01631                                index ml2, (lac mtb nob, ml2
+* 01631     441564     idx 1564
+* 01632     522527     sas 2527
+* 01633     601564     jmp 1564
+
+01634     211540     lac i 1540      mq4,  lac i ml1  / routine for calculating spaceship
+01635     261636     dap 1636        dap . 1          / or other object and displaying it
+01636     621636     jsp 1636        jsp .
+01637     201637     lac 1637        mb1,  lac .
+01640     402657     add 2657        add \mtc
+01641     242657     dac 2657        dac \mtc
+01642     441567     idx 1567        mq1,  idx mx1    / end of comparison and display loop
+01643     441577     idx 1577        idx my1
+01644     441623     idx 1623        idx ma1
+01645     441637     idx 1637        idx mb1
+01646     442660     idx 2660        idx \mdx
+01647     442661     idx 2661        idx \mdy
+01650     442024     idx 2024        idx mom
+01651     442035     idx 2035        idx mth
+01652     442020     idx 2020        idx ma1
+01653     442662     idx 2662        idx \mas
+01654     442663     idx 2663        idx \mfu
+01655     442664     idx 2664        idx \mtr
+01656     441562     idx 1562        idx mot
+01657     442254     idx 2254        idx mco
+01660     442665     idx 2665        idx \mh1
+01661     442666     idx 2666        idx \mh2
+01662     442667     idx 2667        idx \mh3
+01663                                index ml1, (lac mtb nob-1, ml1
+* 01663     441540     idx 1540
+* 01664     522530     sas 2530
+* 01665     601540     jmp 1540
+01666     211540     lac i 1540      lac i ml1       / display and compute last point
+01667     650100     sza i           sza i           / if active
+01670     601676     jmp 1676        jmp mq3
+01671     261672     dap 1672        dap . 1
+01672     621672     jsp 1672        jsp .
+01673     211637     lac i 1637      lac i mb1
+01674     402657     add 2657        add \mtc
+01675     242657     dac 2657        dac \mtc
+01676                                mq3,  background  / display stars of the heavens
+* 01676     621055     jsp 1055
+01677     620575     jsp 575         jsp blp         / display massive star
+01700                                count \mtc, .   / use up rest of time of main loop
+* 01700     462657     isp 2657
+* 01701     601700     jmp 1700
+01702     601410     jmp 1410        jmp ml0         / repeat whole works
+
+
+/ misc calculation routines
+
+/ explosion
+
+01703     261753     dap 1753        mex,  dap mxr
+01704     760200     cla             cla
+01705                                diff \mdx, mx1, (sar 3s
+* 01705     412660     add i 2660
+* 01706     252660     dac i 2660
+* 01707     102531     xct 2531
+* 01710     411567     add i 1567
+* 01711     251567     dac i 1567
+01712     760200     cla             cla
+01713                                diff \mdy, my1, (sar 3s
+* 01713     412661     add i 2661
+* 01714     252661     dac i 2661
+* 01715     102531     xct 2531
+* 01716     411577     add i 1577
+* 01717     251577     dac i 1577
+01720     701754     law 1754        law mst
+01721     261740     dap 1740        dap msh
+01722     211637     lac i 1637      lac i mb1     / time involved
+01723     765000     opr 5000        cma cli-opr
+01724     675003     sar 3           sar 2s
+01725     242672     dac 2672        dac \mxc
+01726     422532     sub 2532        ms1,  sub (500
+01727     640400     sma             sma
+01730     441740     idx 1740        idx msh
+01731                                mz1,  random \ran
+* 01731     202654     lac 2654
+* 01732     671001     rar 1
+* 01733     062500     xor 2500
+* 01734     402500     add 2500
+* 01735     242654     dac 2654
+01736     677777     scr 777         scr 9s
+01737     676777     sir 777         sir 9s
+01740     101740     xct 1740        msh,  xct .
+01741     411577     add i 1577      add i my1
+01742                                swap
+* 01742     663777     rcl 777
+* 01743     663777     rcl 777
+01744     411567     add i 1567      add i mx1
+01745     720007     iot 7           dpy-i
+01746                                count \mxc, mz1
+* 01746     462672     isp 2672
+* 01747     601731     jmp 1731
+01750                                count i ma1, mxr
+* 01750     471623     isp i 1623
+* 01751     601753     jmp 1753
+01752     351540     dzm i 1540      dzm i ml1
+01753     601753     jmp 1753        mxr,  jmp .
+01754     667037     scl 37          mst,  scl 5s
+01755     667003     scl 3           scl 2s
+
+/ torpedo calc routine
+
+01756     262004     dap 2004        tcr,  dap trc
+01757                                count i ma1, tc1
+* 01757     471623     isp i 1623
+* 01760     601766     jmp 1766
+01761     202526     lac 2526        lac (mex
+01762     251540     dac i 1540      dac i ml1
+01763     710001     law i 1         law i 1
+01764     251623     dac i 1623      dac i ma1
+01765     602004     jmp 2004        jmp trc
+01766     760200     cla             tc1,  cla
+01767                                diff \mdy, my1, (sar 3s
+* 01767     412661     add i 2661
+* 01770     252661     dac i 2661
+* 01771     102531     xct 2531
+* 01772     411577     add i 1577
+* 01773     251577     dac i 1577
+01774     760200     cla             cla
+01775                                diff \mdx, mx1, (sar 3s
+* 01775     412660     add i 2660
+* 01776     252660     dac i 2660
+* 01777     102531     xct 2531
+* 02000     411567     add i 15671
+* 02001     251567     dac i 1567
+02002     231577     lio i 1577      lio i my1
+02003     720007     iot 7           dpy-i
+02004     602004     jmp 2004        trc,  jmp .
+
+/ spaceship calc
+
+02005     262343     dap 2343        ss1,  dap srt     / first spaceship
+02006     632670     jsp i 2670      jsp i \cwg
+02007     322673     dio 2673        dio \scw
+02010     602015     jmp 2015        jmp sr0
+
+02011     262343     dap 2343        ss2,  dap srt     / second spaceship
+02012     632670     jsp i 2670      jsp i \cwg
+02013     672017     rir 17          rir 4s
+02014     322673     dio 2673        dio \scw
+
+02015     222673     lio 2673        sr0,  sc1,  lio \scw   /control word
+02016     760206     cla 6           clf 6 cla-opr     /update angle
+02017     642000     spi 0           spi
+02020     402020     add 2020        ma1,  add .
+02021     662001     ril 1           ril 1s
+02022     642000     spi             spi
+02023     432020     sub i 2020      sub i ma1
+
+02024     402024     add 2024        mom,  add .
+02025     252024     dac i 2024      dac i mom
+02026     640010     szs 10          szs 10
+02027     602032     jmp 2032        jmp sr8
+02030     352024     dzm i 2024      dzm i mom
+02031     661177     ral 177         ral 7s
+02032     662001     ril 1           sr8,  ril 1s
+02033     642000     spi             spi
+02034     760016     stf 6           stf 6
+
+02035     402035     add 2035        mth,  add .
+02036     640400     sma             sma
+02037     422420     sub 2420        sub (311040
+02040     640200     spa             spa
+02041     402420     add 2420        add (311040
+02042     252035     dac i 2035      dac i mth
+02043     170021     jda 21          jda sin
+02044     242674     dac 2674        dac \sn
+02045     342652     dzm 2652        dzm \bx
+02046     342653     dzm 2653        dzm \by
+02047     640060     szs 60          szs 60
+02050     602122     jmp 2122        jmp bsg
+02051     211567     lac i 1567      lac i mx1
+02052     675777     sar 777         sar 9s
+02053     675003     sar 3           sar 2s
+02054     242675     dac 2675        dac \t1
+02055     170103     jda 103         jda imp
+02056     202675     lac 2675        lac \t1
+02057     242676     dac 2676        dac \t2
+02060     211577     lac i 1577      lac i my1
+02061     675777     sar 777         sar 9s
+02062     675003     sar 3           sar 2s
+02063     242675     dac 2675        dac \t1
+02064     170103     jda 103         jda imp
+02065     202675     lac 2675        lac \t1
+02066     402676     add 2676        add \t2
+02067     422427     sub 2427        sub (1
+02070     650500     spq             sma i sza-skp  // spq
+02071     602344     jmp 2344        jmp pof
+02072     402427     add 2427        add (1
+02073     242675     dac 2675        dac \t1
+02074     170173     jda 173         jda sqt
+02075     675777     sar 777         sar 9s
+02076     170116     jda 116         jda mpy
+02077     202675     lac 2675        lac \t1
+02100     677003     scr 3           scr 2s
+02101     650020     szs i 20        szs i 20      / switch 2 for light star
+02102     677003     scr 3           scr 2s
+02103     640100     sza             sza
+02104     602122     jmp 2122        jmp bsg
+02105     322675     dio 2675        dio \t1
+02106     211567     lac i 1567      lac i mx1
+02107     761000     cma 0           cma
+02110     170233     jda 233         jda idv
+02111     202675     lac 2675        lac \t1
+02112     760000     nop             opr
+02113     242652     dac 2652        dac \bx
+02114     211577     lac i 1577      lac i my1
+02115     761000     cma             cma
+02116     170233     jda 233         jda idv
+02117     202675     lac 2675        lac \t1
+02120     760000     nop             opr
+02121     242653     dac 2653        dac \by
+02122     212035     lac i 2035      bsg,  lac i mth
+02123     170013     jda 13          jda cos
+02124     242677     dac 2677        dac \cs
+02125     675777     sar 777         sar 9s
+02126     675017     sar 17          sar 4s
+02127     650006     szf i 6         szf i 6
+02130     760200     cla             cla
+02131     402653     add 2653        add \by
+02132                                diff \mdy, my1, (sar 3s
+* 02132     412661     add i 2661
+* 02133     252661     dac i 2661
+* 02134     102531     xct 2531
+* 02135     411577     add i 1577
+* 02136     251577     dac i 1577
+02137     202674     lac 2674        lac \sn
+02140     675777     sar 777         sar 9s
+02141     675017     sar 17          sar 4s
+02142     761000     cma             cma
+02143     650006     szf i 6         szf i 6
+02144     760200     cla             cla
+02145     402652     add 2652        add \bx
+02146                                diff \mdx, mx1, (sar 3s
+* 02146     412660     add i 2660
+* 02147     252660     dac i 2660
+* 02150     102531     xct 2531
+* 02151     411567     add i 1567
+* 02152     251567     dac i 1567
+02153                                sp1,  scale \sn, 5s, \ssn
+* 02153     202674     lac 2674
+* 02154     675037     sar 37
+* 02155     242634     dac 2634
+02156                                sp2,  scale \cs, 5s, \scn
+* 02156     202677     lac 2677
+* 02157     675037     sar 37
+* 02160     242635     dac 2635
+02161     211567     lac i 1567      lac i mx1
+02162     422634     sub 2634        sub \ssn
+02163     242636     dac 2636        dac \sx1
+02164     422634     sub 2634        sub \ssn
+02165     242700     dac 2700        dac \stx
+02166     211577     lac i 1577      lac i my1
+02167     402635     add 2635        add \scn
+02170     242637     dac 2637        dac \sy1
+02171     402635     add 2635        add \scn
+02172     242701     dac 2701        dac \sty
+02173                                scale \sn, 9s, \ssn
+* 02173     202674     lac 2674
+* 02174     675777     sar 777
+* 02175     242634     dac 2634
+02176                                scale \cs, 9s, \scn
+* 02176     202677     lac 2677
+* 02177     675777     sar 777
+* 02200     242635     dac 2635
+02201     202634     lac 2634        lac \ssn
+02202     242643     dac 2643        dac \ssm
+02203     402635     add 2635        add \scn
+02204     242646     dac 2646        dac \ssc
+02205     242645     dac 2645        dac \ssd
+02206     202634     lac 2634        lac \ssn
+02207     422635     sub 2635        sub \scn
+02210     242647     dac 2647        dac \csn
+02211     761000     cma             cma
+02212     242644     dac 2644        dac \csm
+02213     202635     lac 2635        lac \scn
+02214     242642     dac 2642        dac \scm
+02215     764200     opr 4200        cla cli-opr
+02216     724007     iot 4007        dpy-4000
+02217     602217     jmp 2217        sp5,  jmp .
+02220     730000     ioh             sq6,  ioh
+02221                                ranct \ran, sar 9s, sar 4s, \src
+* 02221     202654     lac 2654
+* 02222     671001     rar 1
+* 02223     062500     xor 2500
+* 02224     402500     add 2500
+* 02225     242654     dac 2654
+* 02226     675777     sar 777
+* 02227     675017     sar 17
+* 02230     640400     sma
+* 02231     761000     cma
+* 02232     242702     dac 2702
+02233     232015     lio i 2015      lio i sc1
+02234     662003     ril 3           ril 2s
+02235     652000     spi i           spi i           / not blasting
+02236     602251     jmp 2251        jmp sq9         / no tail
+02237                                sq7,  yincr \sx1, \sy1, sub
+* 02237     202637     lac 2637
+* 02240     422635     sub 2635
+* 02241     242637     dac 2637
+* 02242     202636     lac 2636
+* 02243     402634     add 2634
+* 02244     242636     dac 2636
+02245                                dispt i, \sy1
+* 02245     222637     lio 2637
+* 02246     720007     dpy-i
+02247                                count \src, sq7
+* 02247     462702     isp 2702
+* 02250     602237     jmp 2237
+02251                                sq9,  count i ma1, sr5  / check if torp tube reloaded
+* 02251     471623     isp i 1623
+* 02252     602341     jmp 2341
+02253     351623     dzm i 1623      dzm i ma1       / prevent count around
+02254     202254     lac 2254        mco,  lac .     / previous control word
+02255     761000     cma             cma
+02256     022673     and 2673        and \scw        / present control word
+02257     661007     ral 7           ral 3s          / torpedo bit to bit 0
+02260     640400     sma             sma
+02261     602341     jmp 2341        jmp sr5         / no launch
+02262                                count i \mtr, st1   / check if torpedos exhausted
+* 02262     472664     isp i 2664
+* 02263     602266     jmp 2266
+02264     352664     dzm i 2664      dzm i \mtr      / prevent count around
+02265     602341     jmp 2341        jmp sr5
+02266                                st1,  init sr1, mtb  / search for unused object
+* 02266     703103     law 3103
+* 02267     262270     dap 2270
+02270     202270     lac 2270        sr1,  lac .
+02271     650100     sza i           sza i           / 0 if unused
+02272     602277     jmp 2277        jmp sr2
+02273                                index sr1, (lac mtb nob, sr1
+* 02273     442270     idx 2270
+* 02274     522527     sas 2527
+* 02275     602270     jmp 2270
+02276     760400     hlt             hlt              / no space for new objects
+02277     202533     lac 2533        sr2,  lac (tcr   / set up torpedo calc
+02300     252270     dac i 2270      dac i sr1
+02301     700030     law 30          law nob
+02302     402270     add 2270        add sr1
+02303     262305     dap 2305        dap ss3
+02304     222700     lio 2700        lio \stx
+02305     322305     dio 2305        ss3,  dio .
+02306     402522     add 2522        add (nob
+02307     262311     dap 2311        dap ss4
+02310     222701     lio 2701        lio \sty
+02311     322311     dio 2311        ss4,  dio .
+02312     402522     add 2522        add (nob
+02313     262336     dap 2336        dap sr6
+02314     402522     add 2522        add (nob
+02315     262340     dap 2340        dap sr7
+02316     402522     add 2522        add (nob
+02317     262326     dap 2326        dap sr3
+02320     402522     add 2522        add (nob
+02321     262332     dap 2332        dap sr4
+02322     202674     lac 2674        lac \sn
+02323     675037     sar 37          sar 5s
+02324     761000     cma             cma
+02325     412660     add i 2660      add i \mdx
+02326     242326     dac 2326        sr3,  dac .
+02327     202677     lac 2677        lac \cs
+02330     675037     sar 37          sar 5s
+02331     412661     add i 2661      add i \mdy
+02332     242332     dac 2332        sr4,  dac .
+02333     710040     law i 40        law i 40
+02334     251623     dac i 1623      dac i ma1          / permit torp tubes to cool
+02335     710300     law i 300       law i 300
+02336     242336     dac 2336        sr6,  dac .
+02337     700020     law 20          law 20
+02340     262340     dap 2340        sr7,  dap .        / length of torp calc.
+02341                                sr5,  move \scw, i mco
+* 02341     222673     lio 2673
+* 02342     332254     dio i 2254
+
+02343     602343     jmp 2343        st3,  srt, jmp .
+
+/ here to handle spaceships dragged into star
+
+/ spaceship in star
+
+02344     352660     dzm i 2660      pof,  dzm i \mdx
+02345     352661     dzm i 2661      dzm i \mdy
+02346     650050     szs i 50        szs i 50
+02347     602357     jmp 2357        jmp po1
+02350     351567     dzm i 1567      dzm i mx1
+02351     351577     dzm i 1577      dzm i my1
+02352     211637     lac i 1637      lac i mb1
+02353     242634     dac 2634        dac \ssn
+02354                                count \ssn, .
+* 02354     462634     isp 2634
+* 02355     602354     jmp 2354
+02356     602343     jmp 2343        jmp srt
+
+02357     202426     lac 2426        po1,  lac (377777    / now go bang
+02360     251567     dac i 1567      dac i mx1
+02361     251577     dac i 1577      dac i my1
+02362     602343     jmp 2343        jmp srt
+02363     010000     i               me1,  10000
+02364     004000     004000          me2,  4000
+
+/ outlines of spaceships
+
+02365     111131                     ot1,  111131
+02366     111111                     111111
+02367     111111                     111111
+02370     111163                     111163
+02371     311111                     311111
+02372     146111                     146111
+02373     111114                     111114
+02374     700000                     700000
+. 5/
+
+* 02375     000000
+* 02376     000000
+* 02377     000000
+* 02400     000000
+* 02401     000000
+
+02402     013113                     ot2,  013113
+02403     113111                     113111
+02404     116313                     116313
+02405     131111                     131111
+02406     161151                     161151
+02407     111633                     111633
+02410     365114                     365114
+02411     700000                     700000
+. 5/
+
+* 02412     000000
+* 02413     000000
+* 02414     000000
+* 02415     000000
+* 02416     000000
+
+constants
+02417     062210                     / 62210
+02420     311040                     / 311040
+02421     242763                     / 242763
+02422     756103                     / 756103
+02423     121312                     / 121312
+02424     532511                     / 532511
+02425     144417                     / 144417
+02426     377777                     / 377777
+02427     000001                     / 1
+02430     760015                     / stf 5
+02431     202636                     / lac \sx1
+02432     222637                     / lio \sy1
+02433     663777                     / rcl 9s
+02434     000371                     / 0366+3
+02435     640005                     / szf 5
+02436     000004                     / 4
+02437     242636                     / dac \sx1
+02440     322637                     / dio \sy1
+02441     602220                     / jmp sq6
+02442     760005                     / clf 5
+02443     202642                     / lac \scm
+02444     761000                     / cma
+02445     242642                     / dac \scm
+02446     202643                     / lac \ssm
+02447     242643                     / dac \ssm
+02450     202644                     / lac \csm
+02451     222645                     / lio \ssd
+02452     242645                     / dac \ssd
+02453     322644                     / dio \csm
+02454     202646                     / lac \ssc
+02455     222647                     / lio \csn
+02456     242647                     / dac \csn
+02457     322646                     / dio \ssc
+02460     402634                     / add \ssn
+02461     422635                     / sub \scn
+02462     730000                     / ioh
+02463     724007                     / dpy-4000
+02464     402642                     / add \scm
+02465     402643                     / add \ssm
+02466     402646                     / add \ssc
+02467     422644                     / sub \csm
+02470     422642                     / sub \scm
+02471     422643                     / sub \ssm
+02472     402647                     / add \csn
+02473     422645                     / sub \ssd
+02474     242650                     / dac \ssa
+02475     322651                     / dio \ssi
+02476     202650                     / lac \ssa
+02477     222651                     / lio \ssi
+02500     335671                     / 335671
+02501     400340                     / add 340
+02502     000643                     / bds
+02503     000003                     / 3
+02504     020000                     / 20000
+02505     002000                     / 2000
+02506     001000                     / 1000
+02507     226121                     / lio 1q+2
+02510     761777                     / -20000+2000
+02511     006121                     / 1q+2
+02512     226077                     / lio 1j
+02513     226143                     / lio 2q+2
+02514     006143                     / 2q+2
+02515     226405                     / lio 3q+2
+02516     006405                     / 3q+2
+02517     227751                     / lio 4q+2
+02520     007751                     / 4q+2
+02521     773777                     / -4000
+02522     000030                     / nob
+02523     343763                     / dzm nnn-1+1
+02524     200000                     / 200000
+02525     144420                     / 144420
+02526     001703                     / mex
+02527     203133                     / lac mtb nob
+02530     203132                     / lac mtb nob-1
+02531     675007                     / sar 3s
+02532     000500                     / 500
+02533     001756                     / tcr
+
+02534     000000
+02535     000000
+02536     000000
+02537     000000
+02540     000000
+02541     000000
+02542     000000
+02543     000000
+02544     000000
+02545     000000
+02546     000000
+02547     000000
+02550     000000
+02551     000000
+02552     000000
+02553     000000
+02554     000000
+02555     000000
+02556     000000
+02557     000000
+02560     000000
+02561     000000
+02562     000000
+02563     000000
+02564     000000
+02565     000000
+02566     000000
+02567     000000
+02570     000000
+02571     000000
+02572     000000
+02573     000000
+02574     000000
+02575     000000
+02576     000000
+02577     000000
+02600     000000
+02601     000000
+02602     000000
+02603     000000
+02604     000000
+02605     000000
+02606     000000
+02607     000000
+02610     000000
+02611     000000
+02612     000000
+02613     000000
+02614     000000
+02615     000000
+02616     000000
+02617     000000
+02620     000000
+02621     000000
+02622     000000
+02623     000000
+02624     000000
+02625     000000
+02626     000000
+02627     000000
+02630     000000
+02631     000000
+02632     000000
+02633     000000
+
+variables
+02634     000000                     / ssn
+02635     000000                     / scn
+02636     000000                     / sx1
+02637     000000                     / sy1
+02640     000000                     / occ
+02641     000000                     / oci
+02642     000000                     / scm
+02643     000000                     / ssm
+02644     000000                     / csm
+02645     000000                     / ssd
+02646     000000                     / ssc
+02647     000000                     / csn
+02650     000000                     / ssa
+02651     000000                     / ssi
+02652     000000                     / bx
+02653     000000                     / by
+02654     000000                     / ran
+02655     000000                     / bcc
+02656     000000                     / bkc
+02657     000000                     / mtc
+02660     000000                     / mdx
+02661     000000                     / mdy
+02662     000000                     / mas
+02663     000000                     / mfu
+02664     000000                     / mtr
+02665     000000                     / mh1
+02666     000000                     / mh2
+02667     000000                     / mh3
+02670     000000                     / cwg
+02671     000000                     / mt1
+02672     000000                     / mxc
+02673     000000                     / scw
+02674     000000                     / sn
+02675     000000                     / t1
+02676     000000                     / t2
+02677     000000                     / cs
+02700     000000                     / stx
+02701     000000                     / sty
+02702     000000                     / src
+
+p,    . 200/     / space for patches
+
+// mtb is at 3103 (octal 200 addresses forward)
+mtb,            / table of objects and their properties
+
+* 02703     000000
+* 02704     000000
+* 02705     000000
+* 02706     000000
+* 02707     000000
+* 02710     000000
+* 02711     000000
+* 02712     000000
+* 02713     000000
+* 02714     000000
+* 02715     000000
+* 02716     000000
+* 02717     000000
+* 02720     000000
+* 02721     000000
+* 02722     000000
+* 02723     000000
+* 02724     000000
+* 02725     000000
+* 02726     000000
+* 02727     000000
+* 02730     000000
+* 02731     000000
+* 02732     000000
+* 02733     000000
+* 02734     000000
+* 02735     000000
+* 02736     000000
+* 02737     000000
+* 02740     000000
+* 02741     000000
+* 02742     000000
+* 02743     000000
+* 02744     000000
+* 02745     000000
+* 02746     000000
+* 02747     000000
+* 02750     000000
+* 02751     000000
+* 02752     000000
+* 02753     000000
+* 02754     000000
+* 02755     000000
+* 02756     000000
+* 02757     000000
+* 02760     000000
+* 02761     000000
+* 02762     000000
+* 02763     000000
+* 02764     000000
+* 02765     000000
+* 02766     000000
+* 02767     000000
+* 02770     000000
+* 02771     000000
+* 02772     000000
+* 02773     000000
+* 02774     000000
+* 02775     000000
+* 02776     000000
+* 02777     000000
+* 03000     000000
+* 03001     000000
+* 03002     000000
+* 03003     000000
+* 03004     000000
+* 03005     000000
+* 03006     000000
+* 03007     000000
+* 03010     000000
+* 03011     000000
+* 03012     000000
+* 03013     000000
+* 03014     000000
+* 03015     000000
+* 03016     000000
+* 03017     000000
+* 03020     000000
+* 03021     000000
+* 03022     000000
+* 03023     000000
+* 03024     000000
+* 03025     000000
+* 03026     000000
+* 03027     000000
+* 03030     000000
+* 03031     000000
+* 03032     000000
+* 03033     000000
+* 03034     000000
+* 03035     000000
+* 03036     000000
+* 03037     000000
+* 03040     000000
+* 03041     000000
+* 03042     000000
+* 03043     000000
+* 03044     000000
+* 03045     000000
+* 03046     000000
+* 03047     000000
+* 03050     000000
+* 03051     000000
+* 03052     000000
+* 03053     000000
+* 03054     000000
+* 03055     000000
+* 03056     000000
+* 03057     000000
+* 03060     000000
+* 03061     000000
+* 03062     000000
+* 03063     000000
+* 03064     000000
+* 03065     000000
+* 03066     000000
+* 03067     000000
+* 03070     000000
+* 03071     000000
+* 03072     000000
+* 03073     000000
+* 03074     000000
+* 03075     000000
+* 03076     000000
+* 03077     000000
+* 03100     000000
+* 03101     000000
+* 03102     000000
+
+03103     000000                     / mtb
+03104     000000
+03105     000000
+03106     000000
+03107     000000
+03110     000000
+03111     000000
+03112     000000
+03113     000000
+03114     000000
+03115     000000
+03116     000000
+03117     000000
+03120     000000
+03121     000000
+03122     000000
+03123     000000
+03124     000000
+03125     000000
+03126     000000
+03127     000000
+03130     000000
+03131     000000
+03132     000000
+03133     000000
+03134     000000
+03135     000000
+03136     000000
+03137     000000
+03140     000000
+03141     000000
+03142     000000
+03143     000000
+03144     000000
+03145     000000
+03146     000000
+03147     000000
+03150     000000
+03151     000000
+03152     000000
+03153     000000
+03154     000000
+03155     000000
+03156     000000
+03157     000000
+03160     000000
+03161     000000
+03162     000000
+03163     000000
+03164     000000
+03165     000000
+03166     000000
+03167     000000
+03170     000000
+03171     000000
+03172     000000
+03173     000000
+03174     000000
+03175     000000
+03176     000000
+03177     000000
+03200     000000
+03201     000000
+03202     000000
+03203     000000
+03204     000000
+03205     000000
+03206     000000
+03207     000000
+03210     000000
+03211     000000
+03212     000000
+03213     000000
+03214     000000
+03215     000000
+03216     000000
+03217     000000
+03220     000000
+03221     000000
+03222     000000
+03223     000000
+03224     000000
+03225     000000
+03226     000000
+03227     000000
+03230     000000
+03231     000000
+03232     000000
+03233     000000
+03234     000000
+03235     000000
+03236     000000
+03237     000000
+03240     000000
+03241     000000
+03242     000000
+03243     000000
+03244     000000
+03245     000000
+03246     000000
+03247     000000
+03250     000000
+03251     000000
+03252     000000
+03253     000000
+03254     000000
+03255     000000
+03256     000000
+03257     000000
+03260     000000
+03261     000000
+03262     000000
+03263     000000
+03264     000000
+03265     000000
+03266     000000
+03267     000000
+03270     000000
+03271     000000
+03272     000000
+03273     000000
+03274     000000
+03275     000000
+03276     000000
+03277     000000
+03300     000000
+03301     000000
+03302     000000
+03303     000000
+03304     000000
+03305     000000
+03306     000000
+03307     000000
+03310     000000
+03311     000000
+03312     000000
+03313     000000
+03314     000000
+03315     000000
+03316     000000
+03317     000000
+03320     000000
+03321     000000
+03322     000000
+03323     000000
+03324     000000
+03325     000000
+03326     000000
+03327     000000
+03330     000000
+03331     000000
+03332     000000
+03333     000000
+03334     000000
+03335     000000
+03336     000000
+03337     000000
+03340     000000
+03341     000000
+03342     000000
+03343     000000
+03344     000000
+03345     000000
+03346     000000
+03347     000000
+03350     000000
+03351     000000
+03352     000000
+03353     000000
+03354     000000
+03355     000000
+03356     000000
+03357     000000
+03360     000000
+03361     000000
+03362     000000
+03363     000000
+03364     000000
+03365     000000
+03366     000000
+03367     000000
+03370     000000
+03371     000000
+03372     000000
+03373     000000
+03374     000000
+03375     000000
+03376     000000
+03377     000000
+03400     000000
+03401     000000
+03402     000000
+03403     000000
+03404     000000
+03405     000000
+03406     000000
+03407     000000
+03410     000000
+03411     000000
+03412     000000
+03413     000000
+03414     000000
+03415     000000
+03416     000000
+03417     000000
+03420     000000
+03421     000000
+03422     000000
+03423     000000
+03424     000000
+03425     000000
+03426     000000
+03427     000000
+03430     000000
+03431     000000
+03432     000000
+03433     000000
+03434     000000
+03435     000000
+03436     000000
+03437     000000
+03440     000000
+03441     000000
+03442     000000
+03443     000000
+03444     000000
+03445     000000
+03446     000000
+03447     000000
+03450     000000
+03451     000000
+03452     000000
+03453     000000
+03454     000000
+03455     000000
+03456     000000
+03457     000000
+03460     000000
+03461     000000
+03462     000000
+03463     000000
+03464     000000
+03465     000000
+03466     000000
+03467     000000
+03470     000000
+03471     000000
+03472     000000
+03473     000000
+03474     000000
+03475     000000
+03476     000000
+03477     000000
+03500     000000
+03501     000000
+03502     000000
+03503     000000
+03504     000000
+03505     000000
+03506     000000
+03507     000000
+03510     000000
+03511     000000
+03512     000000
+03513     000000
+03514     000000
+03515     000000
+03516     000000
+03517     000000
+03520     000000
+03521     000000
+03522     000000
+03523     000000
+03524     000000
+03525     000000
+03526     000000
+03527     000000
+03530     000000
+03531     000000
+03532     000000
+03533     000000
+03534     000000
+03535     000000
+03536     000000
+03537     000000
+03540     000000
+03541     000000
+03542     000000
+03543     000000
+03544     000000
+03545     000000
+03546     000000
+03547     000000
+03550     000000
+03551     000000
+03552     000000
+03553     000000
+03554     000000
+03555     000000
+03556     000000
+03557     000000
+03560     000000
+03561     000000
+03562     000000
+03563     000000
+03564     000000
+03565     000000
+03566     000000
+03567     000000
+03570     000000
+03571     000000
+03572     000000
+03573     000000
+03574     000000
+03575     000000
+03576     000000
+03577     000000
+03600     000000
+03601     000000
+03602     000000
+03603     000000
+03604     000000
+03605     000000
+03606     000000
+03607     000000
+03610     000000
+03611     000000
+03612     000000
+03613     000000
+03614     000000
+03615     000000
+03616     000000
+03617     000000
+03620     000000
+03621     000000
+03622     000000
+03623     000000
+03624     000000
+03625     000000
+03626     000000
+03627     000000
+03630     000000
+03631     000000
+03632     000000
+03633     000000
+03634     000000
+03635     000000
+03636     000000
+03637     000000
+03640     000000
+03641     000000
+03642     000000
+03643     000000
+03644     000000
+03645     000000
+03646     000000
+03647     000000
+03650     000000
+03651     000000
+03652     000000
+03653     000000
+03654     000000
+03655     000000
+03656     000000
+03657     000000
+03660     000000
+03661     000000
+03662     000000
+03663     000000
+03664     000000
+03665     000000
+03666     000000
+03667     000000
+03670     000000
+03671     000000
+03672     000000
+03673     000000
+03674     000000
+03675     000000
+03676     000000
+03677     000000
+03700     000000
+03701     000000
+03702     000000
+03703     000000
+03704     000000
+03705     000000
+03706     000000
+03707     000000
+03710     000000
+03711     000000
+03712     000000
+03713     000000
+03714     000000
+03715     000000
+03716     000000
+03717     000000
+03720     000000
+03721     000000
+03722     000000
+03723     000000
+03724     000000
+03725     000000
+03726     000000
+03727     000000
+03730     000000
+03731     000000
+03732     000000
+03733     000000
+03734     000000
+03735     000000
+03736     000000
+03737     000000
+03740     000000
+03741     000000
+03742     000000
+03743     000000
+03744     000000
+03745     000000
+03746     000000
+03747     000000
+03750     000000
+03751     000000
+03752     000000
+03753     000000
+03754     000000
+03755     000000
+03756     000000
+03757     000000
+03760     000000
+03761     000000
+03762     000000
+03763     000000                     / nnn
+
+start
+
+
+
+stars by prs  for s/w 2b
+
+6077/
+
+/stars 1 .  3/13/62, prs.
+
+     decimal
+
+     define
+     mark X, Y
+     repeat 8, Y=Y+Y
+     8192-X    Y
+     terminate
+
+1j,  mark 1537, 371     /87 Taur, Aldebaran
+     mark 1762, -189    /19 Orio, Rigel
+     mark 1990, 168     /58 Orio, Betelgeuze
+     mark 2280, -377    /9 CMaj, Sirius
+     mark 2583, 125     /10 CMin, Procyon
+     mark 3431, 283     /32 Leon, Regulus
+     mark 4551, -242    /67 Virg, Spica
+     mark 4842, 448     /16 Boot, Arcturus
+1q,  mark 6747, 196     /53 Aqil, Altair
+
+2j,  mark 1819, 143     /24 Orio, Bellatrix
+     mark 1884, -29     /46 Orio
+     mark 1910, -46     /50 Orio
+     mark 1951, -221    /53 Orio
+     mark 2152, -407    / 2 CMaj
+     mark 2230, 375     /24 Gemi
+     mark 3201, -187    /30 Hyda, Alphard
+     mark 4005, 344     /94 Leon, Denebola
+2q,  mark 5975, 288     /55 Ophi
+
+3j,  mark   46, 333     /88 Pegs, Algenib
+     mark  362, -244    /31 Ceti
+     mark  490, 338     /99 Pisc
+     mark  566, -375    /52 Ceti
+     mark  621, 462     / 6 Arie
+     mark 764, -78      /68 Ceti, Mira
+     mark  900, 64      /86 Ceti
+     mark 1007, 84      /92 Ceti
+     mark 1243, -230    /23 Erid
+     mark 1328, -314    /34 Erid
+     mark 1495, 432     /74 Taur
+     mark 1496, 356     /78 Taur
+     mark 1618, 154     / 1 Orio
+     mark 1644, 52      / 8 Orio
+     mark 1723, -119    /67 Erid
+     mark 1755, -371    / 5 Leps
+     mark 1779, -158    /20 Orio
+     mark 1817, -57     /28 Orio
+     mark 1843, -474    / 9 Leps
+     mark 1860, -8      /34 Orio
+     mark 1868, -407    /11 Leps
+     mark 1875, 225     /39 Orio
+     mark 1880, -136    /44 Orio
+     mark 1887, 480     /123 Taur
+     mark 1948, -338    /14 Leps
+     mark 2274, 296     /31 Gemi
+     mark 2460, 380     /54 Gemi
+
+     mark 2470, 504     /55 Gemi
+     mark 2513, 193     / 3 CMin
+     mark 2967, 154     /11 Hyda
+     mark 3016, 144     /16 Hyda
+     mark 3424, 393     /30 Leon
+     mark 3496, 463     /41 Leon, Algieba
+     mark 3668, -357    /nu Hyda
+     mark 3805, 479     /68 Leon
+     mark 3806, 364     /10 Leon
+     mark 4124, -502    / 2 Corv
+     mark 4157, -387    / 4 Corv
+     mark 4236, -363    / 7 Corv
+     mark 4304, -21     /29 Virg
+     mark 4384, 90      /43 Virg
+     mark 4421, 262     /47 Virg
+     mark 4606, -2      /79 Virg
+     mark 4721, 430     / 8 Boot
+     mark 5037, -356    / 9 Libr
+     mark 5186, -205    /27 Libr
+     mark 5344, 153     /24 Serp
+     mark 5357, 358     /28 Serp
+     mark 5373, -71     /32 Serp
+     mark 5430, -508    / 7 Scor
+     mark 5459, -445    / 8 Scor
+     mark 5513, -78     / 1 Ophi
+     mark 5536, -101    / 2 Ophi
+     mark 5609, 494     /27 Herc
+     mark 5641, -236    /13 Ophi
+     mark 5828, -355    /35 Ophi
+     mark 5860, 330     /64 Herc
+     mark 5984, -349    /55 Serp
+     mark 6047, 63      /62 Ophi
+     mark 6107, -222    /64 Ophi
+     mark 6159, 217     /72 Ophi
+     mark 6236, -66     /58 Serp
+     mark 6439, -483    /37 Sgtr
+     mark 6490, 312     /17 Aqil
+     mark 6491, -115    /16 Aqil
+     mark 6507, -482    /41 Sgtr
+     mark 6602, 66      /30 Aqil
+     mark 6721, 236     /50 Aqil
+     mark 6794, 437     /12 Sgte
+     mark 6862, -25     /65 Aqil
+     mark 6914, -344    / 9 Capr
+     mark 7014, 324     / 6 Dlph
+     mark 7318, -137    /22 Aqar
+     mark 7391, 214     / 8 Pegs
+     mark 7404, -377    /49 Capr
+     mark 7513, -18     /34 Aqar
+     mark 7539, 130     /26 Pegs
+     mark 7644, -12     /55 Aqar
+     mark 7717, 235     /42 Pegs
+     mark 7790, -372    /76 Aqar
+3q,  mark 7849, 334     /54 Pegs, Markab
+
+4j,  mark    1, -143    /33 Pisc
+     mark   54, 447     /89 Pegs
+     mark   54, -443    / 7 Ceti
+     mark   82, -214    / 8 Ceti
+     mark  223, -254    /17 Ceti
+     mark  248, 160     /63 Pisc
+     mark  273, -38     /20 Ceti
+     mark  329, 167     /71 Pisc
+     mark  376, 467     /84 Pisc
+     mark  450, -198    /45 Ceti
+     mark  548, 113     /106 Pisc
+     mark  570, 197     /110 Pisc
+     mark  595, -255    /53 Ceti
+     mark  606, -247    /55 Ceti
+     mark  615, 428     / 5 Arie
+     mark  617, 61      /14 Pisc
+     mark  656, -491    /59 Ceti
+     mark  665, 52      /113 Pisc
+     mark  727, 191     /65 Ceti
+     mark  803, -290    /72 Ceti
+     mark  813, 182     /73 Ceti
+     mark  838, -357    /76 Ceti
+     mark  878, -2      /82 Ceti
+     mark  907, -340    /89 Ceti
+     mark  908, 221     /87 Ceti
+     mark  913, -432    / 1 Erid
+     mark  947, -487    / 2 Erid
+     mark  976, -212    / 3 Erid
+     mark  992, 194     /91 Ceti
+     mark 1058, 440     /57 Arie
+     mark 1076, 470     /58 Arie
+     mark 1087, -209    /13 Erid
+     mark 1104, 68      /96 Ceti
+     mark 1110, -503    /16 Erid
+     mark 1135, 198     / 1 Taur
+     mark 1148, 214     / 2 Taur
+     mark 1168, 287     / 5 Taur
+     mark 1170, -123    /17 Erid
+     mark 1185, -223    /18 Erid
+     mark 1191, -500    /19 Erid
+     mark 1205, 2       /10 Taur
+     mark 1260, -283    /26 Erid
+     mark 1304, -74     /32 Erid
+     mark 1338, 278     /35 Taur
+     mark 1353, 130     /38 Taur
+     mark 1358, 497     /37 Taur
+     mark 1405, -162    /38 Erid
+     mark 1414, 205     /47 Taur
+     mark 1423, 197     /49 Taur
+     mark 1426, -178    /40 Erid
+     mark 1430, 463     /50 Taur
+     mark 1446, 350     /54 Taur
+     mark 1463, 394     /61 Taur
+     mark 1470, 392     /64 Taur
+     mark 1476, 502     /65 Taur
+     mark 1477, 403     /68 Taur
+
+     mark 1483, 350     /71 Taur
+     mark 1485, 330     /73 Taur
+     mark 1495, 358     /77 Taur
+     mark 1507, 364     /
+     mark 1518, -6      /45 Erid
+     mark 1526, 333     /86 Taur
+     mark 1537, 226     /88 Taur
+     mark 1544, -81     /48 Erid
+     mark 1551, 280     /90 Taur
+     mark 1556, 358     /92 Taur
+     mark 1557, -330    /53 Erid
+     mark 1571, -452    /54 Erid
+     mark 1596, -78     /57 Erid
+     mark 1622, 199     / 2 Orio
+     mark 1626, 124     / 3 Orio
+     mark 1638, -128    /61 Erid
+     mark 1646, 228     / 7 Orio
+     mark 1654, 304     / 9 Orio
+     mark 1669, 36      /10 Orio
+     mark 1680, -289    /64 Erid
+     mark 1687, -167    /65 Erid
+     mark 1690, -460    /
+     mark 1690, 488     /102 Taur
+     mark 1700, 347     /11 Orio
+     mark 1729, 352     /15 Orio
+     mark 1732, -202    /69 Erid
+     mark 1750, -273    / 3 Leps
+     mark 1753, 63      /17 Orio
+     mark 1756, -297    / 4 Leps
+     mark 1792, -302    / 6 Leps
+     mark 1799, -486    /
+     mark 1801, -11     /22 Orio
+     mark 1807, 79      /23 Orio
+     mark 1816, -180    /29 Orio
+     mark 1818, 40      /25 Orio
+     mark 1830, 497     /114 Taur
+     mark 1830, 69      /30 Orio
+     mark 1851, 134     /32 Orio
+     mark 1857, 421     /119 Taur
+     mark 1861, -168    /36 Orio
+     mark 1874, 214     /37 Orio
+     mark 1878, -138    /
+     mark 1880, -112    /42 Orio
+     mark 1885, 210     /40 Orio
+     mark 1899, -60     /48 Orio
+     mark 1900, 93      /47 Orio
+     mark 1900, -165    /49 Orio
+     mark 1909, 375     /126 Taur
+     mark 1936, -511    /13 Leps
+     mark 1957, 287     /134 Taur
+     mark 1974, -475    /15 Leps
+     mark 1982, 461     /54 Orio
+     mark 2002, -323    /16 Leps
+     mark 2020, -70     /
+     mark 2030, 220     /61 Orio
+
+     mark 2032, -241    / 3 Mono
+     mark 2037, 458     /62 Orio
+     mark 2057, -340    /18 Leps
+     mark 2059, 336     /67 Orio
+     mark 2084, 368     /69 Orio
+     mark 2084, 324     /70 Orio
+     mark 2105, -142    / 5 Mono
+     mark 2112, -311    /
+     mark 2153, 106     / 8 Mono
+     mark 2179, 462     /18 Gemi
+     mark 2179, -107    /10 Mono
+     mark 2184, -159    /11 Mono
+     mark 2204, 168     /13 Mono
+     mark 2232, -436    / 7 CMaj
+     mark 2239, -413    / 8 CMaj
+     mark 2245, -320    /
+     mark 2250, 227     /15 Mono
+     mark 2266, 303     /30 Gemi
+     mark 2291, 57      /18 Mono
+     mark 2327, 303     /38 Gemi
+     mark 2328, -457    /15 CMaj
+     mark 2330, -271    /14 CMaj
+     mark 2340, -456    /19 CMaj
+     mark 2342, -385    /20 CMaj
+     mark 2378, -93     /19 Mono
+     mark 2379, 471     /43 Gemi
+     mark 2385, -352    /23 CMaj
+     mark 2428, -8      /22 Mono
+     mark 2491, -429    /
+     mark 2519, 208     / 4 CMin
+     mark 2527, 278     / 6 CMin
+     mark 2559, -503    /
+     mark 2597, -212    /26 Mono
+     mark 2704, -412    /
+     mark 2709, -25     /28 Mono
+     mark 2714, 60      /
+     mark 2751, -61     /29 Mono
+     mark 2757, -431    /16 Pupp
+     mark 2768, -288    /19 Pupp
+     mark 2794, 216     /17 Canc
+     mark 2848, -82     /
+     mark 2915, 138     / 4 Hyda
+     mark 2921, 84      / 5 Hyda
+     mark 2942, -355    / 9 Hyda
+     mark 2944, 497     /43 Canc
+     mark 2947, 85      / 7 Hyda
+     mark 2951, -156    /
+     mark 2953, 421     /47 Canc
+     mark 2968, -300    /12 Hyda
+     mark 2976, 141     /13 Hyda
+     mark 3032, 279     /65 Canc
+     mark 3124, 62      /22 Hyda
+     mark 3157, -263    /26 Hyda
+     mark 3161, -208    /27 Hyda
+     mark 3209, -53     /31 Hyda
+     mark 3225, -17     /32 Hyda
+     mark 3261, 116     /
+
+     mark 3270, -16     /35 Hyda
+     mark 3274, -316    /38 Hyda
+     mark 3276, 236     /14 Leon
+     mark 3338, -327    /39 Hyda
+     mark 3385, 194     /29 Leon
+     mark 3415, -286    /40 Hyda
+     mark 3428, 239     /31 Leon
+     mark 3429, 3       /15 Sext
+     mark 3446, -270    /41 Hyda
+     mark 3495, 455     /40 Leon
+     mark 3534, -372    /42 Hyda
+     mark 3557, -3      /30 Sext
+     mark 3570, 223     /47 Leon
+     mark 3726, -404    /al Crat
+     mark 3736, -44     /61 Leon
+     mark 3738, 471     /60 Leon
+     mark 3754, 179     /63 Leon
+     mark 3793, -507    /11 Crat
+     mark 3821, -71     /74 Leon
+     mark 3836, -324    /12 Crat
+     mark 3846, 150     /77 Leon
+     mark 3861, 252     /78 Leon
+     mark 3868, -390    /15 Crat
+     mark 3935, -211    /21 Crat
+     mark 3936, -6      /91 Leon
+     mark 3981, -405    /27 Crat
+     mark 3986, 161     / 3 Virg
+     mark 3998, 473     /93 Leon
+     mark 4013, 53      / 5 Virg
+     mark 4072, 163     / 8 Virg
+     mark 4097, 211     / 9 Virg
+     mark 4180, -3      /15 Virg
+     mark 4185, 418     /11 Coma
+     mark 4249, -356    / 8 Corv
+     mark 4290, -170    /26 Virg
+     mark 4305, 245     /30 Virg
+     mark 4376, -205    /40 Virg
+     mark 4403, 409     /36 Coma
+     mark 4465, -114    /51 Virg
+     mark 4466, 411     /42 Coma
+     mark 4512, -404    /61 Virg
+     mark 4563, -352    /69 Virg
+     mark 4590, -131    /74 Virg
+     mark 4603, 95      /78 Virg
+     mark 4679, 409     / 4 Boot
+     mark 4691, 371     / 5 Boot
+     mark 4759, 46      /93 Virg
+     mark 4820, 66      /
+     mark 4822, -223    /98 Virg
+     mark 4840, -126    /99 Virg
+     mark 4857, -294    /100 Virg
+     mark 4864, 382     /20 Boot
+     mark 4910, -41     /105 Virg
+     mark 4984, 383     /29 Boot
+     mark 4986, 322     /30 Boot
+     mark 4994, -119    /107 Virg
+
+     mark 5009, 396     /35 Boot
+     mark 5013, 53      /109 Virg
+     mark 5045, 444     /37 Boot
+     mark 5074, -90     /16 Libr
+     mark 5108, 57      /110 Virg
+     mark 5157, -442    /24 Libr
+     mark 5283, -221    /37 Libr
+     mark 5290, -329    /38 Libr
+     mark 5291, 247     /13 Serp
+     mark 5326, -440    /43 Libr
+     mark 5331, 455     /21 Serp
+     mark 5357, 175     /27 Serp
+     mark 5372, 420     /35 Serp
+     mark 5381, 109     /37 Serp
+     mark 5387, 484     /38 Serp
+     mark 5394, -374    /46 Libr
+     mark 5415, 364     /41 Serp
+     mark 5419, -318    /48 Libr
+     mark 5455, -253    /xi Scor
+     mark 5467, -464    / 9 Scor
+     mark 5470, -469    /10 Scor
+     mark 5497, -437    /14 Scor
+     mark 5499, -223    /15 Scor
+     mark 5558, 29      /50 Serp
+     mark 5561, 441     /20 Herc
+     mark 5565, -451    / 4 Ophi
+     mark 5580, 325     /24 Herc
+     mark 5582, -415    / 7 Ophi
+     mark 5589, -186    / 3 Ophi
+     mark 5606, -373    / 8 Ophi
+     mark 5609, 50      /10 Ophi
+     mark 5610, -484    / 9 Ophi
+     mark 5620, 266     /29 Herc
+     mark 5713, -241    /20 Ophi
+     mark 5742, 235     /25 Ophi
+     mark 5763, 217     /27 Ophi
+     mark 5807, 293     /60 Herc
+     mark 5868, -8      /41 Ophi
+     mark 5888, -478    /40 Ophi
+     mark 5889, -290    /53 Serp
+     mark 5924, -114    /
+     mark 5925, 96      /49 Ophi
+     mark 5987, -183    /57 Ophi
+     mark 6006, -292    /56 Serp
+     mark 6016, -492    /58 Ophi
+     mark 6117, -84     /57 Serp
+     mark 6117, 99      /66 Ophi
+     mark 6119, 381     /93 Herc
+     mark 6119, 67      /67 Ophi
+     mark 6125, 30      /68 Ophi
+     mark 6146, 57      /70 Ophi
+     mark 6158, 198     /71 Ophi
+     mark 6170, 473     /102 Herc
+     mark 6188, -480    /13 Sgtr
+     mark 6234, 76      /74 Ophi
+     mark 6235, 499     /106 Herc
+
+     mark 6247, -204    /xi Scut
+     mark 6254, -469    /21 Sgtr
+     mark 6255, 494     /109 Herc
+     mark 6278, -333    /ga Scut
+     mark 6313, -189    /al Scut
+     mark 6379, 465     /110 Herc
+     mark 6382, -110    /be Scut
+     mark 6386, 411     /111 Herc
+     mark 6436, 93      /63 Serp
+     mark 6457, 340     /13 Aqil
+     mark 6465, -134    /12 Aqil
+     mark 6478, -498    /39 Sgtr
+     mark 6553, 483     / 1 Vulp
+     mark 6576, -410    /44 Sgtr
+     mark 6576, -368    /46 Sgtr
+     mark 6607, 3       /32 Aqil
+     mark 6651, 163     /38 Aqil
+     mark 6657, 445     / 9 Vulp
+     mark 6665, -35     /41 Aqil
+     mark 6688, 405     / 5 Sgte
+     mark 6693, 393     / 6 Sgte
+     mark 6730, 416     / 7 Sgte
+     mark 6739, 430     / 8 Sgte
+     mark 6755, 17      /55 Aqil
+     mark 6766, 187     /59 Aqil
+     mark 6772, 140     /60 Aqil
+     mark 6882, 339     /67 Aqil
+     mark 6896, -292    / 5 Capr
+     mark 6898, -292    / 6 Capr
+     mark 6913, -297    / 8 Capr
+     mark 6958, -413    /11 Capr
+     mark 6988, 250     / 2 Dlph
+     mark 7001, 326     / 4 Dlph
+     mark 7015, -33     /71 Aqil
+     mark 7020, 475     /29 Vulp
+     mark 7026, 354     / 9 Dlph
+     mark 7047, 335     /11 Dlph
+     mark 7066, 359     /12 Dlph
+     mark 7067, -225    / 2 Aqar
+     mark 7068, -123    / 3 Aqar
+     mark 7096, -213    / 6 Aqar
+     mark 7161, -461    /22 Capr
+     mark 7170, -401    /23 Capr
+     mark 7192, -268    /13 Aqar
+     mark 7199, 222     / 5 Equl
+     mark 7223, 219     / 7 Equl
+     mark 7230, 110     / 8 Equl
+     mark 7263, -393    /32 Capr
+     mark 7267, 441     / 1 Pegs
+     mark 7299, -506    /36 Capr
+     mark 7347, -453    /39 Capr
+     mark 7353, -189    /23 Aqar
+     mark 7365, -390    /40 Capr
+     mark 7379, -440    /43 Capr
+     mark 7394, 384     / 9 Pegs
+     mark 7499, -60     /31 Aqar
+     mark 7513, 104     /22 Pegs
+
+     mark 7515, -327    /33 Aqar
+     mark 7575, -189    /43 Aqar
+     mark 7603, -43     /48 Aqar
+     mark 7604, 266     /31 Pegs
+     mark 7624, 20      /52 Aqar
+     mark 7639, 96      /35 Pegs
+     mark 7654, -255    /57 Aqar
+     mark 7681, -14     /62 Aqar
+     mark 7727, -440    /66 Aqar
+     mark 7747, 266     /46 Pegs
+     mark 7761, -321    /71 Aqar
+     mark 7779, -185    /73 Aqar
+     mark 7795, 189     /50 Pegs
+     mark 7844, 75      / 4 Pisc
+     mark 7862, 202     /55 Pegs
+     mark 7874, -494    /88 Aqar
+     mark 7903, -150    /90 Aqar
+     mark 7911, -219    /91 Aqar
+     mark 7919, 62      / 6 Pisc
+     mark 7923, -222    /93 Aqar
+     mark 7952, -470    /98 Aqar
+     mark 7969, -482    /99 Aqar
+     mark 7975, 16      / 8 Pisc
+     mark 7981, 133     /10 Pisc
+     mark 7988, 278     /70 Pegs
+     mark 8010, -489    /101 Aqar
+     mark 8049, 116     /17 Pisc
+     mark 8059, -418    /104 Aqar
+     mark 8061, 28      /18 Pisc
+     mark 8064, -344    /105 Aqar
+     mark 8159, 144     /28 Pisc
+     mark 8174, -149    /30 Pisc
+4q,  mark 8188, -407    / 2 Ceti
+
+     start 4
+
+// The data for the star-map is derived from the American Ephemeris and Nautical
+// Almanac and provide coordinates for a cylindrical night sky from 22 1/2 deg N
+// to 22 1/2 deg S (as seen from the equator) in decimal notation. The data
+// range is 0 .. 8192 along the x-axis and -512 .. +512 along the y-axis (the
+// y-domain is matching the resolution of the Type 30 CRT, with the origin at
+// the center of the screen).
+// The macro "mark" translates these coordinates to values to be used with the
+// 'dpy' instruction, by shifting the Y value 8 bits to the left and by
+// substracting the X value from decimal 8192 (essentially flipping the x-axis).
+// The 'dpy' instruction uses bits 0-9 (counting from the highest significant
+// bit) of the AC and IO registers for the X and Y (signed) coordinates to be
+// displayed at a resolution of 1024 x 1024 with the origin at the center (by
+// default, but the origin could be moved by the use of some control-bits).
+//
+// The following data is the product of these instructions
+
+
+06077     014777                     1j,  014777
+06100     271400                     271400
+06101     014436                     014436
+06102     641377                     641377
+06103     014072                     014072
+06104     124000                     124000
+06105     013430                     013430
+06106     503377                     503377
+06107     012751                     012751
+06110     076400                     076400
+06111     011231                     011231
+06112     215400                     215400
+06113     007071                     007071
+06114     606777                     606777
+06115     006426                     006426
+06116     340000                     340000
+06117     002645                     1q,  002645
+06120     142000                     142000
+06121     014345                     2j,  014345
+06122     107400                     107400
+06123     014244                     014244
+06124     761377                     761377
+06125     014212                     014212
+06126     750777                     750777
+06127     014141                     014141
+06130     621377                     621377
+06131     013630                     013630
+06132     464377                     464377
+06133     013512                     013512
+06134     273400                     273400
+06135     011577                     011577
+06136     642377                     642377
+06137     010133                     010133
+06140     254000                     254000
+06141     004251                     2q,  004251
+06142     220000                     220000
+06143     017722                     3j,  017722
+06144     246400                     246400
+06145     017226                     017226
+06146     605777                     605777
+06147     017026                     017026
+06150     251000                     251000
+06151     016712                     016712
+06152     504377                     504377
+06153     016623                     016623
+06154     347000                     347000
+06155     016404                     016404
+06156     730777                     730777
+06157     016174                     016174
+06160     040000                     040000
+06161     016021                     016021
+06162     052000                     052000
+06163     015445                     015445
+06164     614777                     614777
+06165     015320                     015320
+06166     542777                     542777
+06167     015051                     015051
+06170     330000                     330000
+06171     015050                     015050
+06172     262000                     262000
+06173     014656                     014656
+06174     115000                     115000
+06175     014624                     014624
+06176     032000                     032000
+06177     014505                     014505
+06200     704377                     704377
+06201     014445                     014445
+06202     506377                     506377
+06203     014415                     014415
+06204     660777                     660777
+06205     014347                     014347
+06206     743377                     743377
+06207     014315                     014315
+06210     422777                     422777
+06211     014274                     014274
+06212     773777                     773777
+06213     014264                     014264
+06214     464377                     464377
+06215     014255                     014255
+06216     160400                     160400
+06217     014250                     014250
+06220     673777                     673777
+06221     014241                     014241
+06222     360000                     360000
+06223     014144                     014144
+06224     526777                     526777
+06225     013436                     013436
+06226     224000                     224000
+06227     013144                     013144
+06230     276000                     276000
+06231     013132                     013132
+06232     374000                     374000
+06233     013057                     013057
+06234     140400                     140400
+06235     012151                     012151
+06236     115000                     115000
+06237     012070                     012070
+06240     110000                     110000
+06241     011240                     011240
+06242     304400                     304400
+06243     011130                     011130
+06244     347400                     347400
+06245     010654                     010654
+06246     515377                     515377
+06247     010443                     010443
+06250     357400                     357400
+06251     010442                     010442
+06252     266000                     266000
+06253     007744                     007744
+06254     404777                     404777
+06255     007703                     007703
+06256     476377                     476377
+06257     007564                     007564
+06260     512377                     512377
+06261     007460                     007460
+06262     765377                     765377
+06263     007340                     007340
+06264     055000                     055000
+06265     007273                     007273
+06266     203000                     203000
+06267     007002                     007002
+06270     776777                     776777
+06271     006617                     006617
+06272     327000                     327000
+06273     006123                     006123
+06274     515777                     515777
+06275     005676                     005676
+06276     631377                     631377
+06277     005440                     005440
+06300     114400                     114400
+06301     005423                     005423
+06302     263000                     263000
+06303     005403                     005403
+06304     734377                     734377
+06305     005312                     005312
+06306     401777                     401777
+06307     005255                     005255
+06310     441377                     441377
+06311     005167                     005167
+06312     730777                     730777
+06313     005140                     005140
+06314     715377                     715377
+06315     005027                     005027
+06316     367000                     367000
+06317     004767                     004767
+06320     611777                     611777
+06321     004474                     004474
+06322     516377                     516377
+06323     004434                     004434
+06324     245000                     245000
+06325     004240                     004240
+06326     521377                     521377
+06327     004141                     004141
+06330     037400                     037400
+06331     004045                     004045
+06332     620777                     620777
+06333     003761                     003761
+06334     154400                     154400
+06335     003644                     003644
+06336     736777                     736777
+06337     003331                     003331
+06340     416377                     416377
+06341     003246                     003246
+06342     234000                     234000
+06343     003245                     003245
+06344     706377                     706377
+06345     003225                     003225
+06346     416777                     416777
+06347     003066                     003066
+06350     041000                     041000
+06351     002677                     002677
+06352     166000                     166000
+06353     002566                     002566
+06354     332400                     332400
+06355     002462                     002462
+06356     763377                     763377
+06357     002376                     002376
+06360     523777                     523777
+06361     002232                     002232
+06362     242000                     242000
+06363     001552                     001552
+06364     673377                     673377
+06365     001441                     001441
+06366     153000                     153000
+06367     001424                     001424
+06370     503377                     503377
+06371     001247                     001247
+06372     766777                     766777
+06373     001215                     001215
+06374     101000                     101000
+06375     001044                     001044
+06376     771777                     771777
+06377     000733                     000733
+06400     165400                     165400
+06401     000622                     000622
+06402     505777                     505777
+06403     000527                     3q,  000527
+06404     247000                     247000
+06405     017777                     4j,  017777
+06406     670377                     670377
+06407     017712                     017712
+06410     337400                     337400
+06411     017712                     017712
+06412     442377                     442377
+06413     017656                     017656
+06414     624777                     624777
+06415     017441                     017441
+06416     600777                     600777
+06417     017410                     017410
+06420     120000                     120000
+06421     017357                     017357
+06422     754777                     754777
+06423     017267                     017267
+06424     123400                     123400
+06425     017210                     017210
+06426     351400                     351400
+06427     017076                     017076
+06430     634777                     634777
+06431     016734                     016734
+06432     070400                     070400
+06433     016706                     016706
+06434     142400                     142400
+06435     016655                     016655
+06436     600377                     600377
+06437     016642                     016642
+06440     604377                     604377
+06441     016631                     016631
+06442     326000                     326000
+06443     016627                     016627
+06444     036400                     036400
+06445     016560                     016560
+06446     412377                     412377
+06447     016547                     016547
+06450     032000                     032000
+06451     016451                     016451
+06452     137400                     137400
+06453     016335                     016335
+06454     556777                     556777
+06455     016323                     016323
+06456     133000                     133000
+06457     016272                     016272
+06460     515377                     515377
+06461     016222                     016222
+06462     776777                     776777
+06463     016165                     016165
+06464     525777                     525777
+06465     016164                     016164
+06466     156400                     156400
+06467     016157                     016157
+06470     447777                     447777
+06471     016115                     016115
+06472     414377                     414377
+06473     016060                     016060
+06474     625777                     625777
+06475     016040                     016040
+06476     141000                     141000
+06477     015736                     015736
+06500     334000                     334000
+06501     015714                     015714
+06502     353000                     353000
+06503     015701                     015701
+06504     627377                     627377
+06505     015660                     015660
+06506     042000                     042000
+06507     015652                     015652
+06510     404377                     404377
+06511     015621                     015621
+06512     143000                     143000
+06513     015604                     015604
+06514     153000                     153000
+06515     015560                     015560
+06516     217400                     217400
+06517     015556                     015556
+06520     702377                     702377
+06521     015537                     015537
+06522     620377                     620377
+06523     015531                     015531
+06524     405777                     405777
+06525     015513                     015513
+06526     001000                     001000
+06527     015424                     015424
+06530     562377                     562377
+06531     015350                     015350
+06532     732777                     732777
+06533     015306                     015306
+06534     213000                     213000
+06535     015267                     015267
+06536     101000                     101000
+06537     015262                     015262
+06540     370400                     370400
+06541     015203                     015203
+06542     656777                     656777
+06543     015172                     015172
+06544     146400                     146400
+06545     015161                     015161
+06546     142400                     142400
+06547     015156                     015156
+06550     646777                     646777
+06551     015152                     015152
+06552     347400                     347400
+06553     015132                     015132
+06554     257000                     257000
+06555     015111                     015111
+06556     305000                     305000
+06557     015102                     015102
+06560     304000                     304000
+06561     015074                     015074
+06562     373000                     373000
+06563     015073                     015073
+06564     311400                     311400
+06565     015065                     015065
+06566     257000                     257000
+06567     015063                     015063
+06570     245000                     245000
+06571     015051                     015051
+06572     263000                     263000
+06573     015035                     015035
+06574     266000                     266000
+06575     015022                     015022
+06576     774777                     774777
+06577     015012                     015012
+06600     246400                     246400
+06601     014777                     014777
+06602     161000                     161000
+06603     014770                     014770
+06604     727377                     727377
+06605     014761                     014761
+06606     214000                     214000
+06607     014754                     014754
+06610     263000                     263000
+06611     014753                     014753
+06612     532777                     532777
+06613     014735                     014735
+06614     435777                     435777
+06615     014704                     014704
+06616     730777                     730777
+06617     014652                     014652
+06620     143400                     143400
+06621     014646                     014646
+06622     076000                     076000
+06623     014632                     014632
+06624     677777                     677777
+06625     014622                     014622
+06626     162000                     162000
+06627     014612                     014612
+06630     230000                     230000
+06631     014573                     014573
+06632     022000                     022000
+06633     014560                     014560
+06634     557377                     557377
+06635     014551                     014551
+06636     654377                     654377
+06637     014546                     014546
+06640     431777                     431777
+06641     014546                     014546
+06642     364000                     364000
+06643     014534                     014534
+06644     255400                     255400
+06645     014477                     014477
+06646     260000                     260000
+06647     014474                     014474
+06650     632777                     632777
+06651     014452                     014452
+06652     567377                     567377
+06653     014447                     014447
+06654     037400                     037400
+06655     014444                     014444
+06656     553377                     553377
+06657     014400                     014400
+06660     550777                     550777
+06661     014371                     014371
+06662     414777                     414777
+06663     014367                     014367
+06664     772377                     772377
+06665     014361                     014361
+06666     047400                     047400
+06667     014350                     014350
+06670     645777                     645777
+06671     014346                     014346
+06672     024000                     024000
+06673     014332                     014332
+06674     370400                     370400
+06675     014332                     014332
+06676     042400                     042400
+06677     014305                     014305
+06700     103000                     103000
+06701     014277                     014277
+06702     322400                     322400
+06703     014273                     014273
+06704     653777                     653777
+06705     014256                     014256
+06706     153000                     153000
+06707     014252                     014252
+06710     672777                     672777
+06711     014250                     014250
+06712     707777                     707777
+06713     014243                     014243
+06714     151000                     151000
+06715     014225                     014225
+06716     741777                     741777
+06717     014224                     014224
+06720     056400                     056400
+06721     014224                     014224
+06722     655377                     655377
+06723     014213                     014213
+06724     273400                     273400
+06725     014160                     014160
+06726     400377                     400377
+06727     014133                     014133
+06730     217400                     217400
+06731     014112                     014112
+06732     422377                     422377
+06733     014102                     014102
+06734     346400                     346400
+06735     014056                     014056
+06736     536377                     536377
+06737     014034                     014034
+06740     734777                     734777
+06741     014022                     014022
+06742     156000                     156000
+06743     014020                     014020
+06744     607377                     607377
+06745     014013                     014013
+06746     345000                     345000
+06747     013767                     013767
+06750     525777                     525777
+06751     013765                     013765
+06752     250000                     250000
+06753     013734                     013734
+06754     270000                     270000
+06755     013734                     013734
+06756     242000                     242000
+06757     013707                     013707
+06760     670777                     670777
+06761     013700                     013700
+06762     544377                     544377
+06763     013627                     013627
+06764     065000                     065000
+06765     013575                     013575
+06766     347000                     347000
+06767     013575                     013575
+06770     712377                     712377
+06771     013570                     013570
+06772     660377                     660377
+06773     013544                     013544
+06774     124000                     124000
+06775     013510                     013510
+06776     445777                     445777
+06777     013501                     013501
+07000     461377                     461377
+07001     013473                     013473
+07002     537777                     537777
+07003     013466                     013466
+07004     161400                     161400
+07005     013446                     013446
+07006     227400                     227400
+07007     013415                     013415
+07010     034400                     034400
+07011     013351                     013351
+07012     227400                     227400
+07013     013350                     013350
+07014     433377                     433377
+07015     013346                     013346
+07016     570377                     570377
+07017     013334                     013334
+07020     433777                     433777
+07021     013332                     013332
+07022     477377                     477377
+07023     013266                     013266
+07024     721377                     721377
+07025     013265                     013265
+07026     353400                     353400
+07027     013257                     013257
+07030     517777                     517777
+07031     013204                     013204
+07032     773777                     773777
+07033     013105                     013105
+07034     451377                     451377
+07035     013051                     013051
+07036     150000                     150000
+07037     013041                     013041
+07040     213000                     213000
+07041     013001                     013001
+07042     404377                     404377
+07043     012733                     012733
+07044     625777                     625777
+07045     012560                     012560
+07046     461777                     461777
+07047     012553                     012553
+07050     763377                     763377
+07051     012546                     012546
+07052     036000                     036000
+07053     012501                     012501
+07054     741377                     741377
+07055     012473                     012473
+07056     450377                     450377
+07057     012460                     012460
+07060     557777                     557777
+07061     012426                     012426
+07062     154000                     154000
+07063     012340                     012340
+07064     726777                     726777
+07065     012235                     012235
+07066     105000                     105000
+07067     012227                     012227
+07070     052000                     052000
+07071     012202                     012202
+07072     516377                     516377
+07073     012200                     012200
+07074     370400                     370400
+07075     012175                     012175
+07076     052400                     052400
+07077     012171                     012171
+07100     661777                     661777
+07101     012167                     012167
+07102     322400                     322400
+07103     012150                     012150
+07104     551777                     551777
+07105     012140                     012140
+07106     106400                     106400
+07107     012050                     012050
+07110     213400                     213400
+07111     011714                     011714
+07112     037000                     037000
+07113     011653                     011653
+07114     574377                     574377
+07115     011647                     011647
+07116     627777                     627777
+07117     011567                     011567
+07120     745377                     745377
+07121     011547                     011547
+07122     767377                     767377
+07123     011503                     011503
+07124     072000                     072000
+07125     011472                     011472
+07126     767777                     767777
+07127     011466                     011466
+07130     541777                     541777
+07131     011464                     011464
+07132     166000                     166000
+07133     011366                     011366
+07134     534377                     534377
+07135     011307                     011307
+07136     141000                     141000
+07137     011251                     011251
+07140     560777                     560777
+07141     011234                     011234
+07142     167400                     167400
+07143     011233                     011233
+07144     001400                     001400
+07145     011212                     011212
+07146     570777                     570777
+07147     011131                     011131
+07150     343400                     343400
+07151     011062                     011062
+07152     505777                     505777
+07153     011033                     011033
+07154     776377                     776377
+07155     011016                     011016
+07156     157400                     157400
+07157     010562                     010562
+07160     465777                     465777
+07161     010550                     010550
+07162     751777                     751777
+07163     010546                     010546
+07164     353400                     353400
+07165     010526                     010526
+07166     131400                     131400
+07167     010457                     010457
+07170     402377                     402377
+07171     010423                     010423
+07172     734377                     734377
+07173     010404                     010404
+07174     535777                     535777
+07175     010372                     010372
+07176     113000                     113000
+07177     010353                     010353
+07200     176000                     176000
+07201     010344                     010344
+07202     474777                     474777
+07203     010241                     010241
+07204     626377                     626377
+07205     010240                     010240
+07206     774777                     774777
+07207     010163                     010163
+07210     465377                     465377
+07211     010156                     010156
+07212     120400                     120400
+07213     010142                     010142
+07214     354400                     354400
+07215     010123                     010123
+07216     032400                     032400
+07217     010030                     010030
+07220     121400                     121400
+07221     007777                     007777
+07222     151400                     151400
+07223     007654                     007654
+07224     776377                     776377
+07225     007647                     007647
+07226     321000                     321000
+07227     007547                     007547
+07230     515777                     515777
+07231     007476                     007476
+07232     652777                     652777
+07233     007457                     007457
+07234     172400                     172400
+07235     007350                     007350
+07236     631377                     631377
+07237     007315                     007315
+07240     314400                     314400
+07241     007217                     007217
+07242     706777                     706777
+07243     007216                     007216
+07244     315400                     315400
+07245     007140                     007140
+07246     465777                     465777
+07247     007055                     007055
+07250     517777                     517777
+07251     007022                     007022
+07252     676377                     676377
+07253     007005                     007005
+07254     057400                     057400
+07255     006671                     006671
+07256     314400                     314400
+07257     006655                     006655
+07260     271400                     271400
+07261     006551                     006551
+07262     027000                     027000
+07263     006454                     006454
+07264     041000                     041000
+07265     006452                     006452
+07266     620377                     620377
+07267     006430                     006430
+07270     700777                     700777
+07271     006407                     006407
+07272     554777                     554777
+07273     006400                     006400
+07274     277000                     277000
+07275     006322                     006322
+07276     753377                     753377
+07277     006210                     006210
+07300     277400                     277400
+07301     006206                     006206
+07302     241000                     241000
+07303     006176                     006176
+07304     704377                     704377
+07305     006157                     006157
+07306     306000                     306000
+07307     006153                     006153
+07310     032400                     032400
+07311     006113                     006113
+07312     336000                     336000
+07313     006056                     006056
+07314     722777                     722777
+07315     006014                     006014
+07316     034400                     034400
+07317     005733                     005733
+07320     442777                     442777
+07321     005535                     005535
+07322     621377                     621377
+07323     005526                     005526
+07324     533377                     533377
+07325     005525                     005525
+07326     173400                     173400
+07327     005462                     005462
+07330     443777                     443777
+07331     005455                     005455
+07332     343400                     343400
+07333     005423                     005423
+07334     127400                     127400
+07335     005404                     005404
+07336     322000                     322000
+07337     005373                     005373
+07340     066400                     066400
+07341     005365                     005365
+07342     362000                     362000
+07343     005356                     005356
+07344     504777                     504777
+07345     005331                     005331
+07346     266000                     266000
+07347     005325                     005325
+07350     540777                     540777
+07351     005261                     005261
+07352     601377                     601377
+07353     005245                     005245
+07354     427777                     427777
+07355     005242                     005242
+07356     425377                     425377
+07357     005207                     005207
+07360     445377                     445377
+07361     005205                     005205
+07362     620377                     620377
+07363     005112                     005112
+07364     016400                     016400
+07365     005107                     005107
+07366     334400                     334400
+07367     005103                     005103
+07370     436377                     436377
+07371     005064                     005064
+07372     242400                     242400
+07373     005062                     005062
+07374     460377                     460377
+07375     005053                     005053
+07376     642777                     642777
+07377     005032                     005032
+07400     505377                     505377
+07401     005027                     005027
+07402     031000                     031000
+07403     005026                     005026
+07404     415777                     415777
+07405     005014                     005014
+07406     205000                     205000
+07407     004657                     004657
+07410     607377                     607377
+07411     004622                     004622
+07412     165400                     165400
+07413     004575                     004575
+07414     154400                     154400
+07415     004521                     004521
+07416     222400                     222400
+07417     004424                     004424
+07420     773777                     773777
+07421     004400                     004400
+07422     420777                     420777
+07423     004377                     004377
+07424     556777                     556777
+07425     004334                     004334
+07426     706777                     706777
+07427     004333                     004333
+07430     060000                     060000
+07431     004235                     004235
+07432     644377                     644377
+07433     004212                     004212
+07434     555777                     555777
+07435     004200                     004200
+07436     411777                     411777
+07437     004033                     004033
+07440     725777                     725777
+07441     004033                     004033
+07442     061400                     061400
+07443     004031                     004031
+07444     276400                     276400
+07445     004031                     004031
+07446     041400                     041400
+07447     004023                     004023
+07450     017000                     017000
+07451     003776                     003776
+07452     034400                     034400
+07453     003762                     003762
+07454     143000                     143000
+07455     003746                     003746
+07456     354400                     354400
+07457     003724                     003724
+07460     417777                     417777
+07461     003646                     003646
+07462     046000                     046000
+07463     003645                     003645
+07464     371400                     371400
+07465     003631                     003631
+07466     631777                     631777
+07467     003622                     003622
+07470     425377                     425377
+07471     003621                     003621
+07472     367000                     367000
+07473     003572                     003572
+07474     531377                     531377
+07475     003527                     003527
+07476     641377                     641377
+07477     003425                     003425
+07500     350400                     350400
+07501     003422                     003422
+07502     710777                     710777
+07503     003416                     003416
+07504     315400                     315400
+07505     003334                     003334
+07506     056400                     056400
+07507     003307                     003307
+07510     252000                     252000
+07511     003277                     003277
+07512     674777                     674777
+07513     003262                     003262
+07514     406777                     406777
+07515     003147                     003147
+07516     361400                     361400
+07517     003120                     003120
+07520     462777                     462777
+07521     003120                     003120
+07522     507777                     507777
+07523     003061                     003061
+07524     001400                     001400
+07525     003005                     003005
+07526     121400                     121400
+07527     002777                     002777
+07530     336400                     336400
+07531     002767                     002767
+07532     756377                     756377
+07533     002740                     002740
+07534     312400                     312400
+07535     002733                     002733
+07536     304400                     304400
+07537     002666                     002666
+07540     320000                     320000
+07541     002655                     002655
+07542     327000                     327000
+07543     002635                     002635
+07544     010400                     010400
+07545     002622                     002622
+07546     135400                     135400
+07547     002614                     002614
+07550     106000                     106000
+07551     002436                     002436
+07552     251400                     251400
+07553     002420                     002420
+07554     555777                     555777
+07555     002416                     002416
+07556     555777                     555777
+07557     002377                     002377
+07560     553377                     553377
+07561     002322                     002322
+07562     461377                     461377
+07563     002264                     002264
+07564     175000                     175000
+07565     002247                     002247
+07566     243000                     243000
+07567     002231                     002231
+07570     757377                     757377
+07571     002224                     002224
+07572     355400                     355400
+07573     002216                     002216
+07574     261000                     261000
+07575     002171                     002171
+07576     247400                     247400
+07577     002146                     002146
+07600     263400                     263400
+07601     002145                     002145
+07602     617377                     617377
+07603     002144                     002144
+07604     702377                     702377
+07605     002110                     002110
+07606     625377                     625377
+07607     002007                     002007
+07610     431377                     431377
+07611     001776                     001776
+07612     467377                     467377
+07613     001750                     001750
+07614     571777                     571777
+07615     001741                     001741
+07616     157000                     157000
+07617     001711                     001711
+07620     155400                     155400
+07621     001702                     001702
+07622     067000                     067000
+07623     001641                     001641
+07624     473377                     473377
+07625     001635                     001635
+07626     334400                     334400
+07627     001575                     001575
+07630     402777                     402777
+07631     001515                     001515
+07632     435377                     435377
+07633     001507                     001507
+07634     641377                     641377
+07635     001473                     001473
+07636     474777                     474777
+07637     001455                     001455
+07640     443777                     443777
+07641     001436                     001436
+07642     300000                     300000
+07643     001265                     001265
+07644     741777                     741777
+07645     001247                     001247
+07646     064000                     064000
+07647     001245                     001245
+07650     534377                     534377
+07651     001151                     001151
+07652     641377                     641377
+07653     001115                     001115
+07654     752377                     752377
+07655     001114                     001114
+07656     205000                     205000
+07657     001070                     001070
+07660     012000                     012000
+07661     001051                     001051
+07662     060000                     060000
+07663     001032                     001032
+07664     600377                     600377
+07665     000777                     000777
+07666     770777                     770777
+07667     000721                     000721
+07670     443777                     443777
+07671     000675                     000675
+07672     205000                     205000
+07673     000657                     000657
+07674     537377                     537377
+07675     000635                     000635
+07676     643377                     643377
+07677     000615                     000615
+07700     136400                     136400
+07701     000534                     000534
+07702     045400                     045400
+07703     000512                     000512
+07704     145000                     145000
+07705     000476                     000476
+07706     410777                     410777
+07707     000441                     000441
+07710     664777                     664777
+07711     000431                     000431
+07712     622377                     622377
+07713     000421                     000421
+07714     037000                     037000
+07715     000415                     000415
+07716     620777                     620777
+07717     000360                     000360
+07720     424777                     424777
+07721     000337                     000337
+07722     416777                     416777
+07723     000331                     000331
+07724     010000                     010000
+07725     000323                     000323
+07726     102400                     102400
+07727     000314                     000314
+07730     213000                     213000
+07731     000266                     000266
+07732     413377                     413377
+07733     000217                     000217
+07734     072000                     072000
+07735     000205                     000205
+07736     456777                     456777
+07737     000203                     000203
+07740     016000                     016000
+07741     000200                     000200
+07742     523777                     523777
+07743     000041                     000041
+07744     110000                     110000
+07745     000022                     000022
+07746     665377                     665377
+07747     000004                     4q,  000004
+07750     464377                     464377
+
+
+// end of program

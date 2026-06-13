@@ -77,6 +77,13 @@ A snapshot of 2B six days before the canonical 2 April listing. Useful
 as a comparison: small differences between this and `spacewar_2b_2apr62`
 show what was being tuned in the final week before public release.
 
+### `spacewar_2b_m_2016.txt` — Version 2B-m (Landsteiner, 2016/2022)
+
+Norbert Landsteiner's modernised reconstruction of 2B, dated *"nl, 8
+mar 2016, 9 apr 2022"*. A scholarly recovery effort — read alongside
+the two genuine 2B listings to see where 21st-century critical
+reconstruction parts company with the surviving primary sources.
+
 ### `spacewar_2b_2apr62.txt` — Version 2B (2 April 1962)
 
 The **first complete public version**. Gravity is now in (Dan Edwards's
@@ -162,9 +169,17 @@ a separate listing because it was a later addition). Reading all
 three together yields the program as last left at MIT before the
 public PDP-1 sites took over development.
 
+### `spacewar2015.txt` — Spacewar! 2015 (Landsteiner)
+
+Landsteiner's *new* PDP-1 program written in 2015, not a port: a fresh
+implementation that revives Martin Graetz's *Minskytron* hyperspace
+signature and the working subjective view from 4.3 Twin Star. Read as
+a *retrospective* on the 1962–63 family — what survives, what's
+recovered, what's reinterpreted by a 21st-century critical author.
+
 ## Supporting source files
 
-Three companion listings included because Spacewar! cannot really be
+Companion listings included because Spacewar! cannot really be
 read without them:
 
 ### `macro_fiodec.txt` — MACRO assembler definitions (June 1963)
@@ -185,6 +200,59 @@ the data that made it possible.
 Later patch reviving Martin Graetz's *Minskytron* hyperspace effect for
 later PDP-1 emulation work. Useful to see what "porting forward" looks
 like across two decades.
+
+### `snowflake_sa-100.txt` — Snowflake (John Saponara)
+
+Not a Spacewar! version — a *sibling* PDP-1 graphics program from the
+same scene, included for context: the visual culture Spacewar! emerged
+from. Brief and worth comparing for what an "abstract" PDP-1 graphics
+program looks like next to a game.
+
+## Patches and documentation
+
+### `spacewar-senseswitches.txt`
+
+Comprehensive documentation of the sense-switch settings for Spacewar!
+3.1 and the 4.x family — *which physical front-panel toggle does what*.
+Configuration as material practice rather than menu screen.
+
+### `spacewAutoRestartPatch.txt`
+
+Auto-restart patch for Spacewar! 2B. Small; the kind of housekeeping
+modification that accumulates around a long-running program.
+
+### `minskytron-hyperspace-howto.txt`
+
+Walkthrough for adding the *Minskytron Hyperspace Signature* effect to
+Spacewar! 4.1 — a documented worked example of the kind of modification
+the 4.x family was built to invite.
+
+## Disassemblies — scholarly recovery from paper-tape binaries
+
+When the only surviving artifact of a version is its paper-tape binary
+(no text listing), the scholar's tool is disassembly. These three are
+that work made visible:
+
+### `spacewar_2b_disassembly.txt`
+
+A full disassembly of the 2B paper-tape image (~3,900 lines). Compare
+line-by-line against `spacewar_2b_2apr62.txt` and `spacewar_2b_25mar62.txt`
+to see what disassembly recovers and what it cannot — comments, names,
+intent.
+
+### `hyperspace85_disassembly.txt`
+
+Disassembly of the hyperspace85 binary, attributed to *"jmg 62"* —
+that is, the disassembler's reconstruction posits **J. M. Graetz, 1962**
+as origin. A small piece of *forensic* attribution worth reading
+critically.
+
+### `spaceWarRstrt_disassembly.txt`
+
+Disassembly of the restart-patch binary, paired with
+`spacewAutoRestartPatch.txt` above (the source). Read source-and-
+disassembly together to see what compilation drops on the floor and
+what disassembly invents to put back.
 
 ## Versions not included here
 
@@ -276,8 +344,11 @@ When close-reading these programs, consider:
 ## Files
 
 - `README.md` — this file.
+
+**Game versions (chronological):**
 - `spacewar_1_early1962_reconstructed.txt` — Version 1, reconstructed (early 1962).
 - `spacewar_2b_25mar62.txt` — Version 2B, 25 March 1962.
+- `spacewar_2b_m_2016.txt` — Version 2B-m (Landsteiner modernisation, 2016/22).
 - `spacewar_2b_2apr62.txt` — Version 2B, 2 April 1962.
 - `spacewar_3.1_complete.txt` — Version 3.1, 24 September 1962 (**canonical**).
 - `spacewar_4.1f.txt` — Version 4.1f, CHM reconstruction (1963/2005).
@@ -289,9 +360,23 @@ When close-reading these programs, consider:
 - `spacewar_4.8_pt1.txt` — Version 4.8, part 1 (main game), 24 July 1963.
 - `spacewar_4.8_pt2.txt` — Version 4.8, part 2 (continuation).
 - `spacewar_4.8_scorer.txt` — Version 4.8, score display routine.
+- `spacewar2015.txt` — Landsteiner's new PDP-1 program (2015).
+
+**Supporting source:**
 - `macro_fiodec.txt` — MACRO assembler definitions (June 1963).
 - `stars_expensive_planetarium.txt` — Samson's star catalogue data (March 1962).
 - `hyperspace85.txt` — Hyperspace 1985 patch.
+- `snowflake_sa-100.txt` — Snowflake (Saponara), sibling PDP-1 graphics program.
+
+**Patches and documentation:**
+- `spacewar-senseswitches.txt` — Sense-switch settings documented.
+- `spacewAutoRestartPatch.txt` — Auto-restart patch for 2B.
+- `minskytron-hyperspace-howto.txt` — Adding Minskytron hyperspace to 4.1.
+
+**Disassemblies (scholarly recovery from paper-tape binaries):**
+- `spacewar_2b_disassembly.txt` — Full disassembly of 2B paper-tape image.
+- `hyperspace85_disassembly.txt` — Disassembly of hyperspace85 binary.
+- `spaceWarRstrt_disassembly.txt` — Disassembly of the restart-patch binary.
 
 Source for the listings: Norbert Landsteiner's archive at
 [masswerk.at/spacewar/sources/](https://www.masswerk.at/spacewar/sources/).
