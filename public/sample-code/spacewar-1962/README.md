@@ -120,6 +120,16 @@ Working single-shot torpedo mode; the central sun rendered as a fainter
 dotted point. Combined in the bitsavers archive with 4.1f as a single
 file; here separated for line-by-line comparison.
 
+#### `sw41d_combined.txt` — Original combined listing as it ships at bitsavers
+
+The artifact as it actually exists in the bitsavers RLE PDP-1 archive
+([`bitsavers.org/pdf/mit/rle_pdp1/spacewar/sw41d.txt`](https://bitsavers.org/pdf/mit/rle_pdp1/spacewar/sw41d.txt)) —
+both 4.1f and 4.2a concatenated in one file, signed "SW4.1d / dfw".
+Preserved here for readers who want the source-as-found, distinct
+from the split-for-reading files above. (The "d" suffix and the
+"dfw" signature appearing across the whole 4.x family are themselves
+worth a close reading.)
+
 #### `spacewar_4.3f.txt` — Version 4.3 *Twin Star* (17 May 1963)
 
 The **subjective view** experiment: rendering from the *Needle*'s
@@ -272,6 +282,7 @@ When close-reading these programs, consider:
 - `spacewar_3.1_complete.txt` — Version 3.1, 24 September 1962 (**canonical**).
 - `spacewar_4.1f.txt` — Version 4.1f, CHM reconstruction (1963/2005).
 - `spacewar_4.2a.txt` — Version 4.2a, 22 February 1963.
+- `sw41d_combined.txt` — Original bitsavers listing (4.1f + 4.2a unsplit).
 - `spacewar_4.3f.txt` — Version 4.3 *Twin Star* subjective view, 17 May 1963.
 - `spacewar_4.4.txt` — Version 4.4 dual-console, 21 May 1963.
 - `spacewar_4.4f.txt` — Version 4.4 variant.
