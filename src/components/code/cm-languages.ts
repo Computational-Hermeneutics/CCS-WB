@@ -34,6 +34,7 @@ export const LANGUAGE_COLORS: Record<string, { light: string; dark: string }> = 
   agc: { light: "#c45100", dark: "#ff8c1a" }, // AGC bright orange (Apollo spacesuit orange)
   assembly: { light: "#696969", dark: "#a9a9a9" }, // Assembly grey
   iplv: { light: "#d32f2f", dark: "#ef5350" }, // IPL-V red (RAND Corporation colors)
+  pdp1: { light: "#1a5d8c", dark: "#4fb3e8" }, // PDP-1 cyan (Spacewar! CRT phosphor)
 };
 
 /**
@@ -107,6 +108,7 @@ const languageLoaders: Record<string, LanguageLoader> = {
   agc: () => import("./cm-lang-agc").then((m) => m.agc()),
   fortran: () => import("./cm-lang-fortran").then((m) => m.fortran()),
   iplv: () => import("./cm-lang-iplv").then((m) => m.iplv()),
+  pdp1: () => import("./cm-lang-pdp1").then((m) => m.pdp1()),
 
   // Perl (via legacy modes)
   perl: () =>
@@ -216,6 +218,9 @@ const extensionToLanguage: Record<string, string> = {
   mad: "mad",
   // IPL-V (Information Processing Language V)
   iplv: "iplv",
+  // PDP-1 MACRO assembly (Spacewar!)
+  pdp1: "pdp1",
+  macro: "pdp1",
   // SLIP (Symmetric List Processor)
   slip: "plain",
   // PL/I
@@ -289,6 +294,11 @@ const languageAliases: Record<string, string> = {
   aea: "agc", // AGC assembly source files
   mad: "mad", // Michigan Algorithm Decoder - has syntax highlighting
   iplv: "iplv", // Information Processing Language V - has syntax highlighting
+  pdp1: "pdp1", // PDP-1 MACRO assembly (Spacewar!) - has syntax highlighting
+  "pdp-1": "pdp1",
+  "pdp1-macro": "pdp1",
+  spacewar: "pdp1",
+  macro: "pdp1",
   slip: "plain", // Symmetric List Processor
   pli: "plain", // PL/I
   algol: "plain",
