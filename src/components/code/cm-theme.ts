@@ -633,6 +633,14 @@ const ccsHighlightStyleLight = HighlightStyle.define([
 
   // Labels - slightly emphasized
   { tag: t.labelName, color: "hsl(220 40% 40%)", fontWeight: "500" },
+
+  // Macro names (PDP-1 MACRO / Spacewar user-defined operations
+  // like xincr, yincr, mark, dispt, random) - deep rose, bold.
+  // Far enough from the orange of built-in instructions (hue 20)
+  // to read as a different *category* at a glance, not a
+  // shade-variant. Bold weight reinforces "user-defined
+  // instruction-shaped thing" without leaning on hue alone.
+  { tag: t.macroName, color: "hsl(330 60% 42%)", fontWeight: "600" },
 ]);
 
 // Dark mode highlight style
@@ -705,6 +713,11 @@ const ccsHighlightStyleDark = HighlightStyle.define([
 
   // Labels - slightly emphasized
   { tag: t.labelName, color: "hsl(210 50% 65%)", fontWeight: "500" },
+
+  // Macro names (PDP-1 MACRO / Spacewar user-defined operations
+  // like xincr, yincr, mark, dispt, random) - lighter rose, bold;
+  // matches the light-mode rose intent at dark-mode luminance.
+  { tag: t.macroName, color: "hsl(330 75% 70%)", fontWeight: "600" },
 ]);
 
 /**

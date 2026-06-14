@@ -195,15 +195,22 @@ function tokenBase(stream: StringStream, state: PDP1State): string | null {
     }
 
     // Instruction position: the first non-whitespace token on a
-    // line that isn't a label. PDP-1 MACRO sources call user
-    // macros (mark, xincr, dispt, random, scale, dispatch, …)
-    // in exactly the same slot as built-in instructions, so we
-    // colour the whole slot uniformly. This is what gives
-    // Spacewar's user-defined macros the same orange as `lac`,
-    // `dac`, `jmp`, etc.
+    // line that isn't a label or a directive. Split this slot
+    // into two categories so the reader can tell built-in
+    // instructions from user-defined macros at a glance:
+    //   - known PDP-1 mnemonic → `keyword` (orange)
+    //   - anything else → `macroName` (gold/amber) — covers
+    //     both macro DEFINITIONS (the name on the line after
+    //     `define`, e.g. `xincr X,Y,INS`) and macro CALLS
+    //     (e.g. `mark ma,mx,sin`). Same colour for both keeps
+    //     the visual link between definition and use.
     if (wasFirst) {
+      if (instructions[lower]) {
+        state.afterInstruction = true;
+        return "keyword";
+      }
       state.afterInstruction = true;
-      return "keyword";
+      return "macroName";
     }
 
     // Indirect-addressing modifier `i` in operand position.
