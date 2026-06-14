@@ -75,8 +75,16 @@ Edit [`cloud.config.json`](../cloud.config.json):
 That's the whole change. Rebuild, deploy. The cloud subtree
 remains in the source tree (so re-enabling later is a one-line
 flip back), but nothing in the build talks to Supabase, no
-sign-in UI ever appears, and the Cloud tab in Settings shows the
-null state.
+sign-in UI ever appears, and **every cloud touch in the UI is
+removed at the JSX level** — the Cloud tab in Settings is gone,
+the Profile-tab breadcrumb that pointed at it is gone, the cloud
+projects button and UserMenu in the workbench header are gone,
+the "Local vs Cloud Mode" and "Cloud sync (advanced)" sections
+in the Interface Guide popover are gone (the Collaborating
+section collapses to a single paragraph about file-based merge).
+A user landing on a deployment with `enabled: false` sees no
+trace of cloud features anywhere; the workbench reads as a
+purely local app.
 
 You can verify the off state by clearing `localStorage` and
 inspecting Settings → Cloud — the master toggle won't appear
