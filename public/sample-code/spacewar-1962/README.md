@@ -46,6 +46,29 @@ This is rich material for critical close reading along several axes:
   central star pulls everything inward. Read the code as a war game and
   the constants take on a different cast.
 
+## A note on this folder on disk
+
+When you open this sample inside CCS-WB, the workbench loads
+everything — every source listing, the README you are reading,
+the annotations — from a single self-contained project file
+[`spacewar-1962.ccs`](spacewar-1962.ccs). That `.ccs` is JSON
+with the file metadata in `codeFiles[]` and the actual file
+bodies inlined in `codeContents{}`; nothing in it points at
+the loose files sitting next to it.
+
+The 26 loose `.txt` files (and the on-disk copy of this
+README) in this directory are **external copies of what is
+already inlined in the `.ccs`**. They exist so the corpus is
+directly browsable and greppable on GitHub, downloadable
+individually, and usable outside the workbench — they have no
+role in how the workbench loads the project. Most other
+samples in the library are shipped *only* as a `.ccs` for that
+reason (see e.g. [`adventure-1977/`](../adventure-1977/),
+[`git-stash-2007/`](../git-stash-2007/)); Spacewar! keeps both
+because its corpus is a primary scholarly object that benefits
+from external readability. If a loose file disappears, nothing
+in CCS-WB breaks; if the `.ccs` disappears, the project does.
+
 ## The versions in this project
 
 This sample ships **every recoverable version of the Spacewar! source
