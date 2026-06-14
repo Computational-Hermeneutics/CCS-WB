@@ -1278,7 +1278,7 @@ export function SettingsModal({
                 <h4 className="font-display text-caption text-ink mb-1.5">Links</h4>
                 <div className="space-y-1.5">
                   <a
-                    href="https://github.com/dmberry/CCS-WB"
+                    href="https://github.com/Computational-Hermeneutics/CCS-WB"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="block font-sans text-caption text-burgundy hover:text-burgundy-dark transition-colors"

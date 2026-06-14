@@ -28,14 +28,21 @@
 import { StreamLanguage, StringStream, LanguageSupport } from "@codemirror/language";
 
 // PDP-1 instruction mnemonics. Lower-case matches the source
-// convention used in the surviving Spacewar listings.
+// convention used in the surviving Spacewar listings. The list
+// is for the non-first-position fallback (e.g. an instruction
+// following `repeat 3,`); the primary rule is that *any* token
+// in instruction position is highlighted as a keyword, which
+// covers Spacewar's many user-defined macros (mark, xincr,
+// dispt, random, ranct, scale, diff, dispatch, plinst, etc.).
 const instructions: Record<string, boolean> = {
   // Memory reference
   lac: true, dac: true, lio: true, dio: true,
-  add: true, sub: true, mul: true, mult: true, div: true, idv: true,
+  add: true, sub: true, mul: true, mult: true, mus: true,
+  div: true, idv: true, dis: true,
   and: true, ior: true, xor: true,
   sad: true, sas: true,
   dap: true, dip: true, dzm: true,
+  idx: true, isp: true,
   jmp: true, jsp: true, jda: true, cal: true,
   xct: true, law: true,
 
@@ -44,14 +51,15 @@ const instructions: Record<string, boolean> = {
   sal: true, sar: true, scl: true, scr: true, sil: true, sir: true,
 
   // Skip group
+  skp: true,
   sma: true, spa: true, sza: true, sna: true,
   szf: true, szs: true, spi: true, spq: true,
-  sps: true, asp: true,
+  sps: true, asp: true, clo: true,
 
   // Operate group
-  cla: true, cli: true, clf: true, cma: true,
-  hlt: true, lap: true, lat: true, nop: true, opr: true,
-  stf: true, cmq: true, lpd: true,
+  cla: true, cli: true, clc: true, clf: true, caf: true, cma: true,
+  hlt: true, halt: true, lap: true, lat: true, nop: true, opr: true,
+  stf: true, cmq: true, lpd: true, swap: true,
 
   // I/O
   iot: true, ioh: true,
@@ -75,6 +83,12 @@ const operandModifiers: Record<string, boolean> = {
 };
 
 interface PDP1State {
+  // True until the first non-whitespace token on the current
+  // line has been consumed. Used to identify instruction
+  // position (the slot where mnemonics and macro calls live)
+  // so that user-defined macro calls get the same orange
+  // highlight as built-in instructions.
+  firstTokenOnLine: boolean;
   // Whether the previous non-whitespace token on this line was an
   // instruction mnemonic. Used to decide whether bare `i` is the
   // indirect-addressing modifier or just a one-letter identifier.
@@ -129,6 +143,7 @@ function tokenBase(stream: StringStream, state: PDP1State): string | null {
     if (stream.peek() === "s") {
       stream.next();
     }
+    state.firstTokenOnLine = false;
     state.afterInstruction = false;
     return "number";
   }
@@ -136,6 +151,7 @@ function tokenBase(stream: StringStream, state: PDP1State): string | null {
   // Bare `.` as the current-address symbol (e.g. `dap . 1`).
   if (ch === ".") {
     stream.next();
+    state.firstTokenOnLine = false;
     state.afterInstruction = false;
     return "number.special";
   }
@@ -156,24 +172,36 @@ function tokenBase(stream: StringStream, state: PDP1State): string | null {
   // Identifiers (letters, digits, underscore; PDP-1 MACRO is
   // case-insensitive but the sources are lower-case).
   if (/[A-Za-z_]/.test(ch)) {
-    const startCol = stream.column();
     stream.eatWhile(/[A-Za-z0-9_]/);
     const word = stream.current();
     const lower = word.toLowerCase();
+    const wasFirst = state.firstTokenOnLine;
+    state.firstTokenOnLine = false;
 
-    // Label definition: identifier immediately followed by `,`
-    // at (or very near) the start of the line.
-    if (startCol < 16 && stream.peek() === ",") {
-      state.afterInstruction = false;
-      return "labelName";
-    }
-
+    // Directives (define, term, repeat, decimal, octal, …)
+    // always render as directive keywords regardless of
+    // position.
     if (directives[lower]) {
       state.afterInstruction = false;
       return "keyword.directive";
     }
 
-    if (instructions[lower]) {
+    // Label definition: identifier immediately followed by `,`
+    // at the start of a statement (typically column 0, but
+    // some sources indent labels).
+    if (wasFirst && stream.peek() === ",") {
+      state.afterInstruction = false;
+      return "labelName";
+    }
+
+    // Instruction position: the first non-whitespace token on a
+    // line that isn't a label. PDP-1 MACRO sources call user
+    // macros (mark, xincr, dispt, random, scale, dispatch, …)
+    // in exactly the same slot as built-in instructions, so we
+    // colour the whole slot uniformly. This is what gives
+    // Spacewar's user-defined macros the same orange as `lac`,
+    // `dac`, `jmp`, etc.
+    if (wasFirst) {
       state.afterInstruction = true;
       return "keyword";
     }
@@ -181,6 +209,13 @@ function tokenBase(stream: StringStream, state: PDP1State): string | null {
     // Indirect-addressing modifier `i` in operand position.
     if (operandModifiers[lower] && state.afterInstruction) {
       return "keyword.special";
+    }
+
+    // Known built-in instructions still highlight as keywords
+    // even in non-first position (e.g. after `repeat 3,`).
+    if (instructions[lower]) {
+      state.afterInstruction = true;
+      return "keyword";
     }
 
     state.afterInstruction = false;
@@ -196,11 +231,12 @@ export const pdp1Language = StreamLanguage.define<PDP1State>({
   name: "pdp1",
 
   startState(): PDP1State {
-    return { afterInstruction: false };
+    return { firstTokenOnLine: true, afterInstruction: false };
   },
 
   token(stream: StringStream, state: PDP1State): string | null {
     if (stream.sol()) {
+      state.firstTokenOnLine = true;
       state.afterInstruction = false;
     }
     return tokenBase(stream, state);
