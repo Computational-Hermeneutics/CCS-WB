@@ -1199,16 +1199,24 @@ export const WorkbenchHeader = memo(function WorkbenchHeader(props: WorkbenchHea
                       <span><strong>Crit</strong> - Critique</span>
                     </div>
                   </div>
-                  <div>
-                    <h4 className="font-medium text-ink text-[11px] uppercase tracking-wide mb-1">Local vs Cloud Mode</h4>
-                    <p className="mb-1.5"><strong>Local mode</strong> (💾 icon, italic filenames): Working on your device only. Changes saved locally as .ccs files. No internet required.</p>
-                    <p><strong>Cloud mode</strong> (☁️ icon, normal filenames): Connected to a shared project. Changes sync automatically. Collaborate with others in real-time.</p>
-                  </div>
+                  {CLOUD_ENABLED && (
+                    <div>
+                      <h4 className="font-medium text-ink text-[11px] uppercase tracking-wide mb-1">Local vs Cloud Mode</h4>
+                      <p className="mb-1.5"><strong>Local mode</strong> (💾 icon, italic filenames): Working on your device only. Changes saved locally as .ccs files. No internet required.</p>
+                      <p><strong>Cloud mode</strong> (☁️ icon, normal filenames): Connected to a shared project. Changes sync automatically. Collaborate with others in real-time.</p>
+                    </div>
+                  )}
                   <div>
                     <h4 className="font-medium text-ink text-[11px] uppercase tracking-wide mb-1">Collaborating on Annotations</h4>
-                    <p className="mb-1.5">There are two ways to collaborate, at different levels of complexity. Most people want the first.</p>
-                    <p className="mb-1.5"><strong>1. Merge annotations (simple).</strong> The merge button (next to <em>Load session</em>) imports a collaborator&apos;s <code>.ccs</code> file into your session. You each annotate the same code separately, then combine. No sign-in, no internet, nothing of yours is overwritten. After merging, your session is the combined master and you&apos;ll be prompted to save it back out. This is the recommended workflow.</p>
-                    <p><strong>2. Cloud sync (advanced).</strong> Real-time shared projects with sign-in and live sync — more powerful but heavier, and it needs a configured cloud backend. Configure (or turn off) in <strong>Settings → Cloud</strong>; when off, CCS-WB is a clean local-only workbench and no data is sent to or fetched from the cloud. Merge annotations (option 1) keeps working regardless of this switch.</p>
+                    {CLOUD_ENABLED ? (
+                      <>
+                        <p className="mb-1.5">There are two ways to collaborate, at different levels of complexity. Most people want the first.</p>
+                        <p className="mb-1.5"><strong>1. Merge annotations (simple).</strong> The merge button (next to <em>Load session</em>) imports a collaborator&apos;s <code>.ccs</code> file into your session. You each annotate the same code separately, then combine. No sign-in, no internet, nothing of yours is overwritten. After merging, your session is the combined master and you&apos;ll be prompted to save it back out. This is the recommended workflow.</p>
+                        <p><strong>2. Cloud sync (advanced).</strong> Real-time shared projects with sign-in and live sync — more powerful but heavier, and it needs a configured cloud backend. Configure (or turn off) in <strong>Settings → Cloud</strong>; when off, CCS-WB is a clean local-only workbench and no data is sent to or fetched from the cloud. Merge annotations (option 1) keeps working regardless of this switch.</p>
+                      </>
+                    ) : (
+                      <p><strong>Merge annotations.</strong> The merge button (next to <em>Load session</em>) imports a collaborator&apos;s <code>.ccs</code> file into your session. You each annotate the same code separately, then combine. No sign-in, no internet, nothing of yours is overwritten. After merging, your session is the combined master and you&apos;ll be prompted to save it back out.</p>
+                    )}
                   </div>
                   <div>
                     <h4 className="font-medium text-ink text-[11px] uppercase tracking-wide mb-1">Shortcuts</h4>

@@ -452,18 +452,29 @@ export default function WelcomePage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 max-w-4xl mx-auto">
           {entryModes.map((entry, index) => {
             const Icon = entry.icon;
+            // Create mode is the vibe-coding flow — meaningless without
+            // a working AI provider. When AI is off the card fades and
+            // becomes unclickable, with a tooltip explaining why and
+            // pointing at Settings → AI.
+            const needsAI = entry.mode === "create";
+            const disabled = needsAI && !aiSettings.aiEnabled;
             return (
               <button
                 key={entry.mode}
-                onClick={() => handleModeSelect(entry.mode)}
+                onClick={() => { if (!disabled) handleModeSelect(entry.mode); }}
+                disabled={disabled}
+                aria-disabled={disabled}
+                title={disabled ? "Create Code needs an AI provider. Enable AI in Settings → AI." : undefined}
                 className={cn(
                   "flex flex-col items-center text-center p-6 md:p-4",
                   "bg-card border border-parchment rounded-sm",
-                  "shadow-editorial hover:shadow-editorial-md",
-                  "hover:border-parchment-dark hover:-translate-y-0.5",
+                  "shadow-editorial",
                   "transition-all duration-300 ease-out",
                   "focus:outline-none focus:ring-1 focus:ring-burgundy focus:ring-offset-1 focus:ring-offset-background",
-                  "group min-h-[120px]"
+                  "group min-h-[120px]",
+                  disabled
+                    ? "opacity-40 cursor-not-allowed"
+                    : "hover:shadow-editorial-md hover:border-parchment-dark hover:-translate-y-0.5"
                 )}
               >
                 <div
@@ -471,8 +482,8 @@ export default function WelcomePage() {
                     "w-10 h-10 rounded-sm flex items-center justify-center mb-2",
                     "bg-cream border border-parchment",
                     "text-burgundy",
-                    "group-hover:bg-burgundy group-hover:text-ivory group-hover:border-burgundy",
-                    "transition-all duration-300"
+                    "transition-all duration-300",
+                    !disabled && "group-hover:bg-burgundy group-hover:text-ivory group-hover:border-burgundy"
                   )}
                 >
                   <Icon className="h-5 w-5" strokeWidth={1.5} />
@@ -483,6 +494,11 @@ export default function WelcomePage() {
                 <p className="font-body text-xs text-slate leading-snug">
                   {entry.description}
                 </p>
+                {disabled && (
+                  <p className="font-sans text-[10px] text-slate-muted mt-2 italic">
+                    Requires AI — enable in Settings → AI
+                  </p>
+                )}
               </button>
             );
           })}
