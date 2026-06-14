@@ -1268,7 +1268,7 @@ export function SettingsModal({
                   </div>
                   <div className="flex justify-between font-sans text-caption">
                     <span className="text-slate-muted">Methodology</span>
-                    <span className="text-ink">CCS v2.5</span>
+                    <span className="text-ink">CCS v2.7</span>
                   </div>
                 </div>
               </div>

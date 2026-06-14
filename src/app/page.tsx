@@ -155,18 +155,34 @@ export default function WelcomePage() {
       <header className="border-b border-parchment/50 bg-background/95 backdrop-blur-sm sticky top-0 z-10 relative">
         <div className="max-w-5xl mx-auto px-4 py-1">
           <div className="flex items-center justify-between">
-            <h1 className={cn(
-              "font-display text-sm tracking-tight relative",
-              isAlphaVersion
-                ? "text-yellow-600 dark:text-yellow-500"
-                : "text-ink"
-            )} title={isAlphaVersion ? "Alpha Test Version" : undefined}>
-              <span className="hidden sm:inline">Critical Code Studies Workbench</span>
-              <span className="sm:hidden">CCS Workbench</span>
-              <span className="font-sans text-[9px] text-slate/50 ml-2 align-bottom absolute bottom-0 left-full whitespace-nowrap">
-                v{appVersion}
-              </span>
-            </h1>
+            <div className="flex items-center gap-2.5">
+              <a
+                href="https://computational-hermeneutics.github.io"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-shrink-0 opacity-80 hover:opacity-100 transition-opacity"
+                title="Part of Computational Hermeneutics"
+                aria-label="Part of Computational Hermeneutics"
+              >
+                <img
+                  src="/branding/ch/logo-mark.svg"
+                  alt=""
+                  className="w-5 h-5 block"
+                />
+              </a>
+              <h1 className={cn(
+                "font-display text-sm tracking-tight relative",
+                isAlphaVersion
+                  ? "text-yellow-600 dark:text-yellow-500"
+                  : "text-ink"
+              )} title={isAlphaVersion ? "Alpha Test Version" : undefined}>
+                <span className="hidden sm:inline">Critical Code Studies Workbench</span>
+                <span className="sm:hidden">CCS Workbench</span>
+                <span className="font-sans text-[9px] text-slate/50 ml-2 align-bottom absolute bottom-0 left-full whitespace-nowrap">
+                  v{appVersion}
+                </span>
+              </h1>
+            </div>
             <div className="flex items-center gap-1">
               <button
                 onClick={() => setShowAIPanel(true)}
