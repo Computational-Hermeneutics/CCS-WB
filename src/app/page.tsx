@@ -39,7 +39,7 @@ const entryModes: EntryModeCard[] = [
     mode: "create",
     title: "Create Code",
     description:
-      "Explore algorithms by building them. Create simple versions of ELIZA, poetry generators, and more.",
+      "Explore algorithms by building them. Create simple versions of ELIZA, poetry generators, and more. Requires AI to be enabled.",
     icon: Sparkles,
   },
 ];
