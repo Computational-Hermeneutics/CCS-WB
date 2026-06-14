@@ -1246,12 +1246,21 @@ export function SettingsModal({
           {activeTab === "about" && (
             <div className="space-y-4">
               <div>
-                <h3 className="font-display text-sm text-ink mb-1.5">
-                  Critical Code Studies Workbench
-                </h3>
-                <p className="font-sans text-caption text-slate mb-3">
-                  A web application for close reading and hermeneutic analysis of software as cultural artefact.
-                </p>
+                <div className="flex items-start gap-3 mb-2">
+                  <img
+                    src="/branding/ch/tools/ccs-wb.svg"
+                    alt=""
+                    className="w-10 h-10 flex-shrink-0 mt-0.5"
+                  />
+                  <div>
+                    <h3 className="font-display text-sm text-ink mb-0.5">
+                      Critical Code Studies Workbench
+                    </h3>
+                    <p className="font-sans text-caption text-slate">
+                      A web application for close reading and hermeneutic analysis of software as cultural artefact.
+                    </p>
+                  </div>
+                </div>
                 <div className="bg-cream rounded-sm p-3 space-y-1.5">
                   <div className="flex justify-between font-sans text-caption">
                     <span className="text-slate-muted">Version</span>
@@ -1260,6 +1269,24 @@ export function SettingsModal({
                   <div className="flex justify-between font-sans text-caption">
                     <span className="text-slate-muted">Methodology</span>
                     <span className="text-ink">CCS v2.5</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="border-t border-parchment pt-4">
+                <div className="flex items-start gap-3 mb-2">
+                  <img
+                    src="/branding/ch/logo-mark.svg"
+                    alt=""
+                    className="w-8 h-8 flex-shrink-0 mt-0.5"
+                  />
+                  <div>
+                    <h4 className="font-display text-caption text-ink mb-0.5">
+                      Part of Computational Hermeneutics
+                    </h4>
+                    <p className="font-sans text-[11px] text-slate-muted leading-snug">
+                      Research instruments for computational close reading. CCS-WB is the close-reading register; <a href="https://github.com/Computational-Hermeneutics/Source-Variorum" target="_blank" rel="noopener noreferrer" className="text-burgundy hover:text-burgundy-dark">Source Variorum</a> is the collation register.
+                    </p>
                   </div>
                 </div>
               </div>
@@ -1284,6 +1311,14 @@ export function SettingsModal({
                     className="block font-sans text-caption text-burgundy hover:text-burgundy-dark transition-colors"
                   >
                     GitHub Repository →
+                  </a>
+                  <a
+                    href="https://computational-hermeneutics.github.io"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block font-sans text-caption text-burgundy hover:text-burgundy-dark transition-colors"
+                  >
+                    Computational Hermeneutics →
                   </a>
                 </div>
               </div>

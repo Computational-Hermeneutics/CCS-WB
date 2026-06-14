@@ -1,0 +1,8 @@
+<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Computational Hermeneutics">
+  <title>Computational Hermeneutics mark</title>
+  <circle cx="32" cy="32" r="23" fill="none" stroke="#f1ece0" stroke-width="3"/>
+  <g fill="none" stroke-linecap="round" stroke-width="3">
+    <path d="M15 23 C 26 23 38 41 49 41" stroke="#c98989"/>
+    <path d="M15 41 C 26 41 38 23 49 23" stroke="#d4a84e"/>
+  </g>
+</svg>

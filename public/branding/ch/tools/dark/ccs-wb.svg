@@ -1,0 +1,14 @@
+<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" fill="none">
+  <title>CCS Workbench</title>
+  <rect x="8" y="8" width="48" height="48" rx="4" stroke="#d4a84e" stroke-width="1.6" stroke-opacity="0.5"/>
+  <line x1="20" y1="12" x2="20" y2="52" stroke="#d4a84e" stroke-width="1" stroke-opacity="0.5"/>
+  <g stroke="#f1ece0" stroke-width="2.4" stroke-linecap="round">
+    <line x1="25" y1="18" x2="48" y2="18"/>
+    <line x1="25" y1="26" x2="42" y2="26"/>
+    <line x1="25" y1="34" x2="50" y2="34"/>
+    <line x1="25" y1="42" x2="38" y2="42"/>
+    <line x1="25" y1="50" x2="46" y2="50"/>
+  </g>
+  <circle cx="15" cy="34" r="2.6" fill="#d4a84e"/>
+  <line x1="50" y1="34" x2="58" y2="34" stroke="#d4a84e" stroke-width="2.4" stroke-linecap="round"/>
+</svg>
