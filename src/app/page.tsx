@@ -156,20 +156,17 @@ export default function WelcomePage() {
         <div className="max-w-5xl mx-auto px-4 py-1">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2.5">
-              <a
-                href="https://computational-hermeneutics.github.io"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex-shrink-0 opacity-80 hover:opacity-100 transition-opacity"
-                title="Part of Computational Hermeneutics"
-                aria-label="Part of Computational Hermeneutics"
+              <span
+                className="flex-shrink-0"
+                title="CCS Workbench — close reading of a single artefact of code"
+                aria-label="CCS Workbench"
               >
                 <img
-                  src="/branding/ch/logo-mark.svg"
+                  src="/branding/ch/tools/ccs-wb.svg"
                   alt=""
-                  className="w-5 h-5 block"
+                  className="w-6 h-6 block"
                 />
-              </a>
+              </span>
               <h1 className={cn(
                 "font-display text-sm tracking-tight relative",
                 isAlphaVersion

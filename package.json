@@ -1,6 +1,6 @@
 {
   "name": "ccs-wb",
-  "version": "5.1.5",
+  "version": "5.1.6",
   "private": true,
   "scripts": {
     "dev": "next dev",

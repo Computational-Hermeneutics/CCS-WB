@@ -253,20 +253,17 @@ export const WorkbenchHeader = memo(function WorkbenchHeader(props: WorkbenchHea
   return (
     <header className="border-b border-parchment bg-background px-2 sm:px-4 py-1 grid grid-cols-[auto_1fr_auto] items-center gap-2 z-10 relative min-w-0">
       <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
-        <a
-          href="https://computational-hermeneutics.github.io"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex-shrink-0 opacity-80 hover:opacity-100 transition-opacity"
-          title="Part of Computational Hermeneutics"
-          aria-label="Part of Computational Hermeneutics"
+        <span
+          className="flex-shrink-0"
+          title="CCS Workbench — close reading of a single artefact of code"
+          aria-label="CCS Workbench"
         >
           <img
-            src="/branding/ch/logo-mark.svg"
+            src="/branding/ch/tools/ccs-wb.svg"
             alt=""
-            className="w-5 h-5 block"
+            className="w-6 h-6 block"
           />
-        </a>
+        </span>
         <button
           onClick={onNavigateHome}
           className={cn(

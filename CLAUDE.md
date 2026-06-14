@@ -6,7 +6,7 @@ This file provides context for Claude Code or other AI assistants working on thi
 
 **CCS-WB** (Critical Code Studies Workbench) is a web application for close reading and hermeneutic analysis of software as cultural artefact. It implements critical code studies methodology based on the work of Mark Marino and David M. Berry.
 
-**Version**: 5.1.5 | CCS Methodology v2.7
+**Version**: 5.1.6 | CCS Methodology v2.7
 
 ## Technology Stack
 
