@@ -4,7 +4,7 @@
 
 A web application for close reading and hermeneutic analysis of software as cultural artefact.
 
-![Annotated close reading of the 1965 ELIZA MAD source in the Workbench](docs/screenshots/03-workbench-eliza.jpg)
+![Annotated close reading of the 1965 ELIZA MAD source in the Workbench](docs/screenshots/03-workbench-eliza.png)
 
 *The Workbench reading the 1965 ELIZA MAD source: six colour-coded annotation types (Observation, Question, Metaphor, Pattern, Context, Critique) are rendered inline beneath the lines they interpret, with a file tree on the left and a MAD-aware syntax highlighter in the editor.*
 
@@ -22,31 +22,31 @@ Software deserves the same close reading we give literature. The Workbench helps
 
 ### Landing — three modes of engagement
 
-![Landing page with Analyze Code, Learn Methods, and Create Code modes](docs/screenshots/01-landing.jpg)
+![Landing page with Analyze Code, Learn Methods, and Create Code modes](docs/screenshots/01-landing.png)
 
 The Workbench opens on a mode-chooser. **Analyze Code** drops you into the IDE-style workbench with your own files; **Learn Methods** teaches the CCS methodology through guided exploration and a library of historical samples; **Create Code** (AI-dependent) generates small algorithms to understand them by building. Projects can be reopened from a `.ccs` file via *Load Project*. The *AI: Off* badge in the header reflects the local-first default — no cloud is contacted until you configure a provider yourself.
 
 ### Sample projects — a built-in historical corpus
 
-![Sample projects panel listing FLOW-MATIC, IPL-V, Spacewar, ELIZA, Apollo 11, and others](docs/screenshots/02-sample-projects.jpg)
+![Sample projects panel listing FLOW-MATIC, IPL-V, Spacewar, ELIZA, Apollo 11, and others](docs/screenshots/02-sample-projects.png)
 
 The Workbench ships with recoverable historical software ready for close reading: Grace Hopper's FLOW-MATIC (1958), Newell/Shaw/Simon's IPL-V (1958), every surviving version of *Spacewar!* (1962), Weizenbaum's ELIZA (1965) with a pre-annotated critique session, Apollo 11's Comanche055 (1969), and more. The ELIZA sample is distributed with thirty scholarly annotations as a worked example of a CCS reading.
 
 ### Workbench — annotations in context
 
-![Close reading of ELIZA MAD source with inline CTX, OBS, PAT, CRIT annotation pills](docs/screenshots/03-workbench-eliza.jpg)
+![Close reading of ELIZA MAD source with inline CTX, OBS, PAT, CRIT annotation pills](docs/screenshots/03-workbench-eliza.png)
 
 The three-panel IDE: file tree with colour-coded types on the left, editor with line numbers in the centre, and (when AI is configured) a chat and guided-prompts panel on the right. Annotations attach to specific lines or line ranges and render as colour-coded pills — here, **CTX** (Context), **OBS** (Observation), **PAT** (Pattern), and **CRIT** (Critique) are visible. The editor syntax-highlights historical languages the modern IDE has forgotten (MAD, PDP-1 MACRO, IPL-V) alongside the usual Python / JS / HTML / CSS / JSON set.
 
 ### Settings — fonts, display, AI providers, and ring-fenced cloud
 
-![Settings panel on the Appearance tab with font and annotation controls](docs/screenshots/04-settings-appearance.jpg)
+![Settings panel on the Appearance tab with font and annotation controls](docs/screenshots/04-settings-appearance.png)
 
 Everything the reader controls lives behind one Settings panel: fonts and sizes per surface (editor, chat, UI, annotations, file pane), annotation display geometry, and — on the AI tab — the full provider roster (Anthropic, OpenAI, Google, Ollama, OpenRouter, Hugging Face, OpenAI-compatible) with browser-direct keys stored in `localStorage`. The Cloud tab is where you'd paste a Supabase URL and anon key *if* you wanted the optional real-time collaboration tier; everything else works without it.
 
 ### Focus mode — spotlight the annotated lines
 
-![Focus mode dimming unannotated code to highlight annotated passages](docs/screenshots/05-focus-mode.jpg)
+![Focus mode dimming unannotated code to highlight annotated passages](docs/screenshots/05-focus-mode.png)
 
 A single toggle dims unannotated code and intensifies the colour bar on the right margin, so a dense scholarly reading can be navigated by annotation rather than by line. Combine with the annotation-type filters (top of the file pane) to show, say, only Critique or only Pattern annotations across the whole file.
 
